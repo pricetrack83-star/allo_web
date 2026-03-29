@@ -79,7 +79,7 @@ button:hover { background:#00ff80; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-storage.js";
 
 const firebaseConfig = {
@@ -97,51 +97,64 @@ const storage = getStorage(app);
 
 let me="", unread={}, activeChat="", r;
 
-// ===== توابع باید به window اضافه بشن =====
-window.enter = function() {
-    me = document.getElementById("u-in").value.trim();
-    if(!me) return;
-    localStorage.setItem("alloouser", me);
-    document.getElementById("login-page").style.display="none";
-    document.getElementById("chat-page").style.display="flex";
-};
+// همه چیز بعد از لود DOM
+document.addEventListener("DOMContentLoaded", ()=>{
 
-window.send = function() {
-    const txt = document.getElementById("m-in").value.trim();
-    const to = document.getElementById("u-to").value;
-    if(txt){
-        const msg = { from: me, to: to, text: txt, timestamp: new Date() };
-        addDoc(collection(db,"messages"), msg);
-        document.getElementById("m-in").value="";
-        if(to) activeChat = to;
+    // ورود خودکار
+    const user = localStorage.getItem("alloouser");
+    if(user){
+        me = user;
+        document.getElementById("login-page").style.display="none";
+        document.getElementById("chat-page").style.display="flex";
     }
-};
 
-window.showMessage = function(data){
-    if(data.to && data.to!==me && data.from!==me) return;
-    const div = document.createElement("div");
-    div.className = `msg ${data.from===me?'my':'at'}`;
-    const toInfo = data.to?`<small>به ${data.to}</small>`:'';
-    div.innerHTML=`<strong>${data.from}</strong>${toInfo}<br>${data.text||''}`;
-    if(data.audio){
-        const container = document.createElement("div");
-        container.className='waveform-container';
-        const ws = WaveSurfer.create({
-            container:container,
-            waveColor:data.from===me?'#00e676':'#ff5252',
-            progressColor:'#fff',
-            cursorColor:'#fff',
-            barWidth:2,
-            height:50,
-            responsive:true
-        });
-        ws.load(data.audio);
-        container.onclick=()=>{ ws.isPlaying()?ws.pause():ws.play(); };
-        div.appendChild(container);
-    }
-    document.getElementById("messages").appendChild(div);
-    document.getElementById("messages").scrollTop = 99999;
-};
+    // توابع روی window
+    window.enter = function(){
+        me = document.getElementById("u-in").value.trim();
+        if(!me) return;
+        localStorage.setItem("alloouser", me);
+        document.getElementById("login-page").style.display="none";
+        document.getElementById("chat-page").style.display="flex";
+    };
+
+    window.send = function(){
+        const txt = document.getElementById("m-in").value.trim();
+        const to = document.getElementById("u-to").value;
+        if(txt){
+            const msg = { from: me, to: to, text: txt, timestamp: new Date() };
+            addDoc(collection(db,"messages"), msg);
+            document.getElementById("m-in").value="";
+            if(to) activeChat = to;
+        }
+    };
+
+    window.showMessage = function(data){
+        if(data.to && data.to!==me && data.from!==me) return;
+        const div = document.createElement("div");
+        div.className = `msg ${data.from===me?'my':'at'}`;
+        const toInfo = data.to?`<small>به ${data.to}</small>`:'';
+        div.innerHTML=`<strong>${data.from}</strong>${toInfo}<br>${data.text||''}`;
+        if(data.audio){
+            const container = document.createElement("div");
+            container.className='waveform-container';
+            const ws = WaveSurfer.create({
+                container:container,
+                waveColor:data.from===me?'#00e676':'#ff5252',
+                progressColor:'#fff',
+                cursorColor:'#fff',
+                barWidth:2,
+                height:50,
+                responsive:true
+            });
+            ws.load(data.audio);
+            container.onclick=()=>{ ws.isPlaying()?ws.pause():ws.play(); };
+            div.appendChild(container);
+        }
+        document.getElementById("messages").appendChild(div);
+        document.getElementById("messages").scrollTop = 99999;
+    };
+
+});
 
 // دریافت پیام realtime
 const q = query(collection(db,"messages"), orderBy("timestamp"));
@@ -183,19 +196,10 @@ document.getElementById("signout-btn").onclick=()=>{
     location.reload(); 
 };
 
-// ورود خودکار اگر قبلاً وارد شده
-window.onload = ()=>{
-    const user = localStorage.getItem("alloouser");
-    if(user){
-        me = user;
-        document.getElementById("login-page").style.display="none";
-        document.getElementById("chat-page").style.display="flex";
-    }
-};
-
 // درخواست دسترسی نوتیفیکیشن
 if(Notification.permission!=="granted") Notification.requestPermission();
 window.addEventListener("focus",()=>{ unread={}; document.title='ALLOO'; });
+
 </script>
 </body>
 </html>
