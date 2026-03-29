@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>ALLOO</title>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
@@ -11,75 +12,146 @@
 body {
   margin:0;
   font-family:sans-serif;
-  background:#111;
-  color:white;
+  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  height:100vh;
   display:flex;
   justify-content:center;
   align-items:center;
-  height:100vh;
+  color:white;
+}
+
+.container {
+  width:360px;
+  height:600px;
+  background:#111;
+  border-radius:25px;
+  overflow:hidden;
+  box-shadow:0 0 30px rgba(0,0,0,0.6);
+  display:flex;
+  flex-direction:column;
+}
+
+.header {
+  background:#00e676;
+  padding:15px;
+  text-align:center;
+  font-weight:bold;
+  color:#000;
+  font-size:18px;
 }
 
 #login, #chat {
-  background:#1a1a1a;
-  padding:25px;
-  border-radius:20px;
-  width:350px;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  padding:15px;
 }
 
 #chat { display:none; }
 
 input {
-  width:100%;
-  padding:10px;
-  margin-top:10px;
-  border-radius:10px;
+  padding:12px;
   border:none;
+  border-radius:12px;
+  margin-top:10px;
+  outline:none;
 }
 
 button {
+  padding:12px;
   margin-top:10px;
-  padding:10px;
-  width:100%;
   border:none;
-  border-radius:10px;
+  border-radius:12px;
   background:#00e676;
+  font-weight:bold;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+button:hover {
+  opacity:0.8;
 }
 
 #messages {
-  height:200px;
+  flex:1;
   overflow:auto;
   margin:10px 0;
-  background:#000;
+  padding:5px;
+}
+
+.msg {
+  margin:6px 0;
   padding:10px;
-  border-radius:10px;
+  border-radius:15px;
+  max-width:75%;
+  word-wrap:break-word;
+  animation:fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {opacity:0; transform:translateY(10px);}
+  to {opacity:1; transform:translateY(0);}
+}
+
+.me {
+  background:#00e676;
+  color:black;
+  align-self:flex-end;
+}
+
+.other {
+  background:#333;
+  align-self:flex-start;
+}
+
+.footer {
+  display:flex;
+  gap:5px;
+}
+
+.footer input {
+  flex:1;
 }
 </style>
 </head>
 
 <body>
 
-<div id="login">
-  <h2>ALLOO</h2>
-  <input id="name" placeholder="نام...">
-  <button id="loginBtn">ورود</button>
-</div>
+<div class="container">
 
-<div id="chat">
-  <h3 id="user"></h3>
-  <div id="messages"></div>
-  <input id="msg" placeholder="پیام...">
-  <button id="sendBtn">ارسال</button>
-  <button id="logoutBtn">خروج</button>
+  <div class="header">ALLOO 💬</div>
+
+  <!-- LOGIN -->
+  <div id="login">
+    <input id="name" placeholder="اسمتو بنویس...">
+    <button id="loginBtn">ورود</button>
+  </div>
+
+  <!-- CHAT -->
+  <div id="chat">
+    <div id="messages"></div>
+
+    <div class="footer">
+      <input id="msg" placeholder="پیام...">
+      <button id="sendBtn">➤</button>
+    </div>
+
+    <button id="logoutBtn">خروج</button>
+  </div>
+
 </div>
 
 <script>
-console.log("APP START");
+console.log("ALLOO START");
 
-// 🔥 Firebase Config خودت
+// 🔥 کانفیگ خودت
 const firebaseConfig = {
-  apiKey: "AIzaSy...",
+  apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
   authDomain: "alloo-web.firebaseapp.com",
-  projectId: "alloo-web"
+  projectId: "alloo-web",
+  storageBucket: "alloo-web.firebasestorage.app",
+  messagingSenderId: "132232824762",
+  appId: "1:132232824762:web:4e3c25557c072f0feabf83"
 };
 
 // init
@@ -88,17 +160,21 @@ const db = firebase.firestore();
 
 let me = "";
 
-// عناصر
+// elements
 const loginBox = document.getElementById("login");
 const chatBox = document.getElementById("chat");
 const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
 const sendBtn = document.getElementById("sendBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 
 // ورود
 loginBtn.onclick = ()=>{
   const name = document.getElementById("name").value.trim();
-  if(!name) return alert("اسم بزن");
+
+  if(!name){
+    alert("اسم وارد کن 😐");
+    return;
+  }
 
   me = name;
   localStorage.setItem("allo_user", name);
@@ -109,26 +185,39 @@ loginBtn.onclick = ()=>{
 // شروع چت
 function startChat(){
   loginBox.style.display="none";
-  chatBox.style.display="block";
-  document.getElementById("user").innerText = "👤 " + me;
+  chatBox.style.display="flex";
 
-  // دریافت پیام‌ها
+  loadMessages();
+}
+
+// لود پیام‌ها
+function loadMessages(){
   db.collection("messages")
     .orderBy("time")
-    .onSnapshot(snap=>{
+    .onSnapshot(snapshot=>{
       const box = document.getElementById("messages");
-      box.innerHTML="";
-      snap.forEach(doc=>{
+      box.innerHTML = "";
+
+      snapshot.forEach(doc=>{
         const m = doc.data();
-        box.innerHTML += `<div><b>${m.from}:</b> ${m.text}</div>`;
+
+        const div = document.createElement("div");
+        div.className = "msg " + (m.from === me ? "me" : "other");
+
+        div.innerHTML = `<b>${m.from}</b><br>${m.text}`;
+
+        box.appendChild(div);
       });
+
       box.scrollTop = box.scrollHeight;
     });
 }
 
 // ارسال پیام
 sendBtn.onclick = ()=>{
-  const txt = document.getElementById("msg").value;
+  const input = document.getElementById("msg");
+  const txt = input.value.trim();
+
   if(!txt) return;
 
   db.collection("messages").add({
@@ -137,7 +226,7 @@ sendBtn.onclick = ()=>{
     time: Date.now()
   });
 
-  document.getElementById("msg").value="";
+  input.value = "";
 };
 
 // خروج
