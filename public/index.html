@@ -26,7 +26,6 @@ body {
   background:#111;
   border-radius:25px;
   overflow:hidden;
-  box-shadow:0 0 30px rgba(0,0,0,0.6);
   display:flex;
   flex-direction:column;
 }
@@ -35,9 +34,8 @@ body {
   background:#00e676;
   padding:15px;
   text-align:center;
-  font-weight:bold;
   color:#000;
-  font-size:18px;
+  font-weight:bold;
 }
 
 #login, #chat {
@@ -49,68 +47,42 @@ body {
 
 #chat { display:none; }
 
-input {
-  padding:12px;
+input, button {
+  padding:10px;
   border:none;
-  border-radius:12px;
+  border-radius:10px;
   margin-top:10px;
-  outline:none;
 }
 
 button {
-  padding:12px;
-  margin-top:10px;
-  border:none;
-  border-radius:12px;
   background:#00e676;
-  font-weight:bold;
   cursor:pointer;
-  transition:0.2s;
-}
-
-button:hover {
-  opacity:0.8;
 }
 
 #messages {
   flex:1;
   overflow:auto;
-  margin:10px 0;
-  padding:5px;
 }
 
 .msg {
-  margin:6px 0;
+  margin:5px 0;
   padding:10px;
   border-radius:15px;
   max-width:75%;
-  word-wrap:break-word;
-  animation:fadeIn 0.2s ease;
 }
 
-@keyframes fadeIn {
-  from {opacity:0; transform:translateY(10px);}
-  to {opacity:1; transform:translateY(0);}
-}
-
-.me {
-  background:#00e676;
-  color:black;
-  align-self:flex-end;
-}
-
-.other {
-  background:#333;
-  align-self:flex-start;
-}
+.me { background:#00e676; color:black; align-self:flex-end; }
+.other { background:#333; }
 
 .footer {
   display:flex;
   gap:5px;
 }
 
-.footer input {
-  flex:1;
+.footer input { flex:1; }
+
+.voice-btn {
+  background:#ff5252;
 }
 </style>
 </head>
@@ -119,32 +91,28 @@ button:hover {
 
 <div class="container">
 
-  <div class="header">ALLOO 💬</div>
+<div class="header">ALLOO 🎤</div>
 
-  <!-- LOGIN -->
-  <div id="login">
-    <input id="name" placeholder="اسمتو بنویس...">
-    <button id="loginBtn">ورود</button>
+<div id="login">
+  <input id="name" placeholder="اسمتو بنویس">
+  <button id="loginBtn">ورود</button>
+</div>
+
+<div id="chat">
+  <div id="messages"></div>
+
+  <div class="footer">
+    <input id="msg" placeholder="پیام...">
+    <button id="sendBtn">➤</button>
+    <button id="recBtn" class="voice-btn">🎤</button>
   </div>
 
-  <!-- CHAT -->
-  <div id="chat">
-    <div id="messages"></div>
-
-    <div class="footer">
-      <input id="msg" placeholder="پیام...">
-      <button id="sendBtn">➤</button>
-    </div>
-
-    <button id="logoutBtn">خروج</button>
-  </div>
+  <button id="logoutBtn">خروج</button>
+</div>
 
 </div>
 
 <script>
-console.log("ALLOO START");
-
-// 🔥 کانفیگ خودت
 const firebaseConfig = {
   apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
   authDomain: "alloo-web.firebaseapp.com",
@@ -154,70 +122,64 @@ const firebaseConfig = {
   appId: "1:132232824762:web:4e3c25557c072f0feabf83"
 };
 
-// init
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let me = "";
+let mediaRecorder;
+let chunks = [];
 
-// elements
-const loginBox = document.getElementById("login");
-const chatBox = document.getElementById("chat");
 const loginBtn = document.getElementById("loginBtn");
 const sendBtn = document.getElementById("sendBtn");
-const logoutBtn = document.getElementById("logoutBtn");
+const recBtn = document.getElementById("recBtn");
 
 // ورود
 loginBtn.onclick = ()=>{
   const name = document.getElementById("name").value.trim();
-
-  if(!name){
-    alert("اسم وارد کن 😐");
-    return;
-  }
+  if(!name) return alert("اسم بزن");
 
   me = name;
   localStorage.setItem("allo_user", name);
-
   startChat();
 };
 
-// شروع چت
 function startChat(){
-  loginBox.style.display="none";
-  chatBox.style.display="flex";
+  document.getElementById("login").style.display="none";
+  document.getElementById("chat").style.display="flex";
 
-  loadMessages();
-}
+  db.collection("messages").orderBy("time")
+  .onSnapshot(snap=>{
+    const box = document.getElementById("messages");
+    box.innerHTML="";
 
-// لود پیام‌ها
-function loadMessages(){
-  db.collection("messages")
-    .orderBy("time")
-    .onSnapshot(snapshot=>{
-      const box = document.getElementById("messages");
-      box.innerHTML = "";
+    snap.forEach(doc=>{
+      const m = doc.data();
+      const div = document.createElement("div");
+      div.className = "msg " + (m.from===me ? "me":"other");
 
-      snapshot.forEach(doc=>{
-        const m = doc.data();
-
-        const div = document.createElement("div");
-        div.className = "msg " + (m.from === me ? "me" : "other");
-
+      if(m.text){
         div.innerHTML = `<b>${m.from}</b><br>${m.text}`;
+      }
 
-        box.appendChild(div);
-      });
+      if(m.audio){
+        const audio = document.createElement("audio");
+        audio.src = m.audio;
+        audio.controls = true;
+        div.innerHTML = `<b>${m.from}</b><br>`;
+        div.appendChild(audio);
+      }
 
-      box.scrollTop = box.scrollHeight;
+      box.appendChild(div);
     });
+
+    box.scrollTop = box.scrollHeight;
+  });
 }
 
-// ارسال پیام
+// ارسال متن
 sendBtn.onclick = ()=>{
   const input = document.getElementById("msg");
   const txt = input.value.trim();
-
   if(!txt) return;
 
   db.collection("messages").add({
@@ -226,16 +188,49 @@ sendBtn.onclick = ()=>{
     time: Date.now()
   });
 
-  input.value = "";
+  input.value="";
+};
+
+// 🎤 ضبط ویس
+recBtn.onclick = async ()=>{
+  if(!mediaRecorder){
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+
+    mediaRecorder.onstop = ()=>{
+      const blob = new Blob(chunks, {type:'audio/webm'});
+      chunks = [];
+
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+
+      reader.onloadend = ()=>{
+        db.collection("messages").add({
+          from: me,
+          audio: reader.result,
+          time: Date.now()
+        });
+      };
+    };
+
+    mediaRecorder.start();
+    recBtn.innerText = "⏹";
+  } else {
+    mediaRecorder.stop();
+    mediaRecorder = null;
+    recBtn.innerText = "🎤";
+  }
 };
 
 // خروج
-logoutBtn.onclick = ()=>{
+document.getElementById("logoutBtn").onclick = ()=>{
   localStorage.removeItem("allo_user");
   location.reload();
 };
 
-// ورود خودکار
+// auto login
 window.onload = ()=>{
   const user = localStorage.getItem("allo_user");
   if(user){
