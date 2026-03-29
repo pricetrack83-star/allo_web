@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>ALLOO Ultra Pro v4</title>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.7.2/dist/socket.io.min.js"></script>
 <script src="https://unpkg.com/wavesurfer.js"></script>
 <script type="module" src="https://www.gstatic.com/firebasejs/10.20.0/firebase-app.js"></script>
 <script type="module" src="https://www.gstatic.com/firebasejs/10.20.0/firebase-firestore.js"></script>
@@ -46,7 +47,7 @@ input:focus, select:focus { background:#333; }
 body.light input:focus, body.light select:focus { background:#ccc; }
 button { padding:12px 18px; border-radius:12px; border:none; background:#00e676; cursor:pointer; font-weight:bold; transition:0.3s; }
 button:hover { background:#00ff80; }
-#v-btn { background:#ff5252; color:white; border-radius:50%; width:50px; font-size:18px; }
+#w-btn { background:#ff5252; color:white; border-radius:50%; width:50px; font-size:18px; }
 .waveform-container { width:100%; height:50px; border-radius:10px; overflow:hidden; margin-top:5px; box-shadow:0 0 10px rgba(0,255,118,0.4);}
 </style>
 </head>
@@ -78,10 +79,9 @@ button:hover { background:#00ff80; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-storage.js";
 
-// 🔹 Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
   authDomain: "alloo-web.firebaseapp.com",
@@ -91,30 +91,42 @@ const firebaseConfig = {
   appId: "1:132232824762:web:4e3c25557c072f0feabf83"
 };
 
+// Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
+// Socket.IO
+const socket = io(); // اتوماتیک روی همان دامنه و پورت
+
 let me="", unread={}, activeChat="";
 
-// ورود
+socket.on("connect", ()=> {
+    const storedUser = localStorage.getItem("alloouser");
+    if(storedUser){ me = storedUser; socket.emit("login", me); }
+});
+
 function enter() {
     me = document.getElementById("u-in").value.trim();
-    if(!me) return;
+    if(!me || me.length <3){ alert("لطفا نام معتبر وارد کنید"); return; }
     localStorage.setItem("alloouser", me);
-    document.getElementById("login-page").style.display="none";
-    document.getElementById("chat-page").style.display="flex";
-    setDoc(doc(db,"users",me), {name:me, online:true, lastSeen:new Date().toISOString()});
+    socket.emit("login", me);
 }
 
+socket.on("login-success", ()=>{
+    document.getElementById("login-page").style.display="none";
+    document.getElementById("chat-page").style.display="flex";
+});
+
 // ارسال پیام متنی
-function send() {
+function send(){
     const txt = document.getElementById("m-in").value.trim();
     const to = document.getElementById("u-to").value;
     if(txt){
-        const msg = {from:me,to:to,text:txt,timestamp:new Date().toISOString()};
-        addDoc(collection(db,"messages"),msg);
+        const msg = { from: me, to: to, text: txt, timestamp: new Date() };
+        addDoc(collection(db,"messages"), msg);
         document.getElementById("m-in").value="";
+        activeChat=to;
     }
 }
 
@@ -134,38 +146,36 @@ function showMessage(data){
         div.appendChild(container);
     }
     document.getElementById("messages").appendChild(div);
-    document.getElementById("messages").scrollTop=99999;
+    document.getElementById("messages").scrollTop = 99999;
 }
 
-// پیام‌ها realtime
+// دریافت پیام realtime
 const q = query(collection(db,"messages"), orderBy("timestamp"));
-onSnapshot(q,snapshot=>{
+onSnapshot(q, snapshot=>{
     snapshot.docChanges().forEach(change=>{
         if(change.type==="added") showMessage(change.doc.data());
     });
 });
 
 // کاربران آنلاین
-const qUsers = query(collection(db,"users"));
-onSnapshot(qUsers,snapshot=>{
+socket.on("users", us=>{
     const ul = document.getElementById("u-list");
-    const sel = document.getElementById("u-to");
-    ul.innerHTML=''; sel.innerHTML='<option value="">عمومی</option>';
-    snapshot.docs.forEach(doc=>{
-        const u = doc.data();
-        if(u.name!==me){
-            const div = document.createElement("div");
-            div.textContent=u.name;
-            div.classList.add("show");
-            ul.appendChild(div);
-            sel.innerHTML+=`<option value="${u.name}">${u.name}</option>`;
-        }
+    ul.innerHTML='';
+    us.forEach((u,i)=>{
+        const div = document.createElement("div");
+        div.textContent=u + (unread[u]?` (${unread[u]})`:'' );
+        setTimeout(()=>div.classList.add("show"), i*100);
+        ul.appendChild(div);
     });
+    const sel = document.getElementById("u-to");
+    const prev = sel.value;
+    sel.innerHTML='<option value="">عمومی</option>'+us.map(u=>`<option value="${u}">${u}</option>`).join('');
+    if(us.find(x=>x===prev)) sel.value=prev;
 });
 
 // ضبط و ارسال ویس
 let r;
-document.getElementById("v-btn").onclick = async function() {
+document.getElementById("v-btn").onclick=async function(){
     if(r && r.state==="recording"){ r.stop(); this.textContent="🎤"; }
     else{
         const s = await navigator.mediaDevices.getUserMedia({audio:true});
@@ -174,31 +184,21 @@ document.getElementById("v-btn").onclick = async function() {
         r.ondataavailable = e=>ch.push(e.data);
         r.onstop = async ()=>{
             const b = new Blob(ch,{type:'audio/webm'});
-            const fileRef = ref(storage, `voices/${Date.now()}.webm`);
-            await uploadBytes(fileRef,b);
-            const url = await getDownloadURL(fileRef);
-            addDoc(collection(db,"messages"), {from:me,to:document.getElementById("u-to").value,audio:url,timestamp:new Date().toISOString()});
+            const fr = new FileReader();
+            fr.onloadend = async ()=>{
+                const fileRef = ref(storage, `voices/${Date.now()}.webm`);
+                await uploadBytes(fileRef,b);
+                const url = await getDownloadURL(fileRef);
+                addDoc(collection(db,"messages"),{from:me,to:document.getElementById("u-to").value,audio:url,timestamp:new Date()});
+            };
+            fr.readAsDataURL(b);
         };
         r.start(); this.textContent="⏹";
     }
 };
 
-// تم
 document.getElementById("theme-toggle").onclick=()=>{ document.body.classList.toggle('light'); };
-
-// خروج
-document.getElementById("signout-btn").onclick=()=>{
-    setDoc(doc(db,"users",me),{name:me,online:false,lastSeen:new Date().toISOString()});
-    localStorage.removeItem("alloouser"); location.reload();
-};
-
-// بارگذاری خودکار کاربر قبلی
-window.addEventListener("load",()=>{
-    const storedUser = localStorage.getItem("alloouser");
-    if(storedUser) enter();
-});
-
-// نوتیفیکیشن
+document.getElementById("signout-btn").onclick=()=>{ localStorage.removeItem("alloouser"); location.reload(); };
 if(Notification.permission!=="granted") Notification.requestPermission();
 window.addEventListener("focus",()=>{ unread={}; document.title='ALLOO'; });
 </script>
