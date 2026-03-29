@@ -9,11 +9,47 @@
 <script type="module" src="https://www.gstatic.com/firebasejs/10.20.0/firebase-app.js"></script>
 <script type="module" src="https://www.gstatic.com/firebasejs/10.20.0/firebase-firestore.js"></script>
 <script type="module" src="https://www.gstatic.com/firebasejs/10.20.0/firebase-storage.js"></script>
-
 <style>
-/* تمام CSS گرافیکی و نورانی که قبلاً داشتیم */
+/* همون CSS قبلی برای تم و login و chat */
 body { margin:0; font-family:'Vazirmatn',sans-serif; background:linear-gradient(135deg,#0f0f0f,#1a1a1a); color:white; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; transition:0.5s; }
-/* … بقیه CSS مثل قبل … */
+body.light { background: linear-gradient(135deg,#fff,#eee); color:#111; }
+#login-page { background:#1b1b1b; padding:40px; border-radius:25px; text-align:center; width:350px; box-shadow:0 15px 50px rgba(0,255,118,0.7); transition:0.5s; }
+body.light #login-page { background:#f5f5f5; box-shadow:0 15px 50px rgba(0,200,255,0.3); color:#111; }
+#login-page h1 { color:#00e676; margin-bottom:20px; font-size:36px; text-shadow:0 0 10px #00e676; }
+body.light #login-page h1 { color:#00aaff; text-shadow:0 0 10px #00aaff; }
+#chat-page { display:none; width:95%; height:90vh; background:#1a1a1a; border-radius:20px; flex-direction:row; overflow:hidden; box-shadow:0 0 50px rgba(0,255,118,0.4); transition:0.5s; }
+body.light #chat-page { background:#f5f5f5; box-shadow:0 0 50px rgba(0,200,255,0.2); color:#111; }
+#sidebar { width:250px; background:#111; padding:20px; border-left:1px solid #222; display:flex; flex-direction:column; transition:0.3s;}
+body.light #sidebar { background:#eee; border-color:#ccc; color:#111; }
+#sidebar h4 { color:#00e676; text-align:center; margin-bottom:15px; text-shadow:0 0 5px #00e676; }
+body.light #sidebar h4 { color:#00aaff; text-shadow:0 0 5px #00aaff; }
+#u-list { flex:1; overflow-y:auto; margin-bottom:10px; transition:0.3s; }
+#u-list div { padding:8px 10px; border-radius:10px; margin-bottom:5px; background:#222; cursor:pointer; transition:0.3s; display:flex; justify-content:space-between; align-items:center; opacity:0; transform:translateX(30px);}
+#u-list div.show { opacity:1; transform:translateX(0); }
+#u-list div:hover { background:#00e676; color:#000; }
+#sidebar select { margin-bottom:10px; }
+#signout-btn { padding:8px 12px; border-radius:12px; border:none; background:#ff5252; cursor:pointer; font-weight:bold; transition:0.3s; margin-bottom:10px; }
+#signout-btn:hover { background:#ff7979; }
+#chat-area { flex:1; display:flex; flex-direction:column; background:#050505; border-radius:0 20px 20px 0; overflow:hidden; transition:0.3s;}
+body.light #chat-area { background:#fff; color:#111; }
+#messages { flex:1; padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; scrollbar-width:thin; scrollbar-color:#00e676 #111; }
+#messages::-webkit-scrollbar { width:8px; }
+#messages::-webkit-scrollbar-thumb { background:#00e676; border-radius:4px; }
+.msg { padding:12px; border-radius:20px; max-width:75%; font-size:14px; word-wrap:break-word; position:relative; transition:0.3s; cursor:pointer;}
+.msg:hover { transform:scale(1.04); background:linear-gradient(120deg,#00ff80,#00e676);}
+.my { align-self:flex-start; background:#00e676; color:#000; box-shadow:0 2px 10px rgba(0,255,118,0.4);}
+.at { align-self:flex-end; background:#222; color:#fff; text-align:left; direction:ltr; box-shadow:0 2px 10px rgba(0,0,0,0.6);}
+.msg small { font-size:10px; display:block; color:#ccc; }
+.input-box { padding:15px; background:#1a1a1a; display:flex; gap:10px; border-top:1px solid #222; }
+body.light .input-box { background:#eee; border-color:#ccc; }
+input, select { flex:1; padding:12px; border-radius:12px; border:none; background:#222; color:white; outline:none; transition:0.3s; }
+body.light input, body.light select { background:#ddd; color:#111; }
+input:focus, select:focus { background:#333; }
+body.light input:focus, body.light select:focus { background:#ccc; }
+button { padding:12px 18px; border-radius:12px; border:none; background:#00e676; cursor:pointer; font-weight:bold; transition:0.3s; }
+button:hover { background:#00ff80; }
+#w-btn { background:#ff5252; color:white; border-radius:50%; width:50px; font-size:18px; }
+.waveform-container { width:100%; height:50px; border-radius:10px; overflow:hidden; margin-top:5px; box-shadow:0 0 10px rgba(0,255,118,0.4);}
 </style>
 </head>
 <body>
@@ -44,7 +80,7 @@ body { margin:0; font-family:'Vazirmatn',sans-serif; background:linear-gradient(
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-storage.js";
 
 const firebaseConfig = {
@@ -56,31 +92,33 @@ const firebaseConfig = {
   appId: "1:132232824762:web:4e3c25557c072f0feabf83"
 };
 
+// Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-const socket = io("https://allo-web-nu.vercel.app"); // لینک آنلاین Socket.IO
+// Socket.IO (روی Vercel یا سرور پابلیک)
+const socket = io("https://allo-web-nu.vercel.app"); // لینک نهایی سرور خودتو بذار
+
 let me="", unread={}, activeChat="";
 
+// ورود
 socket.on("connect", () => {
     const storedUser = localStorage.getItem("alloouser");
     if (storedUser) { me = storedUser; socket.emit("login", me); }
 });
-
 function enter() {
     me = document.getElementById("u-in").value.trim();
     if (!me) return;
     localStorage.setItem("alloouser", me);
     socket.emit("login", me);
 }
-
 socket.on("login-success", () => {
     document.getElementById("login-page").style.display="none";
     document.getElementById("chat-page").style.display="flex";
 });
 
-// ارسال پیام متنی
+// ارسال پیام
 function send() {
     const txt = document.getElementById("m-in").value.trim();
     const to = document.getElementById("u-to").value;
@@ -92,12 +130,7 @@ function send() {
     }
 }
 
-// دریافت پیام realtime
-const q = query(collection(db,"messages"), orderBy("timestamp"));
-onSnapshot(q, snapshot => {
-    snapshot.docChanges().forEach(change=>{ showMessage(change.doc.data()); });
-});
-
+// نمایش پیام
 function showMessage(data){
     if(data.to && data.to!==me && data.from!==me) return;
     const div = document.createElement("div");
@@ -116,11 +149,29 @@ function showMessage(data){
     document.getElementById("messages").scrollTop = 99999;
 }
 
-// تم و خروج
-document.getElementById("theme-toggle").onclick=()=>{ document.body.classList.toggle('light'); };
-document.getElementById("signout-btn").onclick=()=>{ localStorage.removeItem("alloouser"); location.reload(); };
+// دریافت پیام realtime
+const q = query(collection(db,"messages"), orderBy("timestamp"));
+onSnapshot(q, snapshot => {
+    snapshot.docChanges().forEach(change=>{ if(change.type==="added") showMessage(change.doc.data()); });
+});
 
-// ضبط و ارسال ویس
+// کاربران آنلاین (simulated via Socket.IO)
+socket.on("users", us => {
+    const ul = document.getElementById("u-list");
+    ul.innerHTML='';
+    us.forEach((u,i)=>{
+        const div = document.createElement("div");
+        div.textContent=u + (unread[u]?` (${unread[u]})`:'' );
+        setTimeout(()=>div.classList.add("show"), i*100);
+        ul.appendChild(div);
+    });
+    const sel = document.getElementById("u-to");
+    const prev = sel.value;
+    sel.innerHTML='<option value="">عمومی</option>'+us.map(u=>`<option value="${u}">${u}</option>`).join('');
+    if(us.find(u=>u===prev)) sel.value=prev;
+});
+
+// ضبط ویس
 let r;
 document.getElementById("v-btn").onclick = async function() {
     if(r && r.state==="recording"){ r.stop(); this.textContent="🎤"; }
@@ -131,14 +182,24 @@ document.getElementById("v-btn").onclick = async function() {
         r.ondataavailable = e => ch.push(e.data);
         r.onstop = async ()=>{
             const b = new Blob(ch,{type:'audio/webm'});
-            const fileRef = ref(storage, `voices/${Date.now()}.webm`);
-            await uploadBytes(fileRef, b);
-            const url = await getDownloadURL(fileRef);
-            addDoc(collection(db,"messages"), {from:me, to:document.getElementById("u-to").value, audio:url, timestamp:new Date()});
+            const fr = new FileReader();
+            fr.onloadend = async ()=>{
+                const fileRef = ref(storage, `voices/${Date.now()}.webm`);
+                await uploadBytes(fileRef, b);
+                const url = await getDownloadURL(fileRef);
+                addDoc(collection(db,"messages"), {from:me, to:document.getElementById("u-to").value, audio:url, timestamp:new Date()});
+            };
+            fr.readAsDataURL(b);
         };
         r.start(); this.textContent="⏹";
     }
 };
+
+// تم
+document.getElementById("theme-toggle").onclick=()=>{ document.body.classList.toggle('light'); };
+
+// Sign Out
+document.getElementById("signout-btn").onclick=()=>{ localStorage.removeItem("alloouser"); location.reload(); };
 
 // نوتیفیکیشن
 if(Notification.permission!=="granted") Notification.requestPermission();
