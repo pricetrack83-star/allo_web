@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <title>ALLOO Ultra Pro v4</title>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.7.2/dist/socket.io.min.js"></script>
 <script src="https://unpkg.com/wavesurfer.js"></script>
 <script type="module" src="https://www.gstatic.com/firebasejs/10.20.0/firebase-app.js"></script>
 <script type="module" src="https://www.gstatic.com/firebasejs/10.20.0/firebase-firestore.js"></script>
 <script type="module" src="https://www.gstatic.com/firebasejs/10.20.0/firebase-storage.js"></script>
+
 <style>
 body { margin:0; font-family:'Vazirmatn',sans-serif; background:linear-gradient(135deg,#0f0f0f,#1a1a1a); color:white; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; transition:0.5s; }
 body.light { background: linear-gradient(135deg,#fff,#eee); color:#111; }
@@ -48,7 +48,7 @@ body.light input:focus, body.light select:focus { background:#ccc; }
 button { padding:12px 18px; border-radius:12px; border:none; background:#00e676; cursor:pointer; font-weight:bold; transition:0.3s; }
 button:hover { background:#00ff80; }
 #w-btn { background:#ff5252; color:white; border-radius:50%; width:50px; font-size:18px; }
-.waveform-container { width:100%; height:50px; border-radius:10px; overflow:hidden; margin-top:5px; box-shadow:0 0 10px rgba(0,255,118,0.4);}
+.waveform-container { width:100%; height:50px; border-radius:10px; overflow:hidden; margin-top:5px; box-shadow:0 0 10px rgba(0,255,118,0.4); }
 </style>
 </head>
 <body>
@@ -70,7 +70,7 @@ button:hover { background:#00ff80; }
 <div id="chat-area">
 <div id="messages"></div>
 <div class="input-box">
-<button id="v-btn">🎤</button>
+<button id="w-btn">🎤</button>
 <input type="text" id="m-in" placeholder="پیام...">
 <button onclick="send()">ارسال</button>
 </div>
@@ -79,9 +79,10 @@ button:hover { background:#00ff80; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.20.0/firebase-storage.js";
 
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
   authDomain: "alloo-web.firebaseapp.com",
@@ -91,51 +92,70 @@ const firebaseConfig = {
   appId: "1:132232824762:web:4e3c25557c072f0feabf83"
 };
 
-// Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Socket.IO
-const socket = io(); // اتوماتیک روی همان دامنه و پورت
-
 let me="", unread={}, activeChat="";
 
-socket.on("connect", ()=> {
-    const storedUser = localStorage.getItem("alloouser");
-    if(storedUser){ me = storedUser; socket.emit("login", me); }
-});
-
-function enter() {
+// ورود
+async function enter(){
     me = document.getElementById("u-in").value.trim();
-    if(!me || me.length <3){ alert("لطفا نام معتبر وارد کنید"); return; }
-    localStorage.setItem("alloouser", me);
-    socket.emit("login", me);
-}
+    if(!me) return alert("نام خود را وارد کنید");
 
-socket.on("login-success", ()=>{
+    // ثبت کاربر در Firestore
+    const userDoc = doc(db,"users",me);
+    const userSnap = await getDoc(userDoc);
+    if(!userSnap.exists()){
+        await setDoc(userDoc,{name:me, online:true, lastSeen:new Date().toISOString()});
+    } else {
+        await setDoc(userDoc,{name:me, online:true, lastSeen:new Date().toISOString()},{merge:true});
+    }
+
+    localStorage.setItem("alloouser",me);
     document.getElementById("login-page").style.display="none";
     document.getElementById("chat-page").style.display="flex";
-});
 
-// ارسال پیام متنی
-function send(){
+    // Load messages
+    const q = query(collection(db,"messages"), orderBy("timestamp"));
+    onSnapshot(q,snapshot=>{
+        snapshot.docChanges().forEach(change=>{
+            if(change.type==="added") showMessage(change.doc.data());
+        });
+    });
+
+    // Load users online
+    const usersCol = collection(db,"users");
+    onSnapshot(usersCol,snap=>{
+        const ul = document.getElementById("u-list");
+        const sel = document.getElementById("u-to");
+        ul.innerHTML=""; sel.innerHTML='<option value="">عمومی</option>';
+        snap.docs.forEach(d=>{
+            const u = d.data();
+            if(u.name===me) return;
+            const div = document.createElement("div");
+            div.textContent=u.name;
+            ul.appendChild(div);
+            sel.innerHTML += `<option value="${u.name}">${u.name}</option>`;
+        });
+    });
+}
+
+// ارسال پیام
+async function send(){
     const txt = document.getElementById("m-in").value.trim();
-    const to = document.getElementById("u-to").value;
-    if(txt){
-        const msg = { from: me, to: to, text: txt, timestamp: new Date() };
-        addDoc(collection(db,"messages"), msg);
-        document.getElementById("m-in").value="";
-        activeChat=to;
-    }
+    if(!txt) return;
+    const msg = {from:me,text:txt,timestamp:new Date().toISOString(),to:document.getElementById("u-to").value};
+    await addDoc(collection(db,"messages"),msg);
+    document.getElementById("m-in").value="";
 }
 
 // نمایش پیام
 function showMessage(data){
     if(data.to && data.to!==me && data.from!==me) return;
     const div = document.createElement("div");
-    div.className = `msg ${data.from===me?'my':'at'}`;
-    const toInfo = data.to?`<small>به ${data.to}</small>`:'';
+    div.className=`msg ${data.from===me?'my':'at'}`;
+    const toInfo = data.to?`<small>به ${data.to}</small>`:"";
     div.innerHTML=`<strong>${data.from}</strong>${toInfo}<br>${data.text||''}`;
     if(data.audio){
         const container = document.createElement("div");
@@ -146,61 +166,40 @@ function showMessage(data){
         div.appendChild(container);
     }
     document.getElementById("messages").appendChild(div);
-    document.getElementById("messages").scrollTop = 99999;
+    document.getElementById("messages").scrollTop=99999;
 }
 
-// دریافت پیام realtime
-const q = query(collection(db,"messages"), orderBy("timestamp"));
-onSnapshot(q, snapshot=>{
-    snapshot.docChanges().forEach(change=>{
-        if(change.type==="added") showMessage(change.doc.data());
-    });
-});
-
-// کاربران آنلاین
-socket.on("users", us=>{
-    const ul = document.getElementById("u-list");
-    ul.innerHTML='';
-    us.forEach((u,i)=>{
-        const div = document.createElement("div");
-        div.textContent=u + (unread[u]?` (${unread[u]})`:'' );
-        setTimeout(()=>div.classList.add("show"), i*100);
-        ul.appendChild(div);
-    });
-    const sel = document.getElementById("u-to");
-    const prev = sel.value;
-    sel.innerHTML='<option value="">عمومی</option>'+us.map(u=>`<option value="${u}">${u}</option>`).join('');
-    if(us.find(x=>x===prev)) sel.value=prev;
-});
-
-// ضبط و ارسال ویس
+// ضبط ویس
 let r;
-document.getElementById("v-btn").onclick=async function(){
-    if(r && r.state==="recording"){ r.stop(); this.textContent="🎤"; }
-    else{
-        const s = await navigator.mediaDevices.getUserMedia({audio:true});
-        r = new MediaRecorder(s);
-        let ch=[];
-        r.ondataavailable = e=>ch.push(e.data);
-        r.onstop = async ()=>{
-            const b = new Blob(ch,{type:'audio/webm'});
-            const fr = new FileReader();
-            fr.onloadend = async ()=>{
-                const fileRef = ref(storage, `voices/${Date.now()}.webm`);
-                await uploadBytes(fileRef,b);
-                const url = await getDownloadURL(fileRef);
-                addDoc(collection(db,"messages"),{from:me,to:document.getElementById("u-to").value,audio:url,timestamp:new Date()});
-            };
-            fr.readAsDataURL(b);
+document.getElementById("w-btn").onclick = async function(){
+    if(r && r.state==="recording"){ r.stop(); this.textContent="🎤"; return; }
+    const s = await navigator.mediaDevices.getUserMedia({audio:true});
+    r = new MediaRecorder(s);
+    let ch=[];
+    r.ondataavailable = e=>ch.push(e.data);
+    r.onstop = async ()=>{
+        const b = new Blob(ch,{type:'audio/webm'});
+        const fr = new FileReader();
+        fr.onloadend= async ()=>{
+            const fileRef = ref(storage, `voices/${Date.now()}.webm`);
+            await uploadBytes(fileRef,b);
+            const url = await getDownloadURL(fileRef);
+            await addDoc(collection(db,"messages"),{from:me,to:document.getElementById("u-to").value,audio:url,timestamp:new Date().toISOString()});
         };
-        r.start(); this.textContent="⏹";
-    }
+        fr.readAsDataURL(b);
+    };
+    r.start(); this.textContent="⏹";
 };
 
+// تم
 document.getElementById("theme-toggle").onclick=()=>{ document.body.classList.toggle('light'); };
+
+// خروج
 document.getElementById("signout-btn").onclick=()=>{ localStorage.removeItem("alloouser"); location.reload(); };
+
+// Notification
 if(Notification.permission!=="granted") Notification.requestPermission();
-window.addEventListener("focus",()=>{ unread={}; document.title='ALLOO'; });
+window.addEventListener("focus",()=>{ document.title='ALLOO'; });
 </script>
 </body>
 </html>
