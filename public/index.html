@@ -4,13 +4,12 @@
 <meta charset="UTF-8">
 <title>ALLOO Ultra Pro v4</title>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.7.2/dist/socket.io.min.js"></script>
 <script src="https://unpkg.com/wavesurfer.js"></script>
 <script type="module" src="https://www.gstatic.com/firebasejs/10.20.0/firebase-app.js"></script>
 <script type="module" src="https://www.gstatic.com/firebasejs/10.20.0/firebase-firestore.js"></script>
 <script type="module" src="https://www.gstatic.com/firebasejs/10.20.0/firebase-storage.js"></script>
 <style>
-/* همون CSS قبلی برای تم و login و chat */
+/* ==== همون CSS قبلی ==== */
 body { margin:0; font-family:'Vazirmatn',sans-serif; background:linear-gradient(135deg,#0f0f0f,#1a1a1a); color:white; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; transition:0.5s; }
 body.light { background: linear-gradient(135deg,#fff,#eee); color:#111; }
 #login-page { background:#1b1b1b; padding:40px; border-radius:25px; text-align:center; width:350px; box-shadow:0 15px 50px rgba(0,255,118,0.7); transition:0.5s; }
@@ -48,7 +47,7 @@ input:focus, select:focus { background:#333; }
 body.light input:focus, body.light select:focus { background:#ccc; }
 button { padding:12px 18px; border-radius:12px; border:none; background:#00e676; cursor:pointer; font-weight:bold; transition:0.3s; }
 button:hover { background:#00ff80; }
-#w-btn { background:#ff5252; color:white; border-radius:50%; width:50px; font-size:18px; }
+#v-btn { background:#ff5252; color:white; border-radius:50%; width:50px; font-size:18px; }
 .waveform-container { width:100%; height:50px; border-radius:10px; overflow:hidden; margin-top:5px; box-shadow:0 0 10px rgba(0,255,118,0.4);}
 </style>
 </head>
@@ -92,31 +91,20 @@ const firebaseConfig = {
   appId: "1:132232824762:web:4e3c25557c072f0feabf83"
 };
 
-// Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Socket.IO (روی Vercel یا سرور پابلیک)
-const socket = io("https://allo-web-nu.vercel.app"); // لینک نهایی سرور خودتو بذار
-
 let me="", unread={}, activeChat="";
 
 // ورود
-socket.on("connect", () => {
-    const storedUser = localStorage.getItem("alloouser");
-    if (storedUser) { me = storedUser; socket.emit("login", me); }
-});
 function enter() {
     me = document.getElementById("u-in").value.trim();
-    if (!me) return;
+    if(!me) return;
     localStorage.setItem("alloouser", me);
-    socket.emit("login", me);
-}
-socket.on("login-success", () => {
     document.getElementById("login-page").style.display="none";
     document.getElementById("chat-page").style.display="flex";
-});
+}
 
 // ارسال پیام
 function send() {
@@ -149,29 +137,15 @@ function showMessage(data){
     document.getElementById("messages").scrollTop = 99999;
 }
 
-// دریافت پیام realtime
+// دریافت پیام realtime از Firestore
 const q = query(collection(db,"messages"), orderBy("timestamp"));
 onSnapshot(q, snapshot => {
-    snapshot.docChanges().forEach(change=>{ if(change.type==="added") showMessage(change.doc.data()); });
-});
-
-// کاربران آنلاین (simulated via Socket.IO)
-socket.on("users", us => {
-    const ul = document.getElementById("u-list");
-    ul.innerHTML='';
-    us.forEach((u,i)=>{
-        const div = document.createElement("div");
-        div.textContent=u + (unread[u]?` (${unread[u]})`:'' );
-        setTimeout(()=>div.classList.add("show"), i*100);
-        ul.appendChild(div);
+    snapshot.docChanges().forEach(change=>{
+        if(change.type==="added") showMessage(change.doc.data());
     });
-    const sel = document.getElementById("u-to");
-    const prev = sel.value;
-    sel.innerHTML='<option value="">عمومی</option>'+us.map(u=>`<option value="${u}">${u}</option>`).join('');
-    if(us.find(u=>u===prev)) sel.value=prev;
 });
 
-// ضبط ویس
+// ضبط و ارسال ویس
 let r;
 document.getElementById("v-btn").onclick = async function() {
     if(r && r.state==="recording"){ r.stop(); this.textContent="🎤"; }
