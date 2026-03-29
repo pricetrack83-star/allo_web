@@ -2,14 +2,17 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>ALLOO</title>
+<title>ALLOO PRO</title>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
+<!-- WaveSurfer -->
+<script src="https://unpkg.com/wavesurfer.js"></script>
+
 <style>
-body {
+body{
   margin:0;
   font-family:sans-serif;
   background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
@@ -20,70 +23,86 @@ body {
   color:white;
 }
 
-.container {
-  width:360px;
-  height:600px;
+.container{
+  width:380px;
+  height:620px;
   background:#111;
   border-radius:25px;
-  overflow:hidden;
   display:flex;
   flex-direction:column;
+  overflow:hidden;
 }
 
-.header {
+.header{
   background:#00e676;
-  padding:15px;
+  padding:10px;
   text-align:center;
-  color:#000;
+  color:black;
   font-weight:bold;
 }
 
-#login, #chat {
+#login,#chat{
   flex:1;
   display:flex;
   flex-direction:column;
-  padding:15px;
+  padding:10px;
 }
 
-#chat { display:none; }
+#chat{display:none;}
 
-input, button {
+input,button{
   padding:10px;
   border:none;
   border-radius:10px;
-  margin-top:10px;
+  margin-top:5px;
 }
 
-button {
+button{
   background:#00e676;
   cursor:pointer;
 }
 
-#messages {
+#users{
+  display:flex;
+  overflow:auto;
+  gap:5px;
+}
+
+.user{
+  background:#222;
+  padding:5px 10px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.online{background:#00e676;color:black;}
+
+#messages{
   flex:1;
   overflow:auto;
 }
 
-.msg {
-  margin:5px 0;
+.msg{
+  margin:5px;
   padding:10px;
   border-radius:15px;
   max-width:75%;
 }
 
-.me { background:#00e676; color:black; align-self:flex-end; }
-.other { background:#333; }
+.me{background:#00e676;color:black;align-self:flex-end;}
+.other{background:#333;}
 
-.footer {
+.wave{
+  height:50px;
+}
+
+.footer{
   display:flex;
   gap:5px;
 }
+.footer input{flex:1;}
 
-.footer input { flex:1; }
-
-.voice-btn {
-  background:#ff5252;
-}
+.voice-btn{background:#ff5252;}
 </style>
 </head>
 
@@ -91,23 +110,29 @@ button {
 
 <div class="container">
 
-<div class="header">ALLOO 🎤</div>
+<div class="header">ALLOO PRO 🚀</div>
 
 <div id="login">
   <input id="name" placeholder="اسمتو بنویس">
-  <button id="loginBtn">ورود</button>
+  <button onclick="login()">ورود</button>
 </div>
 
 <div id="chat">
+
+  <!-- کاربران -->
+  <div id="users"></div>
+
+  <!-- پیام -->
   <div id="messages"></div>
 
   <div class="footer">
     <input id="msg" placeholder="پیام...">
-    <button id="sendBtn">➤</button>
-    <button id="recBtn" class="voice-btn">🎤</button>
+    <button onclick="send()">➤</button>
+    <button onclick="record()" class="voice-btn">🎤</button>
   </div>
 
-  <button id="logoutBtn">خروج</button>
+  <button onclick="logout()">خروج</button>
+
 </div>
 
 </div>
@@ -116,126 +141,183 @@ button {
 const firebaseConfig = {
   apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
   authDomain: "alloo-web.firebaseapp.com",
-  projectId: "alloo-web",
-  storageBucket: "alloo-web.firebasestorage.app",
-  messagingSenderId: "132232824762",
-  appId: "1:132232824762:web:4e3c25557c072f0feabf83"
+  projectId: "alloo-web"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let me = "";
+let me="";
+let activeUser="";
 let mediaRecorder;
-let chunks = [];
+let chunks=[];
 
-const loginBtn = document.getElementById("loginBtn");
-const sendBtn = document.getElementById("sendBtn");
-const recBtn = document.getElementById("recBtn");
+// login
+function login(){
+  const name=document.getElementById("name").value.trim();
+  if(!name)return alert("اسم بزن");
 
-// ورود
-loginBtn.onclick = ()=>{
-  const name = document.getElementById("name").value.trim();
-  if(!name) return alert("اسم بزن");
+  me=name;
+  localStorage.setItem("allo_user",name);
 
-  me = name;
-  localStorage.setItem("allo_user", name);
-  startChat();
-};
+  db.collection("users").doc(me).set({
+    online:true,
+    lastSeen:Date.now()
+  });
 
-function startChat(){
+  start();
+}
+
+// start
+function start(){
   document.getElementById("login").style.display="none";
   document.getElementById("chat").style.display="flex";
 
-  db.collection("messages").orderBy("time")
-  .onSnapshot(snap=>{
-    const box = document.getElementById("messages");
+  loadUsers();
+  loadMessages();
+}
+
+// users (online/offline)
+function loadUsers(){
+  db.collection("users").onSnapshot(snap=>{
+    const box=document.getElementById("users");
     box.innerHTML="";
 
     snap.forEach(doc=>{
-      const m = doc.data();
-      const div = document.createElement("div");
-      div.className = "msg " + (m.from===me ? "me":"other");
+      const u=doc.id;
+      if(u===me)return;
+
+      const data=doc.data();
+
+      const div=document.createElement("div");
+      div.className="user "+(data.online?"online":"");
+      div.innerText=u;
+
+      div.onclick=()=>{activeUser=u;};
+
+      box.appendChild(div);
+    });
+  });
+}
+
+// messages (private)
+function loadMessages(){
+  db.collection("messages").orderBy("time")
+  .onSnapshot(snap=>{
+    const box=document.getElementById("messages");
+    box.innerHTML="";
+
+    snap.forEach(doc=>{
+      const m=doc.data();
+
+      // فقط چت خصوصی
+      if(!(m.from===me && m.to===activeUser) &&
+         !(m.from===activeUser && m.to===me)) return;
+
+      const div=document.createElement("div");
+      div.className="msg "+(m.from===me?"me":"other");
 
       if(m.text){
-        div.innerHTML = `<b>${m.from}</b><br>${m.text}`;
+        div.innerHTML=`<b>${m.from}</b><br>${m.text}`;
       }
 
       if(m.audio){
-        const audio = document.createElement("audio");
-        audio.src = m.audio;
-        audio.controls = true;
-        div.innerHTML = `<b>${m.from}</b><br>`;
-        div.appendChild(audio);
+        const wave=document.createElement("div");
+        wave.className="wave";
+
+        div.innerHTML=`<b>${m.from}</b>`;
+        div.appendChild(wave);
+
+        const ws=WaveSurfer.create({
+          container:wave,
+          waveColor:m.from===me?'#00e676':'#ff5252',
+          progressColor:'#fff',
+          height:50
+        });
+
+        ws.load(m.audio);
+        wave.onclick=()=>ws.playPause();
       }
 
       box.appendChild(div);
     });
 
-    box.scrollTop = box.scrollHeight;
+    box.scrollTop=box.scrollHeight;
   });
 }
 
-// ارسال متن
-sendBtn.onclick = ()=>{
-  const input = document.getElementById("msg");
-  const txt = input.value.trim();
-  if(!txt) return;
+// send text
+function send(){
+  const txt=document.getElementById("msg").value.trim();
+  if(!txt || !activeUser)return;
 
   db.collection("messages").add({
-    from: me,
-    text: txt,
-    time: Date.now()
+    from:me,
+    to:activeUser,
+    text:txt,
+    time:Date.now()
   });
 
-  input.value="";
-};
+  document.getElementById("msg").value="";
+}
 
-// 🎤 ضبط ویس
-recBtn.onclick = async ()=>{
+// 🎤 record
+async function record(){
   if(!mediaRecorder){
-    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-    mediaRecorder = new MediaRecorder(stream);
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    mediaRecorder=new MediaRecorder(stream);
 
-    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+    mediaRecorder.ondataavailable=e=>chunks.push(e.data);
 
-    mediaRecorder.onstop = ()=>{
-      const blob = new Blob(chunks, {type:'audio/webm'});
-      chunks = [];
+    mediaRecorder.onstop=()=>{
+      const blob=new Blob(chunks,{type:'audio/webm'});
+      chunks=[];
 
-      const reader = new FileReader();
+      const reader=new FileReader();
       reader.readAsDataURL(blob);
 
-      reader.onloadend = ()=>{
+      reader.onloadend=()=>{
         db.collection("messages").add({
-          from: me,
-          audio: reader.result,
-          time: Date.now()
+          from:me,
+          to:activeUser,
+          audio:reader.result,
+          time:Date.now()
         });
       };
     };
 
     mediaRecorder.start();
-    recBtn.innerText = "⏹";
-  } else {
+    event.target.innerText="⏹";
+  }else{
     mediaRecorder.stop();
-    mediaRecorder = null;
-    recBtn.innerText = "🎤";
+    mediaRecorder=null;
+    event.target.innerText="🎤";
   }
-};
+}
 
-// خروج
-document.getElementById("logoutBtn").onclick = ()=>{
+// logout
+function logout(){
+  db.collection("users").doc(me).update({
+    online:false,
+    lastSeen:Date.now()
+  });
+
   localStorage.removeItem("allo_user");
   location.reload();
-};
+}
 
 // auto login
-window.onload = ()=>{
-  const user = localStorage.getItem("allo_user");
+window.onload=()=>{
+  const user=localStorage.getItem("allo_user");
   if(user){
-    me = user;
-    startChat();
+    me=user;
+
+    db.collection("users").doc(me).set({
+      online:true,
+      lastSeen:Date.now()
+    });
+
+    start();
   }
 };
 </script>
