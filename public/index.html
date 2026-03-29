@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>ALLOO Ultra Pro v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://unpkg.com/wavesurfer.js"></script>
+<style>
+body { margin:0; font-family:'Vazirmatn',sans-serif; background:linear-gradient(135deg,#0f0f0f,#1a1a1a); color:white; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; transition:0.5s; }
+body.light { background: linear-gradient(135deg,#fff,#eee); color:#111; }
+#login-page { background:#1b1b1b; padding:40px; border-radius:25px; text-align:center; width:350px; box-shadow:0 15px 50px rgba(0,255,118,0.7); transition:0.5s; }
+body.light #login-page { background:#f5f5f5; box-shadow:0 15px 50px rgba(0,200,255,0.3); color:#111; }
+#login-page h1 { color:#00e676; margin-bottom:20px; font-size:36px; text-shadow:0 0 10px #00e676; }
+body.light #login-page h1 { color:#00aaff; text-shadow:0 0 10px #00aaff; }
+#chat-page { display:none; width:95%; height:90vh; background:#1a1a1a; border-radius:20px; flex-direction:row; overflow:hidden; box-shadow:0 0 50px rgba(0,255,118,0.4); transition:0.5s; }
+body.light #chat-page { background:#f5f5f5; box-shadow:0 0 50px rgba(0,200,255,0.2); color:#111; }
+#sidebar { width:250px; background:#111; padding:20px; border-left:1px solid #222; display:flex; flex-direction:column; transition:0.3s;}
+body.light #sidebar { background:#eee; border-color:#ccc; color:#111; }
+#sidebar h4 { color:#00e676; text-align:center; margin-bottom:15px; text-shadow:0 0 5px #00e676; }
+body.light #sidebar h4 { color:#00aaff; text-shadow:0 0 5px #00aaff; }
+#u-list { flex:1; overflow-y:auto; margin-bottom:10px; transition:0.3s; }
+#u-list div { padding:8px 10px; border-radius:10px; margin-bottom:5px; background:#222; cursor:pointer; transition:0.3s; display:flex; justify-content:space-between; align-items:center; opacity:0; transform:translateX(30px);}
+#u-list div.show { opacity:1; transform:translateX(0); }
+#u-list div:hover { background:#00e676; color:#000; }
+#sidebar select { margin-bottom:10px; }
+#signout-btn { padding:8px 12px; border-radius:12px; border:none; background:#ff5252; cursor:pointer; font-weight:bold; transition:0.3s; margin-bottom:10px; }
+#signout-btn:hover { background:#ff7979; }
+#chat-area { flex:1; display:flex; flex-direction:column; background:#050505; border-radius:0 20px 20px 0; overflow:hidden; transition:0.3s;}
+body.light #chat-area { background:#fff; color:#111; }
+#messages { flex:1; padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; scrollbar-width:thin; scrollbar-color:#00e676 #111; }
+#messages::-webkit-scrollbar { width:8px; }
+#messages::-webkit-scrollbar-thumb { background:#00e676; border-radius:4px; }
+.msg { padding:12px; border-radius:20px; max-width:75%; font-size:14px; word-wrap:break-word; position:relative; transition:0.3s; cursor:pointer;}
+.msg:hover { transform:scale(1.04); background:linear-gradient(120deg,#00ff80,#00e676);}
+.my { align-self:flex-start; background:#00e676; color:#000; box-shadow:0 2px 10px rgba(0,255,118,0.4);}
+.at { align-self:flex-end; background:#222; color:#fff; text-align:left; direction:ltr; box-shadow:0 2px 10px rgba(0,0,0,0.6);}
+.msg small { font-size:10px; display:block; color:#ccc; }
+.input-box { padding:15px; background:#1a1a1a; display:flex; gap:10px; border-top:1px solid #222; }
+body.light .input-box { background:#eee; border-color:#ccc; }
+input, select { flex:1; padding:12px; border-radius:12px; border:none; background:#222; color:white; outline:none; transition:0.3s; }
+body.light input, body.light select { background:#ddd; color:#111; }
+input:focus, select:focus { background:#333; }
+body.light input:focus, body.light select:focus { background:#ccc; }
+button { padding:12px 18px; border-radius:12px; border:none; background:#00e676; cursor:pointer; font-weight:bold; transition:0.3s; }
+button:hover { background:#00ff80; }
+#v-btn { background:#ff5252; color:white; border-radius:50%; width:50px; font-size:18px; }
+.waveform-container { width:100%; height:50px; border-radius:10px; overflow:hidden; margin-top:5px; box-shadow:0 0 10px rgba(0,255,118,0.4);}
+</style>
+</head>
+<body>
+
+<div id="login-page">
+<h1>ALLOO</h1>
+<input type="text" id="u-in" placeholder="نام شما...">
+<button onclick="enter()">ورود</button>
+</div>
+
+<div id="chat-page">
+<div id="sidebar">
+<h4>آنلاین</h4>
+<button id="signout-btn">خروج</button>
+<div id="u-list"></div>
+<select id="u-to"><option value="">عمومی</option></select>
+<button id="theme-toggle">تغییر تم</button>
+</div>
+<div id="chat-area">
+<div id="messages"></div>
+<div class="input-box">
+<button id="v-btn">🎤</button>
+<input type="text" id="m-in" placeholder="پیام...">
+<button onclick="send()">ارسال</button>
+</div>
+</div>
+</div>
+
+<script>
+const socket = io("http://localhost:4000");
+let me="", unread={}, activeChat="";
+
+// اتصال آماده
+socket.on("connect", () => {
+    const storedUser = localStorage.getItem("alloouser");
+    if (storedUser) {
+        me = storedUser;
+        socket.emit("login", me);
+    }
+});
+
+function enter() {
+    me = document.getElementById("u-in").value.trim();
+    if (!me) return;
+    localStorage.setItem("alloouser", me);
+    socket.emit("login", me);
+}
+
+socket.on("login-success", () => {
+    document.getElementById("login-page").style.display="none";
+    document.getElementById("chat-page").style.display="flex";
+});
+
+function send() {
+    const txt = document.getElementById("m-in").value.trim();
+    const to = document.getElementById("u-to").value;
+    if(txt) {
+        socket.emit("send-message",{from:me,to:to,text:txt});
+        document.getElementById("m-in").value="";
+        if(to) activeChat = to;
+    }
+}
+
+function show(data){
+    if(data.to && data.to!==me && data.from!==me) return;
+    const div = document.createElement("div");
+    div.className = `msg ${data.from===me?'my':'at'}`;
+    const toInfo = data.to?`<small>به ${data.to}</small>`:'';
+    div.innerHTML=`<strong>${data.from}</strong>${toInfo}<br>${data.text||''}`;
+    if(data.audio){
+        const container = document.createElement("div");
+        container.className='waveform-container';
+        const ws = WaveSurfer.create({container:container,waveColor:data.from===me?'#00e676':'#ff5252',progressColor:'#fff',cursorColor:'#fff',barWidth:2,height:50,responsive:true});
+        ws.load(data.audio);
+        container.onclick=()=>{ ws.isPlaying()?ws.pause():ws.play(); };
+        div.appendChild(container);
+    }
+    document.getElementById("messages").appendChild(div);
+    document.getElementById("messages").scrollTop = 99999;
+
+    if(data.to && data.to===me){
+        unread[data.from]=(unread[data.from]||0)+1;
+        updateTitle();
+        if(Notification.permission==="granted"){
+            new Notification(`${data.from} پیام فرستاد`,{body:data.text||'🎵 ویس دریافت شد'});
+        }
+        if(activeChat!==data.from){ activeChat=data.from; document.getElementById('u-to').value=data.from; }
+    }
+}
+
+function updateTitle(){
+    let total = Object.values(unread).reduce((a,b)=>a+b,0);
+    document.title = total?`(${total}) ALLOO`:'ALLOO';
+}
+
+socket.on("receive-message",show);
+socket.on("receive-voice",show);
+socket.on("load-messages",l=>l.forEach(show));
+
+socket.on("users", us => {
+    const ul = document.getElementById("u-list");
+    ul.innerHTML='';
+    us.forEach((u,i)=>{
+        const div = document.createElement("div");
+        div.textContent=u + (unread[u]?` (${unread[u]})`:'');
+        setTimeout(()=>div.classList.add("show"),i*100);
+        ul.appendChild(div);
+    });
+    const sel = document.getElementById("u-to");
+    const prev = sel.value;
+    sel.innerHTML='<option value="">عمومی</option>'+us.map(u=>`<option value="${u}">${u}</option>`).join('');
+    if(us.find(u=>u===prev)) sel.value=prev;
+});
+
+// ویس
+let r;
+document.getElementById("v-btn").onclick = async function() {
+    if(r && r.state==="recording"){ r.stop(); this.textContent="🎤"; }
+    else{
+        const s = await navigator.mediaDevices.getUserMedia({audio:true});
+        r = new MediaRecorder(s);
+        let ch=[];
+        r.ondataavailable = e => ch.push(e.data);
+        r.onstop = ()=>{
+            const b = new Blob(ch,{type:'audio/webm'});
+            const fr = new FileReader();
+            const to = document.getElementById("u-to").value;
+            fr.onloadend = ()=>socket.emit("send-voice",{from:me,to:to,audio:fr.result});
+            fr.readAsDataURL(b);
+        };
+        r.start(); this.textContent="⏹";
+    }
+};
+
+// تم
+document.getElementById("theme-toggle").onclick=()=>{ document.body.classList.toggle('light'); };
+
+// Sign Out
+document.getElementById("signout-btn").onclick=()=>{ localStorage.removeItem("alloouser"); location.reload(); };
+
+// نوتیفیکیشن
+if(Notification.permission!=="granted") Notification.requestPermission();
+window.addEventListener("focus",()=>{ unread={}; updateTitle(); });
+</script>
+</body>
+</html>
