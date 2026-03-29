@@ -2,7 +2,10 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>ALLOO TEST LOGIN</title>
+<title>ALLOO</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <style>
 body {
@@ -18,15 +21,12 @@ body {
 
 #login, #chat {
   background:#1a1a1a;
-  padding:30px;
+  padding:25px;
   border-radius:20px;
-  text-align:center;
-  width:300px;
+  width:350px;
 }
 
-#chat {
-  display:none;
-}
+#chat { display:none; }
 
 input {
   width:100%;
@@ -43,71 +43,116 @@ button {
   border:none;
   border-radius:10px;
   background:#00e676;
-  cursor:pointer;
+}
+
+#messages {
+  height:200px;
+  overflow:auto;
+  margin:10px 0;
+  background:#000;
+  padding:10px;
+  border-radius:10px;
 }
 </style>
-
 </head>
+
 <body>
 
 <div id="login">
   <h2>ALLOO</h2>
-  <input id="name" placeholder="نام خود را وارد کنید">
+  <input id="name" placeholder="نام...">
   <button id="loginBtn">ورود</button>
 </div>
 
 <div id="chat">
-  <h2>🎉 وارد شدی</h2>
-  <p id="userName"></p>
+  <h3 id="user"></h3>
+  <div id="messages"></div>
+  <input id="msg" placeholder="پیام...">
+  <button id="sendBtn">ارسال</button>
   <button id="logoutBtn">خروج</button>
 </div>
 
 <script>
-console.log("JS Loaded ✅");
+console.log("APP START");
 
-// گرفتن المان‌ها
+// 🔥 Firebase Config خودت
+const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "alloo-web.firebaseapp.com",
+  projectId: "alloo-web"
+};
+
+// init
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let me = "";
+
+// عناصر
 const loginBox = document.getElementById("login");
 const chatBox = document.getElementById("chat");
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
-const nameInput = document.getElementById("name");
-const userName = document.getElementById("userName");
+const sendBtn = document.getElementById("sendBtn");
 
 // ورود
-loginBtn.onclick = function(){
-    const name = nameInput.value.trim();
+loginBtn.onclick = ()=>{
+  const name = document.getElementById("name").value.trim();
+  if(!name) return alert("اسم بزن");
 
-    if(!name){
-        alert("لطفا اسم وارد کن");
-        return;
-    }
+  me = name;
+  localStorage.setItem("allo_user", name);
 
-    localStorage.setItem("allo_user", name);
-
-    showChat(name);
-
-    console.log("LOGIN SUCCESS ✅");
+  startChat();
 };
 
-// نمایش چت
-function showChat(name){
-    loginBox.style.display = "none";
-    chatBox.style.display = "block";
-    userName.innerText = "👤 " + name;
+// شروع چت
+function startChat(){
+  loginBox.style.display="none";
+  chatBox.style.display="block";
+  document.getElementById("user").innerText = "👤 " + me;
+
+  // دریافت پیام‌ها
+  db.collection("messages")
+    .orderBy("time")
+    .onSnapshot(snap=>{
+      const box = document.getElementById("messages");
+      box.innerHTML="";
+      snap.forEach(doc=>{
+        const m = doc.data();
+        box.innerHTML += `<div><b>${m.from}:</b> ${m.text}</div>`;
+      });
+      box.scrollTop = box.scrollHeight;
+    });
 }
 
+// ارسال پیام
+sendBtn.onclick = ()=>{
+  const txt = document.getElementById("msg").value;
+  if(!txt) return;
+
+  db.collection("messages").add({
+    from: me,
+    text: txt,
+    time: Date.now()
+  });
+
+  document.getElementById("msg").value="";
+};
+
 // خروج
-logoutBtn.onclick = function(){
-    localStorage.removeItem("allo_user");
-    location.reload();
+logoutBtn.onclick = ()=>{
+  localStorage.removeItem("allo_user");
+  location.reload();
 };
 
 // ورود خودکار
-window.onload = function(){
-    const user = localStorage.getItem("allo_user");
-    if(user){
-        showChat(user);
-    }
+window.onload = ()=>{
+  const user = localStorage.getItem("allo_user");
+  if(user){
+    me = user;
+    startChat();
+  }
 };
 </script>
 
