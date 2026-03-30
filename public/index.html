@@ -21,14 +21,6 @@
     --border: rgba(255, 255, 255, 0.12);
 }
 
-/* متغیرهای تم روشن */
-body.light-mode {
-    --dark-bg: #f5f5f5;
-    --glass: rgba(0, 0, 0, 0.05);
-    --border: rgba(0, 0, 0, 0.1);
-    color: #222;
-}
-
 * { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
 
 body { 
@@ -66,8 +58,10 @@ body {
 .brand-title {
     font-family: 'Orbitron', sans-serif; font-size: 80px; font-weight: 900;
     color: var(--primary); letter-spacing: 15px; margin-bottom: 30px;
-    text-shadow: 0 0 40px var(--primary-glow);
+    text-shadow: 0 0 40px var(--primary-glow); animation: neonPulse 2s infinite alternate;
 }
+
+@keyframes neonPulse { from { opacity: 0.8; text-shadow: 0 0 20px var(--primary-glow); } to { opacity: 1; text-shadow: 0 0 50px var(--primary-glow); } }
 
 .auth-mode-switch {
     display: flex; background: rgba(0,0,0,0.6); border-radius: 20px;
@@ -83,19 +77,23 @@ body {
 .input-container input {
     width: 100%; padding: 22px; border-radius: 18px;
     background: rgba(0,0,0,0.7); border: 1px solid var(--border);
-    color: #fff; font-size: 15px; outline: none; text-align: center;
+    color: #fff; font-size: 15px; outline: none; text-align: center; letter-spacing: 1px;
 }
+.input-container input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 255, 204, 0.2); background: rgba(0,0,0,0.8); }
 
 .action-btn {
     width: 100%; padding: 22px; border-radius: 18px; border: none;
     background: linear-gradient(90deg, var(--primary), #00d2ff);
     color: #000; font-weight: 900; font-size: 16px; cursor: pointer;
+    box-shadow: 0 15px 35px var(--primary-glow);
 }
+.action-btn:hover { transform: translateY(-3px); box-shadow: 0 20px 45px var(--primary-glow); }
 
 .app-frame {
     width: 96vw; height: 92vh; display: flex;
     background: rgba(10, 10, 10, 0.5); border: 1px solid var(--border);
     border-radius: 50px; backdrop-filter: blur(50px); overflow: hidden;
+    box-shadow: 0 50px 100px rgba(0,0,0,0.5);
 }
 
 .sidebar { width: 360px; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: rgba(0,0,0,0.2); }
@@ -103,14 +101,15 @@ body {
 .unread-count {
     background: var(--secondary); color: white; min-width: 22px; height: 22px;
     border-radius: 50%; font-size: 11px; display: flex; align-items: center;
-    justify-content: center; font-weight: 900;
+    justify-content: center; font-weight: 900; box-shadow: 0 0 10px var(--secondary-glow);
 }
 
 .user-item {
     padding: 20px 25px; margin: 10px 15px; border-radius: 22px;
     display: flex; align-items: center; gap: 15px; cursor: pointer;
+    border: 1px solid transparent;
 }
-.user-item:hover { background: rgba(255,255,255,0.03); }
+.user-item:hover { background: rgba(255,255,255,0.03); border-color: var(--border); }
 .user-item.active { background: linear-gradient(90deg, rgba(0, 255, 204, 0.12), transparent); border-color: rgba(0, 255, 204, 0.2); }
 
 .avatar-hex {
@@ -118,6 +117,7 @@ body {
     display: flex; align-items: center; justify-content: center;
     font-family: 'Orbitron'; font-weight: 900; color: var(--primary);
     border: 1px solid var(--border); position: relative;
+    box-shadow: inset 0 0 10px rgba(0,255,204,0.1);
 }
 
 .online-glow {
@@ -125,56 +125,98 @@ body {
     background: var(--primary); border-radius: 50%; border: 3px solid #080808;
     display: none; box-shadow: 0 0 15px var(--primary);
 }
-.is-online .online-glow { display: block; }
+.is-online .online-glow { display: block; animation: pulse 2s infinite; }
 
-.chat-window { flex: 1; display: flex; flex-direction: column; position: relative; }
+@keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.6; } 100% { transform: scale(1); opacity: 1; } }
+
+.chat-window { flex: 1; display: flex; flex-direction: column; position: relative; background: radial-gradient(circle at top right, rgba(0,255,204,0.03), transparent); }
 .chat-header { padding: 25px 40px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
 
-#messages { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+#messages { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; scroll-behavior: smooth; }
+#messages::-webkit-scrollbar { width: 5px; }
+#messages::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
 .bubble {
-    padding: 16px 24px; border-radius: 25px; max-width: 65%; font-size: 14px;
+    padding: 16px 24px; border-radius: 25px; max-width: 65%; font-size: 14px; line-height: 1.6;
+    backdrop-filter: blur(10px); animation: fadeIn 0.3s ease;
 }
-.bubble.me { align-self: flex-end; background: var(--primary); color: #000; font-weight: 700; border-bottom-right-radius: 4px; }
-.bubble.other { align-self: flex-start; background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: #eee; border-bottom-left-radius: 4px; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-/* اصلاح شده: چیدمان صحیح حالت Minimize */
+.bubble.me { 
+    align-self: flex-end; background: var(--primary); color: #000; font-weight: 700; 
+    border-bottom-right-radius: 4px; box-shadow: 0 8px 25px var(--primary-glow);
+}
+.bubble.other { 
+    align-self: flex-start; background: rgba(255,255,255,0.06); border: 1px solid var(--border); 
+    border-bottom-left-radius: 4px; color: #eee;
+}
+
 #callUI {
     position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 20000;
     display: none; flex-direction: column; align-items: center; justify-content: center;
     backdrop-filter: blur(100px);
 }
 #callUI.minimized {
-    width: 340px; height: 90px; inset: auto 20px 20px auto; border-radius: 30px;
-    flex-direction: row; padding: 0 20px; border: 2px solid var(--primary);
-    background: #000; justify-content: space-between;
+    width: 320px; height: 100px; inset: auto 20px 20px auto; border-radius: 30px;
+    flex-direction: row; padding: 20px; border: 1px solid var(--primary);
 }
 #callUI.minimized .call-avatar-large, #callUI.minimized #cStatus { display: none; }
-#callUI.minimized #cName { font-size: 18px; margin: 0; letter-spacing: 1px; flex: 1; text-align: right; margin-right: 15px; }
-#callUI.minimized .call-controls-wrapper { margin: 0; gap: 12px; }
-#callUI.minimized button { width: 48px !important; height: 48px !important; font-size: 20px !important; border-radius: 15px !important; }
-#callUI.minimized #minBtn { top: -40px; left: auto; right: 10px; background: var(--primary); color: #000; }
+#callUI.minimized .call-controls-wrapper { margin-top: 0; gap: 15px; }
+#callUI.minimized #cName { font-size: 18px; margin: 0 15px; }
+#callUI.minimized button { width: 45px !important; height: 45px !important; font-size: 20px !important; border-radius: 15px !important; }
 
 .call-avatar-large {
     width: 200px; height: 200px; border-radius: 70px; background: var(--primary);
     display: flex; align-items: center; justify-content: center; font-size: 90px; color: #000;
-    margin-bottom: 40px;
+    margin-bottom: 40px; box-shadow: 0 0 60px var(--primary-glow);
 }
 
-#msgInput {
-    flex: 1; padding: 22px 30px; border-radius: 22px; border: 1px solid var(--border); 
-    background: rgba(0,0,0,0.6); color: #fff; outline: none;
+@keyframes recPulse {
+    0% { box-shadow: 0 0 0px var(--secondary); }
+    50% { box-shadow: 0 0 20px var(--secondary); }
+    100% { box-shadow: 0 0 0px var(--secondary); }
 }
+.is-recording {
+    animation: recPulse 1s infinite !important;
+    background: var(--secondary) !important;
+    color: white !important;
+}
+#recIndicator {
+    font-family: 'Orbitron';
+    font-size: 10px;
+    color: var(--secondary);
+    letter-spacing: 2px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    animation: blink 1s infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
 
-.icon-btn {
-    width: 65px; height: 65px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; border: none;
+@media (max-width: 900px) {
+    .app-frame { width: 100vw; height: 100vh; border-radius: 0; border: none; }
+    .sidebar { width: 80px; min-width: 80px; }
+    .sidebar h1, .sidebar #myIDDisplay, .sidebar .user-item div:last-child { display: none; }
+    .sidebar .user-item { justify-content: center; padding: 15px; margin: 8px; }
+    .login-card { width: 90%; padding: 30px; }
 }
 
 .logout-btn {
     color: var(--secondary); background: rgba(255,0,85,0.1); border: 1px solid rgba(255,0,85,0.2);
     padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 800; font-size: 11px;
-    width: 100%; text-transform: uppercase;
+    width: 100%; text-transform: uppercase; letter-spacing: 1px;
+}
+.logout-btn:hover { background: var(--secondary); color: #fff; box-shadow: 0 0 20px var(--secondary-glow); }
+
+#msgInput {
+    flex: 1; padding: 22px 30px; border-radius: 22px; border: 1px solid var(--border); 
+    background: rgba(0,0,0,0.6); color: #fff; outline: none; font-size: 14px;
+}
+#msgInput:focus { border-color: var(--primary); }
+
+.icon-btn {
+    width: 65px; height: 65px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 24px; border: none;
 }
 </style>
 </head>
@@ -182,6 +224,7 @@ body {
 
 <div class="bg-canvas">
     <div class="particle" style="width:450px; height:450px; top:5%; left:5%;"></div>
+    <div class="particle" style="width:600px; height:600px; bottom:5%; right:5%; background:var(--accent);"></div>
 </div>
 
 <div id="loginScreen">
@@ -199,8 +242,8 @@ body {
 
 <div class="app-frame">
     <div class="sidebar">
-        <div style="padding:40px; border-bottom:1px solid var(--border); cursor:pointer;" onclick="document.body.classList.toggle('light-mode')">
-            <h1 style="font-family:'Orbitron'; color:var(--primary); font-size:26px; letter-spacing:6px;">ALLO</h1>
+        <div style="padding:40px; border-bottom:1px solid var(--border);">
+            <h1 style="font-family:'Orbitron'; color:var(--primary); font-size:26px; letter-spacing:6px; text-shadow:0 0 10px var(--primary-glow);">ALLO</h1>
         </div>
         <div id="userList" style="flex:1; overflow-y:auto; padding-top:15px;"></div>
         <div style="padding:25px; background:rgba(0,0,0,0.4); border-top:1px solid var(--border);">
@@ -212,14 +255,16 @@ body {
     <div class="chat-window">
         <div class="chat-header">
             <div style="display:flex; align-items:center; gap:18px;">
-                <div id="hAvatar" class="avatar-hex" style="width:55px; height:55px;">?</div>
+                <div id="hAvatar" style="width:55px; height:55px; background:var(--glass); border:1px solid var(--border); border-radius:18px; display:flex; align-items:center; justify-content:center; font-family:'Orbitron'; font-weight:900; color:var(--primary);">?</div>
                 <h3 id="targetName" style="font-weight:300; letter-spacing:2px; font-size:18px;">Terminal Ready</h3>
             </div>
-            <button onclick="startCall()" style="background:var(--primary); color:#000; border:none; padding:12px 30px; border-radius:15px; font-weight:900; cursor:pointer;">CALL</button>
+            <button onclick="startCall()" style="background:var(--primary); color:#000; border:none; padding:12px 30px; border-radius:15px; font-weight:900; cursor:pointer; box-shadow: 0 8px 20px var(--primary-glow); font-family:'Orbitron'; font-size:12px;">CALL</button>
         </div>
+
         <div id="messages"></div>
-        <div style="padding:25px 40px; display:flex; flex-direction:column; gap:10px;">
-            <div id="recIndicator" style="display:none; color:var(--secondary); font-family:'Orbitron'; font-size:10px;">🔴 RECORDING...</div>
+
+        <div style="padding:25px 40px; display:flex; flex-direction:column; gap:10px; background:rgba(0,0,0,0.2); backdrop-filter:blur(20px);">
+            <div id="recIndicator">🔴 RECORDING DATA...</div>
             <div style="display:flex; gap:15px; width:100%;">
                 <input id="msgInput" placeholder="Secure transmission..." onkeypress="if(event.key=='Enter') sendMsg()">
                 <button id="vBtn" onclick="toggleVoice()" class="icon-btn" style="border:1px solid var(--secondary); color:var(--secondary); background:none;">🎤</button>
@@ -232,12 +277,12 @@ body {
 <div id="callUI">
     <button id="minBtn" onclick="toggleCallView()" style="position:absolute; top:30px; left:30px; background:none; border:1px solid #fff; color:#fff; padding:8px 15px; border-radius:10px; cursor:pointer; font-family:'Orbitron'; font-size:10px; z-index:100;">MINIMIZE</button>
     <div class="call-avatar-large" id="cAvatar">👤</div>
-    <h2 id="cName" style="font-family:'Orbitron'; font-size:45px; margin-bottom:10px;">USER</h2>
-    <p id="cStatus" style="color:var(--primary); letter-spacing:8px; font-size:12px;">ESTABLISHING...</p>
+    <h2 id="cName" style="font-family:'Orbitron'; font-size:45px; margin-bottom:10px; letter-spacing:5px;">USER</h2>
+    <p id="cStatus" style="color:var(--primary); letter-spacing:8px; font-weight:100; font-size:12px;">ESTABLISHING CONNECTION...</p>
     <div class="call-controls-wrapper" style="display:flex; gap:35px; margin-top:50px;">
-        <button id="acceptBtn" onclick="answerCall()" style="width:90px; height:90px; border-radius:35px; background:#2ecc71; border:none; font-size:35px; cursor:pointer;">✅</button>
+        <button id="acceptBtn" onclick="answerCall()" style="width:90px; height:90px; border-radius:35px; background:#2ecc71; border:none; font-size:35px; cursor:pointer; box-shadow: 0 10px 30px rgba(46, 204, 113, 0.4);">✅</button>
         <button id="muteBtn" onclick="toggleMute()" style="width:90px; height:90px; border-radius:35px; background:rgba(255,255,255,0.1); border:1px solid var(--border); font-size:35px; cursor:pointer; display:none;">🎙️</button>
-        <button onclick="hangup()" style="width:90px; height:90px; border-radius:35px; background:var(--secondary); border:none; font-size:35px; cursor:pointer;">❌</button>
+        <button onclick="hangup()" style="width:90px; height:90px; border-radius:35px; background:var(--secondary); border:none; font-size:35px; cursor:pointer; box-shadow: 0 10px 30px var(--secondary-glow);">❌</button>
     </div>
 </div>
 
@@ -258,6 +303,7 @@ const db = firebase.firestore();
 
 let me = localStorage.getItem("alloo_uid");
 let activeTarget = "";
+let authMode = 'login';
 let pc; let localStream; let isMuted = false;
 let unreadCounts = {}; 
 
@@ -282,7 +328,8 @@ async function handleAuth() {
         if(!doc.exists || doc.data().pass !== ps) return alert("اطلاعات ورود نادرست است.");
         await userRef.update({ online: true, lastSeen: Date.now() });
     }
-    localStorage.setItem("alloo_uid", id); location.reload();
+    localStorage.setItem("alloo_uid", id);
+    location.reload();
 }
 
 function initApp() {
@@ -291,10 +338,15 @@ function initApp() {
     setInterval(() => db.collection("users").doc(me).update({ lastSeen: Date.now(), online: true }), 20000);
 
     db.collection("messages").where("t", "==", me).where("read", "==", false).onSnapshot(snap => {
-        unreadCounts = {}; snap.forEach(doc => { unreadCounts[doc.data().f] = (unreadCounts[doc.data().f] || 0) + 1; });
+        unreadCounts = {}; 
+        snap.forEach(doc => {
+            const m = doc.data();
+            unreadCounts[m.f] = (unreadCounts[m.f] || 0) + 1;
+        });
         updateUserListUI();
     });
-    db.collection("users").onSnapshot(updateUserListUI);
+
+    db.collection("users").onSnapshot(() => updateUserListUI());
     listenForCalls();
 }
 
@@ -309,8 +361,12 @@ function updateUserListUI() {
             const unread = unreadCounts[doc.id] || 0;
             const item = document.createElement("div");
             item.className = `user-item ${activeTarget === doc.id ? 'active' : ''} ${isOnline ? 'is-online' : ''}`;
-            item.innerHTML = `<div class="avatar-hex">${doc.id[0].toUpperCase()}<div class="online-glow"></div></div>
-                <div style="flex:1"><div style="font-weight:900;">${doc.id}</div><div style="font-size:9px;">${isOnline?'ONLINE':'OFFLINE'}</div></div>
+            item.innerHTML = `
+                <div class="avatar-hex">${doc.id[0].toUpperCase()}<div class="online-glow"></div></div>
+                <div style="flex:1">
+                    <div style="font-weight:900; font-size:15px; color:#fff; letter-spacing:1px;">${doc.id}</div>
+                    <div style="font-size:9px; color:var(--primary); opacity:0.8; font-weight:800;">${isOnline ? 'ONLINE' : 'OFFLINE'}</div>
+                </div>
                 ${unread > 0 ? `<div class="unread-count">${unread}</div>` : ''}`;
             item.onclick = () => { activeTarget = doc.id; selectUser(); };
             list.appendChild(item);
@@ -326,13 +382,17 @@ function selectUser() {
 
 function loadMessages() {
     db.collection("messages").orderBy("time", "asc").onSnapshot(snap => {
-        const box = document.getElementById("messages"); box.innerHTML = "";
+        const box = document.getElementById("messages");
+        box.innerHTML = "";
         snap.forEach(doc => {
             const d = doc.data();
             if((d.f==me && d.t==activeTarget) || (d.f==activeTarget && d.t==me)) {
-                if(d.f==activeTarget && !d.read) db.collection("messages").doc(doc.id).update({read:true});
-                const m = document.createElement("div"); m.className = `bubble ${d.f==me?'me':'other'}`;
-                if(d.audio) m.innerHTML = `<audio src="${d.audio}" controls style="height:35px;"></audio>`;
+                if (d.f === activeTarget && d.read === false) {
+                    db.collection("messages").doc(doc.id).update({ read: true });
+                }
+                const m = document.createElement("div");
+                m.className = `bubble ${d.f==me ? 'me' : 'other'}`;
+                if(d.audio) m.innerHTML = `<audio src="${d.audio}" controls style="filter:invert(1) opacity:0.8; height:35px;"></audio>`;
                 else m.innerText = d.txt;
                 box.appendChild(m);
             }
@@ -342,26 +402,48 @@ function loadMessages() {
 }
 
 function sendMsg() {
-    const i = document.getElementById("msgInput"); if(!i.value || !activeTarget) return;
+    const i = document.getElementById("msgInput");
+    if(!i.value || !activeTarget) return;
     db.collection("messages").add({ f: me, t: activeTarget, txt: i.value, time: Date.now(), read: false });
     i.value = "";
 }
 
-// WebRTC Logic اصلاح شده
+// --- بخش اصلاح شده WebRTC برای رفع مشکل صدا ---
 const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }] };
+
 async function startCall() {
     if(!activeTarget) return;
-    const ui = document.getElementById("callUI"); ui.style.display = "flex";
+    document.getElementById("callUI").style.display = "flex";
+    document.getElementById("cName").innerText = activeTarget.toUpperCase();
+    document.getElementById("acceptBtn").style.display = "none";
+    document.getElementById("muteBtn").style.display = "block";
+    document.getElementById("cStatus").innerText = "CALLING...";
+
     pc = new RTCPeerConnection(rtcConfig);
+    
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-    pc.onicecandidate = e => e.candidate && db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON());
-    pc.ontrack = e => document.getElementById("remoteAudio").srcObject = e.streams[0];
-    const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
+
+    pc.onicecandidate = e => {
+        if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON());
+    };
+
+    pc.ontrack = e => {
+        document.getElementById("remoteAudio").srcObject = e.streams[0];
+        document.getElementById("cStatus").innerText = "CONNECTED";
+    };
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
     await db.collection("calls").doc(activeTarget).set({ offer, from: me });
+
     db.collection("calls").doc(activeTarget).onSnapshot(async snap => {
-        const d = snap.data(); if(d?.answer && !pc.currentRemoteDescription) await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+        const d = snap.data();
+        if(d?.answer && !pc.currentRemoteDescription) {
+            await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+        }
     });
+
     db.collection("calls").doc(activeTarget).collection("receiverCandidates").onSnapshot(s => {
         s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
     });
@@ -371,57 +453,83 @@ function listenForCalls() {
     db.collection("calls").doc(me).onSnapshot(async snap => {
         const d = snap.data();
         if(d?.offer && !pc) {
-            window.incoming = d; document.getElementById("callUI").style.display = "flex";
+            window.incoming = d;
+            document.getElementById("callUI").style.display = "flex";
             document.getElementById("cName").innerText = d.from.toUpperCase();
             document.getElementById("acceptBtn").style.display = "block";
+            document.getElementById("muteBtn").style.display = "none";
+            document.getElementById("cStatus").innerText = "INCOMING CALL";
             document.getElementById("ring").play();
         } else if(!d && pc) hangup();
     });
 }
 
 async function answerCall() {
-    document.getElementById("ring").pause(); document.getElementById("acceptBtn").style.display = "none";
+    document.getElementById("ring").pause();
+    document.getElementById("acceptBtn").style.display = "none";
     document.getElementById("muteBtn").style.display = "block";
+    document.getElementById("cStatus").innerText = "CONNECTING...";
+
     pc = new RTCPeerConnection(rtcConfig);
+    
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-    pc.onicecandidate = e => e.candidate && db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON());
-    pc.ontrack = e => document.getElementById("remoteAudio").srcObject = e.streams[0];
+
+    pc.onicecandidate = e => {
+        if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON());
+    };
+
+    pc.ontrack = e => {
+        document.getElementById("remoteAudio").srcObject = e.streams[0];
+        document.getElementById("cStatus").innerText = "CONNECTED";
+    };
+
     await pc.setRemoteDescription(new RTCSessionDescription(window.incoming.offer));
-    const answer = await pc.createAnswer(); await pc.setLocalDescription(answer);
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
     await db.collection("calls").doc(me).update({ answer });
+
     db.collection("calls").doc(me).collection("callerCandidates").onSnapshot(s => {
         s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
     });
 }
 
-function toggleMute() { isMuted = !isMuted; localStream.getAudioTracks()[0].enabled = !isMuted; document.getElementById("muteBtn").innerText = isMuted ? "🚫" : "🎙️"; }
+function toggleMute() {
+    isMuted = !isMuted;
+    localStream.getAudioTracks()[0].enabled = !isMuted;
+    document.getElementById("muteBtn").innerText = isMuted ? "🚫" : "🎙️";
+}
 
 function hangup() {
     if(localStream) localStream.getTracks().forEach(t => t.stop());
     if(pc) pc.close(); pc = null;
     db.collection("calls").doc(me).delete();
+    if(activeTarget) db.collection("calls").doc(activeTarget).delete();
     document.getElementById("callUI").style.display = "none";
     document.getElementById("ring").pause();
 }
 
-function toggleCallView() { 
-    const ui = document.getElementById("callUI"); ui.classList.toggle("minimized");
-    document.getElementById("minBtn").innerText = ui.classList.contains("minimized") ? "MAX" : "MINIMIZE";
+function toggleCallView() {
+    document.getElementById("callUI").classList.toggle("minimized");
 }
 
 let rec; let chunks = [];
 async function toggleVoice() {
+    const v = document.getElementById("vBtn");
+    const indicator = document.getElementById("recIndicator");
     if(!rec || rec.state === 'inactive') {
         const s = await navigator.mediaDevices.getUserMedia({ audio: true });
         rec = new MediaRecorder(s); chunks = [];
         rec.ondataavailable = e => chunks.push(e.data);
         rec.onstop = () => {
-            const r = new FileReader(); r.readAsDataURL(new Blob(chunks));
+            const b = new Blob(chunks, { type: 'audio/webm' });
+            const r = new FileReader(); r.readAsDataURL(b);
             r.onloadend = () => db.collection("messages").add({ f: me, t: activeTarget, audio: r.result, time: Date.now(), read: false });
+            v.classList.remove("is-recording");
+            indicator.style.display = "none";
         };
-        rec.start(); document.getElementById("recIndicator").style.display = "block";
-    } else { rec.stop(); document.getElementById("recIndicator").style.display = "none"; }
+        rec.start(); v.classList.add("is-recording"); indicator.style.display = "flex";
+    } else { rec.stop(); }
 }
 
 function logout() { db.collection("users").doc(me).update({ online: false }); localStorage.clear(); location.reload(); }
