@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>ALLO 🚀</title>
+<title>ALLO</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/wavesurfer.js"></script>
@@ -77,13 +77,12 @@ body.light .footer input:focus{background:#ccc;}
 #themeToggle:hover{transform:scale(1.12);box-shadow:0 6px 25px rgba(0,255,118,0.6);}
 </style>
 </head>
-
 <body class="dark">
 <div class="app">
 
 <!-- Login -->
 <div id="loginBox">
-  <div class="title">ALLO 🚀</div>
+  <div class="title">ALLO</div>
   <input id="usernameInput" placeholder="نام کاربری">
   <input id="passwordInput" type="password" placeholder="رمز عبور">
   <button onclick="registerUser()">ثبت نام</button>
@@ -131,6 +130,7 @@ function registerUser(){
     if(doc.exists) return alert("این کاربر قبلاً ساخته شده است");
     db.collection("users").doc(u).set({password:p,online:true});
     me=u; localStorage.setItem("allo_user",me); startApp();
+    notify(`کاربر ${u} ثبت شد!`);
   });
 }
 function loginUser(){
@@ -143,8 +143,13 @@ function loginUser(){
     me=u; localStorage.setItem("allo_user",me);
     db.collection("users").doc(me).update({online:true});
     startApp();
+    notify(`خوش آمدید ${u}!`);
   });
 }
+
+// Notification
+function notify(txt){if(Notification.permission==="granted"){new Notification(txt);}} 
+if(Notification.permission!=="granted"){Notification.requestPermission();}
 
 // Start App
 function startApp(){
@@ -188,6 +193,8 @@ function loadMessages(){
       }
       if(m.seen && m.from===me) div.innerHTML+='<small>✔✔ Seen</small>';
       msgDiv.appendChild(div);
+      // Sound notification
+      if(m.from!==me) new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3').play();
     });
     msgDiv.scrollTop=99999;
   });
@@ -197,8 +204,9 @@ function loadMessages(){
 function sendMessage(){
   let text=document.getElementById("msgInput").value.trim();
   if(!text||!activeUser) return;
-  db.collection("messages").add({from:me,to:activeUser,text,time:Date.now()});
+  db.collection("messages").add({from:me,to:activeUser,text,time:Date.now(),seen:false});
   document.getElementById("msgInput").value="";
+  new Audio('https://www.soundjay.com/buttons/sounds/button-3.mp3').play();
 }
 
 // Send image
@@ -206,7 +214,7 @@ document.getElementById("imgInput").addEventListener("change",function(e){
   const file=e.target.files[0];
   if(!file||!activeUser) return;
   const url=URL.createObjectURL(file);
-  db.collection("messages").add({from:me,to:activeUser,image:url,time:Date.now()});
+  db.collection("messages").add({from:me,to:activeUser,image:url,time:Date.now(),seen:false});
 });
 
 // Send voice
@@ -218,7 +226,7 @@ async function sendVoice(){
   recorder.onstop=()=>{
     const blob=new Blob(chunks,{type:'audio/webm'});
     const url=URL.createObjectURL(blob);
-    db.collection("messages").add({from:me,to:activeUser,audio:url,time:Date.now()});
+    db.collection("messages").add({from:me,to:activeUser,audio:url,time:Date.now(),seen:false});
   };
   recorder.start();
 }
