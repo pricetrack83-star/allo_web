@@ -7,75 +7,34 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/wavesurfer.js"></script>
 <style>
-/* ==== Reset & Base ==== */
-*{box-sizing:border-box;margin:0;padding:0;}
-body{margin:0;font-family:'Vazirmatn',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;transition:0.5s;background:linear-gradient(135deg,#0f0f0f,#1a1a1a);color:white;overflow:hidden;}
-body.light{background:linear-gradient(135deg,#f5f5f5,#ddd);color:#111;}
-body.dark{background:linear-gradient(135deg,#0f0f0f,#1a1a1a);color:white;}
-
-/* ==== App container ==== */
-.app{width:1000px;height:720px;border-radius:30px;backdrop-filter:blur(25px);display:flex;overflow:hidden;transition:0.5s;box-shadow:0 0 100px rgba(0,255,118,0.5);}
-
-/* ==== Login ==== */
-#loginBox{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;transition:0.5s;}
-#loginBox input{width:280px;padding:16px;border-radius:35px;border:none;background:#222;color:white;outline:none;transition:0.3s;box-shadow:0 3px 15px rgba(0,255,118,0.2);}
-#loginBox input:focus{background:#333;}
-#loginBox button{width:180px;padding:16px;border-radius:35px;border:none;background:linear-gradient(135deg,#00ff80,#00e676);color:black;font-weight:bold;cursor:pointer;box-shadow:0 5px 25px rgba(0,255,118,0.5);transition:0.3s;}
-#loginBox button:hover{transform:scale(1.08);box-shadow:0 8px 30px rgba(0,255,118,0.7);}
-#loginBox .title{font-size:50px;font-weight:bold;color:#00ff80;text-shadow:0 0 30px #00ff80;transition:0.5s;}
-
-/* ==== Chat ==== */
-#chatBox{display:none;flex:1;flex-direction:row;transition:0.5s;}
-
-/* ==== Online list ==== */
-#onlineList{width:240px;padding:20px;display:flex;flex-direction:column;border-radius:0 0 0 30px;transition:0.5s;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#00e676 #111;}
-#onlineList::-webkit-scrollbar{width:8px;}
-#onlineList::-webkit-scrollbar-thumb{background:#00e676;border-radius:4px;}
-#onlineList h3{text-align:center;margin-bottom:15px;text-shadow:0 0 12px currentColor;color:inherit;}
-.user{padding:12px;margin:6px 0;border-radius:25px;cursor:pointer;transition:0.3s;box-shadow:0 2px 15px rgba(0,255,118,0.2);}
-.user:hover{transform:scale(1.08);box-shadow:0 5px 20px rgba(0,255,118,0.5);}
-
-/* ==== Chat Area ==== */
-#chatArea{flex:1;display:flex;flex-direction:column;margin-left:15px;border-radius:0 30px 30px 0;padding:15px;transition:0.5s;position:relative;}
-#messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:10px;scrollbar-width:thin;scrollbar-color:#00e676 #111;}
-#messages::-webkit-scrollbar{width:8px;}
-#messages::-webkit-scrollbar-thumb{background:#00e676;border-radius:4px;}
-.msg{padding:16px 22px;border-radius:30px;max-width:70%;position:relative;transition:0.3s;cursor:pointer;font-size:15px;word-break:break-word;box-shadow:0 3px 15px rgba(0,255,118,0.2);}
-.msg.me{background:linear-gradient(135deg,#00ff80,#00e676);color:black;align-self:flex-end;animation:slideInRight 0.5s;}
-.msg.other{background:linear-gradient(135deg,#333,#111);color:white;align-self:flex-start;animation:slideInLeft 0.5s;}
-@keyframes slideInRight{0%{opacity:0;transform:translateX(50px);}100%{opacity:1;transform:translateX(0);}}
-@keyframes slideInLeft{0%{opacity:0;transform:translateX(-50px);}100%{opacity:1;transform:translateX(0);}}
-
-/* Footer */
-.footer{display:flex;gap:12px;padding:12px;border-top:2px solid currentColor;border-radius:0 0 30px 0;}
-.footer input{flex:1;padding:16px;border-radius:30px;border:none;background:#222;color:white;outline:none;transition:0.3s;box-shadow:0 2px 10px rgba(0,255,118,0.2);}
-.footer button{padding:16px;border-radius:50%;border:none;background:linear-gradient(135deg,#00ff80,#00e676);color:black;cursor:pointer;font-size:20px;transition:0.2s;box-shadow:0 3px 15px rgba(0,255,118,0.3);}
-
-/* Waveform */
-.waveform-container{width:100%;height:55px;border-radius:20px;overflow:hidden;margin-top:5px;box-shadow:0 0 20px rgba(0,255,118,0.6);}
-
-/* Theme toggle */
-#themeToggle{margin:12px;padding:12px 18px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;background:linear-gradient(135deg,#00ff80,#00e676);box-shadow:0 3px 15px rgba(0,255,118,0.4);transition:0.3s;}
-#themeToggle:hover{transform:scale(1.12);box-shadow:0 6px 25px rgba(0,255,118,0.6);}
-
-/* Settings Modal */
-#settingsModal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);color:white;padding:20px;border-radius:25px;display:none;flex-direction:column;gap:15px;z-index:999;box-shadow:0 0 50px #00ff80;}
-#settingsModal input{padding:10px;border-radius:20px;border:none;outline:none;}
-#settingsModal button{padding:10px;border-radius:20px;border:none;background:#00ff80;color:black;cursor:pointer;}
+body{margin:0;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;transition:0.5s;background:#111;color:white;}
+body.light{background:#eee;color:#111;}
+.app{width:1000px;height:720px;border-radius:20px;display:flex;overflow:hidden;background:rgba(0,0,0,0.7);}
+#loginBox, #chatBox{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:15px;}
+input{padding:12px;border-radius:25px;border:none;outline:none;width:250px;}
+button{padding:12px 20px;border-radius:25px;border:none;cursor:pointer;background:#0f0;color:#000;}
+#chatBox{display:none;flex-direction:row;}
+#onlineList{width:220px;padding:15px;border-right:2px solid #0f0;}
+#messages{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding:10px;}
+.msg{padding:10px 15px;border-radius:20px;max-width:70%;word-break:break-word;}
+.msg.me{align-self:flex-end;background:#0f0;color:#000;}
+.msg.other{align-self:flex-start;background:#222;color:#fff;}
+.footer{display:flex;gap:5px;padding:10px;border-top:2px solid #0f0;width:100%;}
+#settingsModal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#222;color:white;padding:15px;border-radius:15px;display:none;flex-direction:column;gap:10px;}
 </style>
 </head>
-<body class="dark">
+<body>
 <div class="app">
 
 <!-- Login -->
 <div id="loginBox">
-  <div class="title">ALLO</div>
+  <h2>ALLO</h2>
   <input id="usernameInput" placeholder="نام کاربری">
-  <input id="userIDInput" placeholder="شناسه یکتا (ID)" title="این شناسه باید یکتا باشد">
+  <input id="userIDInput" placeholder="شناسه یکتا">
   <input id="passwordInput" type="password" placeholder="رمز عبور">
   <button onclick="registerUser()">ثبت نام</button>
   <button onclick="loginUser()">ورود</button>
-  <button id="themeToggle" onclick="toggleTheme()">تغییر تم 🌗</button>
+  <button onclick="toggleTheme()">تغییر تم</button>
 </div>
 
 <!-- Chat -->
@@ -83,13 +42,14 @@ body.dark{background:linear-gradient(135deg,#0f0f0f,#1a1a1a);color:white;}
   <div id="onlineList">
     <h3>آنلاین‌ها</h3>
     <div id="users"></div>
+    <button onclick="openSettings()">تنظیمات</button>
   </div>
   <div id="chatArea">
     <div id="messages"></div>
     <div class="footer">
       <input id="msgInput" placeholder="پیام...">
       <button onclick="sendMessage()">💬</button>
-      <input type="file" id="imgInput" style="display:none;" accept="image/*">
+      <input type="file" id="imgInput" style="display:none;">
       <button onclick="document.getElementById('imgInput').click()">📸</button>
       <button onclick="logout()">خروج</button>
     </div>
@@ -100,59 +60,54 @@ body.dark{background:linear-gradient(135deg,#0f0f0f,#1a1a1a);color:white;}
 <div id="settingsModal">
   <h3>تنظیمات کاربر</h3>
   <div>کد کوتاه شما: <span id="userCode"></span></div>
-  <div>شناسه یکتا: <span id="userUniqueID"></span></div>
+  <div>
+    شناسه یکتا: <input id="editID">
+    <button onclick="updateID()">تغییر</button>
+  </div>
   <button onclick="closeSettings()">بستن</button>
 </div>
 
 <script>
 // Firebase
 const firebaseConfig = {
-    apiKey:"AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
-    authDomain:"alloo-web.firebaseapp.com",
-    projectId:"alloo-web",
+    apiKey:"YOUR_API_KEY",
+    authDomain:"YOUR_PROJECT.firebaseapp.com",
+    projectId:"YOUR_PROJECT",
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let me="", meCode="", meID="", activeUser="", recorder=null;
+let me="", meCode="", meID="", activeUser="";
 
 // Theme
-function toggleTheme(){document.body.classList.toggle('light');document.body.classList.toggle('dark');}
+function toggleTheme(){document.body.classList.toggle('light');}
 
-// Generate unique short code
-async function generateUniqueCode() {
-    let code = '';
-    let exists = true;
-    while (exists) {
-        code = 'ALLO-' + Math.floor(1000 + Math.random() * 9000);
-        const snap = await db.collection("users").where("code","==",code).get();
-        exists = !snap.empty;
+// Generate unique code
+async function generateUniqueCode(){
+    let code, exists=true;
+    while(exists){
+        code='ALLO-'+Math.floor(1000+Math.random()*9000);
+        const snap=await db.collection("users").where("code","==",code).get();
+        exists=!snap.empty;
     }
     return code;
 }
 
-// Register user
+// Register
 async function registerUser(){
-    let u=document.getElementById("usernameInput").value.trim();
-    let p=document.getElementById("passwordInput").value.trim();
-    let id=document.getElementById("userIDInput").value.trim();
-    if(!u||!p||!id) return alert("همه فیلدها لازم است");
+    const u=document.getElementById("usernameInput").value.trim();
+    const p=document.getElementById("passwordInput").value.trim();
+    const id=document.getElementById("userIDInput").value.trim();
+    if(!u||!p||!id)return alert("همه فیلدها لازم است");
 
-    // Check username
     const doc = await db.collection("users").doc(u).get();
-    if(doc.exists) return alert("این کاربر قبلاً ساخته شده است");
+    if(doc.exists) return alert("کاربر قبلاً وجود دارد");
 
-    // Check custom ID uniqueness
     const idSnap = await db.collection("users").where("id","==",id).get();
-    if(!idSnap.empty) return alert("این شناسه قبلاً استفاده شده است");
+    if(!idSnap.empty) return alert("این شناسه قبلاً استفاده شده");
 
-    const code = await generateUniqueCode();
-    await db.collection("users").doc(u).set({
-        password:p,
-        online:true,
-        code:code,
-        id:id
-    });
+    const code=await generateUniqueCode();
+    await db.collection("users").doc(u).set({password:p, online:true, code:code, id:id});
 
     me=u; meCode=code; meID=id;
     localStorage.setItem("allo_user",me);
@@ -161,13 +116,13 @@ async function registerUser(){
 
 // Login
 async function loginUser(){
-    let u=document.getElementById("usernameInput").value.trim();
-    let p=document.getElementById("passwordInput").value.trim();
-    if(!u||!p) return alert("هر دو فیلد لازم است");
+    const u=document.getElementById("usernameInput").value.trim();
+    const p=document.getElementById("passwordInput").value.trim();
+    if(!u||!p)return alert("همه فیلدها لازم است");
 
     const doc = await db.collection("users").doc(u).get();
-    if(!doc.exists) return alert("کاربر وجود ندارد");
-    if(doc.data().password!==p) return alert("رمز اشتباه است");
+    if(!doc.exists)return alert("کاربر وجود ندارد");
+    if(doc.data().password!==p)return alert("رمز اشتباه است");
 
     me=u; meCode=doc.data().code; meID=doc.data().id;
     localStorage.setItem("allo_user",me);
@@ -175,12 +130,12 @@ async function loginUser(){
     startApp();
 }
 
-// Start app
+// Start
 function startApp(){
     document.getElementById("loginBox").style.display="none";
     document.getElementById("chatBox").style.display="flex";
     document.getElementById("userCode").innerText=meCode;
-    document.getElementById("userUniqueID").innerText=meID;
+    document.getElementById("editID").value=meID;
     loadUsers(); loadMessages();
 }
 
@@ -189,10 +144,9 @@ function loadUsers(){
     db.collection("users").onSnapshot(snap=>{
         const usersDiv=document.getElementById("users"); usersDiv.innerHTML="";
         snap.forEach(doc=>{
-            if(doc.id===me) return;
+            if(doc.id===me)return;
             let div=document.createElement("div");
-            div.className="user";
-            div.innerText=doc.id+" ("+doc.data().code+") ["+doc.data().id+"] "+(doc.data().online?"✅":"❌");
+            div.textContent=doc.data().id+" ("+doc.data().code+") ["+(doc.data().online?"✅":"❌")+"]";
             div.onclick=()=>{ activeUser=doc.id; loadMessages(); };
             usersDiv.appendChild(div);
         });
@@ -201,51 +155,45 @@ function loadUsers(){
 
 // Messages
 function loadMessages(){
-    if(!activeUser) return;
+    if(!activeUser)return;
     const msgDiv=document.getElementById("messages"); msgDiv.innerHTML="";
     db.collection("messages").where("users","array-contains",me).orderBy("timestamp","asc").onSnapshot(snap=>{
         msgDiv.innerHTML="";
         snap.forEach(doc=>{
-            let data=doc.data();
-            if(!data.users.includes(activeUser)) return;
-            let div=document.createElement("div"); div.className="msg "+(data.from===me?"me":"other");
-            if(data.type==="text") div.innerText=data.msg;
-            if(data.type==="image"){ let img=document.createElement("img"); img.src=data.msg; div.appendChild(img);}
-            if(data.type==="voice"){let wf=document.createElement("div");wf.className="waveform-container";div.appendChild(wf);
-                let wavesurfer = WaveSurfer.create({container:wf, waveColor:'#00ff80', progressColor:'#00e676', height:50});
-                wavesurfer.load(data.msg);
-            }
-            msgDiv.appendChild(div); msgDiv.scrollTop=msgDiv.scrollHeight;
+            const data=doc.data();
+            if(!data.users.includes(activeUser))return;
+            let div=document.createElement("div");
+            div.className="msg "+(data.from===me?"me":"other");
+            if(data.type==="text")div.innerText=data.msg;
+            msgDiv.appendChild(div);
         });
     });
 }
 
-// Send message
+// Send
 function sendMessage(){
     const input=document.getElementById("msgInput");
-    if(!input.value.trim()||!activeUser) return;
+    if(!input.value.trim()||!activeUser)return;
     db.collection("messages").add({from:me,to:activeUser,msg:input.value,type:"text",users:[me,activeUser],timestamp:firebase.firestore.FieldValue.serverTimestamp()});
     input.value="";
 }
 
-// Send image
-document.getElementById("imgInput").addEventListener("change", function(e){
-    if(!activeUser) return alert("ابتدا کاربر انتخاب شود");
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev){
-        db.collection("messages").add({from:me,to:activeUser,msg:ev.target.result,type:"image",users:[me,activeUser],timestamp:firebase.firestore.FieldValue.serverTimestamp()});
-    }
-    reader.readAsDataURL(file);
-});
-
 // Logout
-function logout(){
-    if(!me) return;
-    db.collection("users").doc(me).update({online:false});
-    localStorage.removeItem("allo_user");
-    location.reload();
+function logout(){db.collection("users").doc(me).update({online:false}); localStorage.removeItem("allo_user"); location.reload();}
+
+// Settings
+function openSettings(){document.getElementById("settingsModal").style.display="flex";}
+function closeSettings(){document.getElementById("settingsModal").style.display="none";}
+
+// Update ID
+async function updateID(){
+    const newID=document.getElementById("editID").value.trim();
+    if(!newID)return alert("شناسه نمی‌تواند خالی باشد");
+    const idSnap = await db.collection("users").where("id","==",newID).get();
+    if(!idSnap.empty && idSnap.docs[0].id!==me)return alert("این شناسه قبلاً استفاده شده");
+    await db.collection("users").doc(me).update({id:newID});
+    meID=newID;
+    alert("شناسه با موفقیت تغییر کرد");
 }
 
 // Auto login
