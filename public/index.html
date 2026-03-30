@@ -179,7 +179,7 @@ function startApp(){
   loadUsers(); 
 }
 
-// Load Users (نمایش آنلاین‌ها و انتخاب مستقیم)
+// Load Users
 function loadUsers(){
   db.collection("users").onSnapshot(snap=>{
     const usersDiv=document.getElementById("users"); usersDiv.innerHTML="";
@@ -187,11 +187,8 @@ function loadUsers(){
       if(doc.id===me) return;
       let div=document.createElement("div");
       div.className="user";
-      div.innerText=doc.id + (doc.data().online?" ✅":" ❌");
-      div.onclick = () => {
-        activeUser = doc.id;
-        loadMessages();
-      };
+      div.innerText=doc.id+" ("+doc.data().code+")"+(doc.data().online?" ✅":" ❌");
+      div.onclick=()=>{ activeUser=doc.id; loadMessages(); };
       usersDiv.appendChild(div);
     });
   });
@@ -200,16 +197,18 @@ function loadUsers(){
 // Messages
 function loadMessages(){
   if(!activeUser) return;
+  const msgs=document.getElementById("messages");
+  msgs.innerHTML="";
   db.collection("messages")
     .where("users", "array-contains", me)
     .orderBy("timestamp")
     .onSnapshot(snap=>{
-      const msgs=document.getElementById("messages");
       msgs.innerHTML="";
       snap.forEach(doc=>{
         const data = doc.data();
         if(data.users.includes(activeUser)){
-          let div=document.createElement("div"); div.className="msg "+(data.from===me?"me":"other");
+          let div=document.createElement("div"); 
+          div.className="msg "+(data.from===me?"me":"other");
           if(data.type==="text") div.innerHTML=data.msg;
           else if(data.type==="image") div.innerHTML=`<img src="${data.msg}" style="max-width:250px;border-radius:15px;">`;
           else if(data.type==="voice"){
@@ -230,7 +229,10 @@ function sendMessage(){
   if(!input.value.trim()) return;
   if(!activeUser){ alert("ابتدا یک کاربر را از لیست انتخاب کنید"); return; }
   db.collection("messages").add({
-    from: me, to: activeUser, msg: input.value, type:"text",
+    from: me,
+    to: activeUser,
+    msg: input.value,
+    type:"text",
     users:[me, activeUser],
     timestamp: firebase.firestore.FieldValue.serverTimestamp()
   });
@@ -239,31 +241,19 @@ function sendMessage(){
 
 // Send Voice
 function sendVoice(){
-  alert("ویس هنوز آماده نشده!"); // می‌توانیم ضبط و ارسال واقعی اضافه کنیم
+  alert("ویس هنوز آماده نشده");
 }
 
-// Image Upload
-document.getElementById("imgInput").addEventListener("change", function(){
-  if(!this.files[0]) return;
-  let reader=new FileReader();
-  reader.onload=function(e){
-    if(!activeUser){ alert("ابتدا یک کاربر را انتخاب کنید"); return; }
-    db.collection("messages").add({
-      from:me,to:activeUser,msg:e.target.result,type:"image",users:[me,activeUser],timestamp:firebase.firestore.FieldValue.serverTimestamp()
-    });
-  }
-  reader.readAsDataURL(this.files[0]);
-});
+// Logout
+function logout(){
+  if(me) db.collection("users").doc(me).update({online:false});
+  localStorage.removeItem("allo_user"); location.reload();
+}
 
 // Settings
 function openSettings(){ document.getElementById("settingsModal").style.display="flex"; }
 function closeSettings(){ document.getElementById("settingsModal").style.display="none"; }
 
-// Logout
-function logout(){
-  db.collection("users").doc(me).update({online:false});
-  localStorage.removeItem("allo_user"); location.reload();
-}
 </script>
 </body>
 </html>
