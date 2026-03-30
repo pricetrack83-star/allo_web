@@ -337,7 +337,7 @@ function initApp() {
     db.collection("users").doc(me).update({ online: true, lastSeen: Date.now() });
     setInterval(() => db.collection("users").doc(me).update({ lastSeen: Date.now(), online: true }), 20000);
 
-    // شمارش پیام‌های ناخوانده واقعی از دیتابیس
+    // شمارش پیام‌های نخوانده
     db.collection("messages").where("t", "==", me).where("read", "==", false).onSnapshot(snap => {
         unreadCounts = {}; 
         snap.forEach(doc => {
@@ -382,7 +382,6 @@ function selectUser() {
     document.getElementById("targetName").innerText = activeTarget.toUpperCase();
     document.getElementById("hAvatar").innerText = activeTarget[0].toUpperCase();
     loadMessages();
-    updateUserListUI();
 }
 
 function loadMessages() {
@@ -392,7 +391,8 @@ function loadMessages() {
         snap.forEach(doc => {
             const d = doc.data();
             if((d.f==me && d.t==activeTarget) || (d.f==activeTarget && d.t==me)) {
-                // اگر پیام مال طرف مقابل است و خوانده نشده، آن را به عنوان خوانده شده علامت بزن
+                
+                // بخش جدید: اگر چت باز است و پیام نخوانده از طرف مقابل آمد، آن را Read کن
                 if (d.f === activeTarget && d.read === false) {
                     db.collection("messages").doc(doc.id).update({ read: true });
                 }
@@ -411,13 +411,12 @@ function loadMessages() {
 function sendMsg() {
     const i = document.getElementById("msgInput");
     if(!i.value || !activeTarget) return;
-    // اضافه شدن فیلد read: false به دیتابیس
+    // ارسال با وضعیت read: false
     db.collection("messages").add({ f: me, t: activeTarget, txt: i.value, time: Date.now(), read: false });
     i.value = "";
-    if(window.innerWidth < 900) i.blur();
 }
 
-const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }] };
+const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
 
 async function startCall() {
     if(!activeTarget) return;
@@ -425,24 +424,17 @@ async function startCall() {
     document.getElementById("cName").innerText = activeTarget.toUpperCase();
     document.getElementById("acceptBtn").style.display = "none";
     document.getElementById("muteBtn").style.display = "block";
-    
     pc = new RTCPeerConnection(rtcConfig);
     pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON()); };
     pc.ontrack = e => { document.getElementById("remoteAudio").srcObject = e.streams[0]; document.getElementById("cStatus").innerText = "CONNECTED"; };
-
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     await db.collection("calls").doc(activeTarget).set({ offer, from: me });
-
     db.collection("calls").doc(activeTarget).onSnapshot(async snap => {
         const d = snap.data();
         if(d?.answer && !pc.currentRemoteDescription) await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
-    });
-    db.collection("calls").doc(activeTarget).collection("receiverCandidates").onSnapshot(s => {
-        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
     });
 }
 
@@ -454,7 +446,6 @@ function listenForCalls() {
             document.getElementById("callUI").style.display = "flex";
             document.getElementById("cName").innerText = d.from.toUpperCase();
             document.getElementById("acceptBtn").style.display = "block";
-            document.getElementById("muteBtn").style.display = "none";
             document.getElementById("ring").play();
         } else if(!d && pc) hangup();
     });
@@ -473,53 +464,31 @@ async function answerCall() {
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
     await db.collection("calls").doc(me).update({ answer });
-    db.collection("calls").doc(me).collection("callerCandidates").onSnapshot(s => {
-        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
-    });
 }
 
 function toggleMute() {
     isMuted = !isMuted;
     localStream.getAudioTracks()[0].enabled = !isMuted;
     document.getElementById("muteBtn").innerText = isMuted ? "🚫" : "🎙️";
-    document.getElementById("muteBtn").style.background = isMuted ? "var(--secondary)" : "rgba(255,255,255,0.1)";
 }
 
 function hangup() {
-    const target = activeTarget || (window.incoming ? window.incoming.from : null);
-    if(target && me) {
-        db.collection("messages").add({ 
-            f: me, 
-            t: target, 
-            txt: "📞 تماس پایان یافت", 
-            time: Date.now(),
-            read: false
-        });
-    }
-
     if(localStream) localStream.getTracks().forEach(t => t.stop());
-    if(pc) { pc.close(); pc = null; }
+    if(pc) pc.close(); pc = null;
     db.collection("calls").doc(me).delete();
     if(activeTarget) db.collection("calls").doc(activeTarget).delete();
     document.getElementById("callUI").style.display = "none";
-    document.getElementById("callUI").classList.remove("minimized");
-    document.getElementById("minBtn").innerText = "MINIMIZE";
     document.getElementById("ring").pause();
-    isMuted = false;
 }
 
 function toggleCallView() {
-    const ui = document.getElementById("callUI");
-    const btn = document.getElementById("minBtn");
-    ui.classList.toggle("minimized");
-    btn.innerText = ui.classList.contains("minimized") ? "MAXIMIZE" : "MINIMIZE";
+    document.getElementById("callUI").classList.toggle("minimized");
 }
 
 let rec; let chunks = [];
 async function toggleVoice() {
     const v = document.getElementById("vBtn");
     const indicator = document.getElementById("recIndicator");
-
     if(!rec || rec.state === 'inactive') {
         const s = await navigator.mediaDevices.getUserMedia({ audio: true });
         rec = new MediaRecorder(s); chunks = [];
@@ -531,19 +500,11 @@ async function toggleVoice() {
             v.classList.remove("is-recording");
             indicator.style.display = "none";
         };
-        rec.start(); 
-        v.classList.add("is-recording");
-        indicator.style.display = "flex";
-    } else { 
-        rec.stop(); 
-    }
+        rec.start(); v.classList.add("is-recording"); indicator.style.display = "flex";
+    } else { rec.stop(); }
 }
 
-function logout() { 
-    db.collection("users").doc(me).update({ online: false }); 
-    localStorage.clear(); 
-    location.reload(); 
-}
+function logout() { db.collection("users").doc(me).update({ online: false }); localStorage.clear(); location.reload(); }
 </script>
 </body>
 </html>
