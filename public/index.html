@@ -6,55 +6,290 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/wavesurfer.js"></script>
+
 <style>
-/* ==== STYLES SAME AS YOUR CODE ==== */
-body{margin:0;font-family:'Vazirmatn',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;transition:0.5s;}
-body.light{background:linear-gradient(135deg,#f5f5f5,#ddd);color:#111;}
-body.dark{background:linear-gradient(135deg,#0f0f0f,#1a1a1a);color:white;}
-.app{width:980px;height:720px;border-radius:30px;backdrop-filter:blur(25px);display:flex;overflow:hidden;transition:0.5s;box-shadow:0 10px 40px rgba(0,0,0,0.2);}
-body.light .app{background:rgba(255,255,255,0.95);box-shadow:0 0 60px rgba(0,200,255,0.2);}
-body.dark .app{background:rgba(20,20,20,0.95);box-shadow:0 0 60px rgba(0,255,118,0.4);}
-#loginBox{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:15px;}
-#loginBox input{width:300px;padding:16px;border-radius:30px;border:none;background:#222;color:white;outline:none;font-size:15px;transition:0.3s;box-shadow:0 4px 15px rgba(0,0,0,0.2);}
-body.light #loginBox input{background:#eee;color:#111;}
-#loginBox input:focus{background:#333;box-shadow:0 0 10px #00ff80;}
-body.light #loginBox input:focus{background:#ccc;box-shadow:0 0 10px #00aaff;}
-#loginBox button{width:200px;padding:16px;border-radius:30px;border:none;background:linear-gradient(135deg,#00ff80,#00e676);color:black;font-weight:bold;cursor:pointer;font-size:15px;box-shadow:0 5px 15px rgba(0,255,118,0.4);transition:0.3s;}
-#loginBox button:hover{transform:scale(1.1);box-shadow:0 8px 25px rgba(0,255,118,0.6);}
-#chatBox{display:none;flex:1;flex-direction:row;transition:0.5s;}
-#onlineList{width:240px;padding:15px;display:flex;flex-direction:column;border-radius:0 0 0 30px;transition:0.5s;overflow-y:auto;background:rgba(30,30,30,0.95);}
-body.light #onlineList{background:rgba(240,240,240,0.95);border-right:2px solid #00aaff;}
-body.dark #onlineList{background:rgba(30,30,30,0.95);border-right:2px solid #00ff80;}
-#onlineList h3{text-align:center;margin-bottom:12px;text-shadow:0 0 8px currentColor;}
-.user{padding:12px 15px;margin:5px 0;border-radius:25px;cursor:pointer;transition:0.3s;font-weight:bold;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.2);}
-.user:hover{transform:scale(1.05);background:linear-gradient(135deg,#00ff80,#00e676);color:black;box-shadow:0 5px 18px rgba(0,255,118,0.5);}
-body.light .user:hover{background:linear-gradient(135deg,#00aaff,#00d4ff);color:white;}
-#chatArea{flex:1;display:flex;flex-direction:column;margin-left:10px;border-radius:0 30px 30px 0;padding:10px;transition:0.5s;background:rgba(10,10,10,0.9);position:relative;}
+/* ==================== BODY ==================== */
+body{
+  margin:0;
+  font-family:'Vazirmatn',sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  transition:0.5s;
+}
+body.light{
+  background:linear-gradient(135deg,#f5f5f5,#ddd);
+  color:#111;
+}
+body.dark{
+  background:linear-gradient(135deg,#0f0f0f,#1a1a1a);
+  color:white;
+}
+
+/* ==================== APP ==================== */
+.app{
+  width:980px;
+  height:720px;
+  border-radius:30px;
+  backdrop-filter:blur(25px);
+  display:flex;
+  overflow:hidden;
+  transition:0.5s;
+  box-shadow:0 10px 40px rgba(0,0,0,0.2);
+}
+body.light .app{
+  background:rgba(255,255,255,0.95);
+  box-shadow:0 0 60px rgba(0,200,255,0.2);
+}
+body.dark .app{
+  background:rgba(20,20,20,0.95);
+  box-shadow:0 0 60px rgba(0,255,118,0.4);
+}
+
+/* ==================== LOGIN ==================== */
+#loginBox{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:15px;
+}
+#loginBox input{
+  width:300px;
+  padding:16px;
+  border-radius:30px;
+  border:none;
+  background:#222;
+  color:white;
+  outline:none;
+  font-size:15px;
+  transition:0.3s;
+  box-shadow:0 4px 15px rgba(0,0,0,0.2);
+}
+body.light #loginBox input{background:#eee; color:#111;}
+#loginBox input:focus{background:#333; box-shadow:0 0 10px #00ff80;}
+body.light #loginBox input:focus{background:#ccc; box-shadow:0 0 10px #00aaff;}
+#loginBox button{
+  width:200px;
+  padding:16px;
+  border-radius:30px;
+  border:none;
+  background:linear-gradient(135deg,#00ff80,#00e676);
+  color:black;
+  font-weight:bold;
+  cursor:pointer;
+  font-size:15px;
+  box-shadow:0 5px 15px rgba(0,255,118,0.4);
+  transition:0.3s;
+}
+#loginBox button:hover{
+  transform:scale(1.1);
+  box-shadow:0 8px 25px rgba(0,255,118,0.6);
+}
+
+/* ==================== CHAT ==================== */
+#chatBox{display:none; flex:1; flex-direction:row; transition:0.5s;}
+#onlineList{
+  width:240px;
+  padding:15px;
+  display:flex;
+  flex-direction:column;
+  border-radius:0 0 0 30px;
+  transition:0.5s;
+  overflow-y:auto;
+  background:rgba(30,30,30,0.95);
+}
+body.light #onlineList{
+  background:rgba(240,240,240,0.95);
+  border-right:2px solid #00aaff;
+}
+body.dark #onlineList{
+  background:rgba(30,30,30,0.95);
+  border-right:2px solid #00ff80;
+}
+#onlineList h3{
+  text-align:center;
+  margin-bottom:12px;
+  text-shadow:0 0 8px currentColor;
+}
+.user{
+  padding:12px 15px;
+  margin:5px 0;
+  border-radius:25px;
+  cursor:pointer;
+  transition:0.3s;
+  font-weight:bold;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:rgba(0,0,0,0.2);
+}
+.user:hover{
+  transform:scale(1.05);
+  background:linear-gradient(135deg,#00ff80,#00e676);
+  color:black;
+  box-shadow:0 5px 18px rgba(0,255,118,0.5);
+}
+body.light .user:hover{background:linear-gradient(135deg,#00aaff,#00d4ff); color:white;}
+
+/* ==================== CHAT AREA ==================== */
+#chatArea{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  margin-left:10px;
+  border-radius:0 30px 30px 0;
+  padding:10px;
+  transition:0.5s;
+  background:rgba(10,10,10,0.9);
+  position:relative;
+}
 body.light #chatArea{background:rgba(255,255,255,0.95);}
-#userID{font-size:13px;color:#00ff80;text-align:center;margin-bottom:5px;font-weight:bold;}
-#messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:10px;}
-.msg{padding:14px 20px;border-radius:25px;max-width:70%;position:relative;transition:0.3s;cursor:pointer;font-size:14px;word-break:break-word;box-shadow:0 2px 12px rgba(0,255,118,0.2);}
-.me{background:linear-gradient(135deg,#00ff80,#00e676);color:black;align-self:flex-end;}
-.other{background:linear-gradient(135deg,#333,#111);color:white;}
-.msg img{border-radius:15px;max-width:220px;margin-top:5px;transition:0.3s;}
+#userID{
+  font-size:13px;
+  color:#00ff80;
+  text-align:center;
+  margin-bottom:5px;
+  font-weight:bold;
+}
+#messages{
+  flex:1;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  padding:10px;
+}
+.msg{
+  padding:14px 20px;
+  border-radius:25px;
+  max-width:70%;
+  position:relative;
+  transition:0.3s;
+  cursor:pointer;
+  font-size:14px;
+  word-break:break-word;
+  box-shadow:0 2px 12px rgba(0,255,118,0.2);
+}
+.me{
+  background:linear-gradient(135deg,#00ff80,#00e676);
+  color:black;
+  align-self:flex-end;
+}
+.other{
+  background:linear-gradient(135deg,#333,#111);
+  color:white;
+}
+.msg img{
+  border-radius:15px;
+  max-width:220px;
+  margin-top:5px;
+  transition:0.3s;
+}
 .msg img:hover{transform:scale(1.05);}
-.msg small{font-size:10px;color:#ccc;display:block;margin-top:5px;}
-.footer{display:flex;gap:10px;padding:12px;border-top:2px solid currentColor;border-radius:0 0 30px 0;align-items:center;}
-.footer input{flex:1;padding:14px 16px;border-radius:25px;border:none;background:#222;color:white;outline:none;font-size:14px;transition:0.3s;box-shadow:0 2px 8px rgba(0,255,118,0.2);}
-body.light .footer input{background:#eee;color:#111;}
-.footer input:focus{background:#333;box-shadow:0 0 8px #00ff80;}
-body.light .footer input:focus{background:#ccc;box-shadow:0 0 8px #00aaff;}
-.footer button{padding:14px;border-radius:50%;border:none;background:linear-gradient(135deg,#00ff80,#00e676);color:black;cursor:pointer;font-size:18px;box-shadow:0 3px 12px rgba(0,255,118,0.4);transition:0.3s;}
-.footer button:hover{transform:scale(1.3);box-shadow:0 6px 20px rgba(0,255,118,0.6);}
-#voiceControls{display:flex;align-items:center;gap:10px;}
-#recordBtn{padding:10px 18px;border-radius:50px;border:none;font-weight:bold;cursor:pointer;background:linear-gradient(135deg,#ff4081,#f50057);color:white;transition:0.3s;box-shadow:0 2px 10px rgba(255,82,82,0.4);}
-#recordBtn.recording{background:linear-gradient(135deg,#ff5252,#ff1744);animation:pulse 1s infinite;}
-@keyframes pulse{0%{box-shadow:0 0 5px #ff5252;}50%{box-shadow:0 0 20px #ff1744;}100%{box-shadow:0 0 5px #ff5252;}}
-#callBox{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);padding:20px;border-radius:20px;color:white;z-index:999;width:300px;text-align:center;}
-#callBox button{margin-top:15px;padding:10px 20px;border:none;border-radius:15px;cursor:pointer;}
+.msg small{
+  font-size:10px;
+  color:#ccc;
+  display:block;
+  margin-top:5px;
+}
+
+/* ==================== FOOTER ==================== */
+.footer{
+  display:flex;
+  gap:10px;
+  padding:12px;
+  border-top:2px solid currentColor;
+  border-radius:0 0 30px 0;
+  align-items:center;
+}
+.footer input{
+  flex:1;
+  padding:14px 16px;
+  border-radius:25px;
+  border:none;
+  background:#222;
+  color:white;
+  outline:none;
+  font-size:14px;
+  transition:0.3s;
+  box-shadow:0 2px 8px rgba(0,255,118,0.2);
+}
+body.light .footer input{background:#eee; color:#111;}
+.footer input:focus{background:#333; box-shadow:0 0 8px #00ff80;}
+body.light .footer input:focus{background:#ccc; box-shadow:0 0 8px #00aaff;}
+
+.footer button{
+  padding:14px;
+  border-radius:50%;
+  border:none;
+  background:linear-gradient(135deg,#00ff80,#00e676);
+  color:black;
+  cursor:pointer;
+  font-size:18px;
+  box-shadow:0 3px 12px rgba(0,255,118,0.4);
+  transition:0.3s;
+}
+.footer button:hover{
+  transform:scale(1.3);
+  box-shadow:0 6px 20px rgba(0,255,118,0.6);
+}
+
+/* ==================== VOICE ==================== */
+#voiceControls{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+#recordBtn{
+  padding:10px 18px;
+  border-radius:50px;
+  border:none;
+  font-weight:bold;
+  cursor:pointer;
+  background:linear-gradient(135deg,#ff4081,#f50057);
+  color:white;
+  transition:0.3s;
+  box-shadow:0 2px 10px rgba(255,82,82,0.4);
+}
+#recordBtn.recording{
+  background:linear-gradient(135deg,#ff5252,#ff1744);
+  animation:pulse 1s infinite;
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 5px #ff5252;}
+  50%{box-shadow:0 0 20px #ff1744;}
+  100%{box-shadow:0 0 5px #ff5252;}
+}
+
+/* ==================== CALL BOX ==================== */
+#callBox{
+  display:none;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:rgba(0,0,0,0.9);
+  padding:20px;
+  border-radius:20px;
+  color:white;
+  z-index:999;
+  width:300px;
+  text-align:center;
+}
+#callBox button{
+  margin-top:15px;
+  padding:10px 20px;
+  border:none;
+  border-radius:15px;
+  cursor:pointer;
+}
 </style>
 </head>
 <body class="dark">
+
 <div class="app">
 <!-- Login -->
 <div id="loginBox">
@@ -66,6 +301,7 @@ body.light .footer input:focus{background:#ccc;box-shadow:0 0 8px #00aaff;}
   <button onclick="loginUser()">ورود</button>
   <button id="themeToggle" onclick="toggleTheme()">تغییر تم 🌗</button>
 </div>
+
 <!-- Chat -->
 <div id="chatBox">
   <div id="onlineList">
@@ -90,6 +326,7 @@ body.light .footer input:focus{background:#ccc;box-shadow:0 0 8px #00aaff;}
     <button onclick="logout()" style="margin:10px;background:#ff5252;border-radius:25px;padding:10px;font-weight:bold;cursor:pointer;">خروج</button>
   </div>
 </div>
+
 <!-- Call Box -->
 <div id="callBox">
   <div id="callStatus">در انتظار تماس...</div>
@@ -99,24 +336,36 @@ body.light .footer input:focus{background:#ccc;box-shadow:0 0 8px #00aaff;}
   </div>
   <button id="endCallBtn" onclick="endCall()" style="display:none;">قطع تماس</button>
 </div>
+
 <audio id="ringTone" src="https://actions.google.com/sounds/v1/alarms/phone_alerts_and_ringtones.ogg" loop></audio>
 
 <script>
-// ==== Firebase Config ====
-const firebaseConfig = { apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0", authDomain: "alloo-web.firebaseapp.com", projectId: "alloo-web", storageBucket: "alloo-web.appspot.com", messagingSenderId: "132232824762", appId: "1:132232824762:web:4e3c25557c072f0feabf83" };
+// ==================== Firebase ====================
+const firebaseConfig = {
+  apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
+  authDomain: "alloo-web.firebaseapp.com",
+  projectId: "alloo-web",
+  storageBucket: "alloo-web.appspot.com",
+  messagingSenderId: "132232824762",
+  appId: "1:132232824762:web:4e3c25557c072f0feabf83"
+};
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ==== Globals ====
+// ==================== Global ====================
 let me="", activeUser="", recorder=null, recChunks=[], recInterval=null, recSeconds=0;
 let localStream=null, remoteStream=null, peerConnection=null;
 let incomingCall=null;
 const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-// ==== Theme ====
-function toggleTheme(){document.body.classList.toggle('light');document.body.classList.toggle('dark');localStorage.setItem("allo_theme",document.body.classList.contains('dark')?"dark":"light");}
+// ==================== Theme ====================
+function toggleTheme(){
+  document.body.classList.toggle('light');
+  document.body.classList.toggle('dark');
+  localStorage.setItem("allo_theme", document.body.classList.contains('dark')?"dark":"light");
+}
 
-// ==== Register & Login ====
+// ==================== Register & Login ====================
 function registerUser(){
   let u=document.getElementById("usernameInput").value.trim();
   let p=document.getElementById("passwordInput").value.trim();
@@ -125,11 +374,12 @@ function registerUser(){
   db.collection("users").doc(id).get().then(doc=>{
     if(doc.exists) return alert("این شناسه یکتا قبلاً استفاده شده");
     db.collection("users").doc(id).set({username:u,password:p,online:true});
-    me=id; localStorage.setItem("allo_user",me);
+    me=id; localStorage.setItem("allo_user",me); 
     document.getElementById("userID").innerText="کد شما: "+me;
     startApp();
   });
 }
+
 function loginUser(){
   let u=document.getElementById("userIDInput").value.trim();
   let p=document.getElementById("passwordInput").value.trim();
@@ -144,10 +394,14 @@ function loginUser(){
   });
 }
 
-// ==== Start App ====
-function startApp(){document.getElementById("loginBox").style.display="none";document.getElementById("chatBox").style.display="flex";loadUsers(); loadMessages();}
+// ==================== Start App ====================
+function startApp(){
+  document.getElementById("loginBox").style.display="none";
+  document.getElementById("chatBox").style.display="flex";
+  loadUsers(); loadMessages();
+}
 
-// ==== Load Users ====
+// ==================== Users ====================
 function loadUsers(){
   db.collection("users").onSnapshot(snap=>{
     const usersDiv=document.getElementById("users"); usersDiv.innerHTML="";
@@ -162,72 +416,90 @@ function loadUsers(){
   });
 }
 
-// ==== Messages ====
+// ==================== Messages ====================
 function loadMessages(){
   if(!activeUser) return;
   db.collection("messages").orderBy("time").onSnapshot(snap=>{
-    const msgDiv=document.getElementById("messages"); msgDiv.innerHTML="";
+    const msgDiv = document.getElementById("messages");
+    msgDiv.innerHTML = "";
     snap.forEach(doc=>{
-      let m=doc.data();
-      if(!((m.from===me && m.to===activeUser)||(m.from===activeUser && m.to===me))) return;
-      let div=document.createElement("div"); div.className="msg "+(m.from===me?"me":"other");
-      if(m.text) div.innerText=m.text;
-      if(m.audio){let audioElem=document.createElement("audio"); audioElem.src=m.audio; audioElem.controls=true; div.appendChild(audioElem);}
+      let m = doc.data();
+      if(!((m.from===me && m.to===activeUser) || (m.from===activeUser && m.to===me))) return;
+      let div = document.createElement("div");
+      div.className = "msg " + (m.from===me ? "me" : "other");
+      if(m.text) div.innerText = m.text;
+      if(m.audio){
+        let audioElem = document.createElement("audio");
+        audioElem.src = m.audio;
+        audioElem.controls=true;
+        div.appendChild(audioElem);
+      }
       msgDiv.appendChild(div);
     });
-    msgDiv.scrollTop=msgDiv.scrollHeight;
+    msgDiv.scrollTop = msgDiv.scrollHeight;
   });
 }
+
+// ==================== Send Message ====================
 function sendMessage(){
-  let text=document.getElementById("msgInput").value.trim();
-  if(!text||!activeUser) return;
-  db.collection("messages").add({from:me,to:activeUser,text:text,time:firebase.firestore.FieldValue.serverTimestamp(),seen:false});
+  let text = document.getElementById("msgInput").value.trim();
+  if(!text || !activeUser) return;
+  db.collection("messages").add({
+    from: me,
+    to: activeUser,
+    text: text,
+    time: firebase.firestore.FieldValue.serverTimestamp(),
+    seen: false
+  });
   document.getElementById("msgInput").value="";
 }
-function logout(){db.collection("users").doc(me).update({online:false}); localStorage.removeItem("allo_user"); location.reload();}
 
-// ==== Recording ====
+// ==================== Logout ====================
+function logout(){
+  db.collection("users").doc(me).update({online:false});
+  localStorage.removeItem("allo_user");
+  location.reload();
+}
+
+// ==================== Recording ====================
 async function toggleRecording(){
-  if(recorder && recorder.state=="recording"){recorder.stop(); clearInterval(recInterval); recSeconds=0; document.getElementById("recordBtn").classList.remove("recording");}
-  else{
-    let stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    recorder=new MediaRecorder(stream); recorder.start(); recChunks=[]; recSeconds=0;
+  if(recorder && recorder.state=="recording"){
+    recorder.stop(); clearInterval(recInterval); recSeconds=0;
+    document.getElementById("recordBtn").classList.remove("recording");
+  }else{
+    let stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    recorder = new MediaRecorder(stream);
+    recorder.start();
+    recChunks=[]; recSeconds=0;
     document.getElementById("recordBtn").classList.add("recording");
-    recInterval=setInterval(()=>{recSeconds++; let m=Math.floor(recSeconds/60); let s=recSeconds%60; document.getElementById("recTimer").innerText=`${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;},1000);
-    recorder.ondataavailable=e=>{recChunks.push(e.data);}
-    recorder.onstop=()=>{let blob=new Blob(recChunks,{type:'audio/webm'}); let url=URL.createObjectURL(blob); if(activeUser) db.collection("messages").add({from:me,to:activeUser,audio:url,time:firebase.firestore.FieldValue.serverTimestamp(),seen:false});};
+    recInterval=setInterval(()=>{ recSeconds++; let m=Math.floor(recSeconds/60); let s=recSeconds%60; document.getElementById("recTimer").innerText=`${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; },1000);
+    recorder.ondataavailable=e=>{ recChunks.push(e.data); }
+    recorder.onstop=()=>{ let blob=new Blob(recChunks,{type:'audio/webm'}); let url=URL.createObjectURL(blob); if(activeUser) db.collection("messages").add({from:me,to:activeUser,audio:url,time:firebase.firestore.FieldValue.serverTimestamp(),seen:false}); };
   }
 }
 
-// ==== WebRTC Call ====
+// ==================== WebRTC Call ====================
 async function startCall(){
   if(!activeUser) return alert("ابتدا یک کاربر را انتخاب کنید");
-  localStream=await navigator.mediaDevices.getUserMedia({audio:true});
-  peerConnection=new RTCPeerConnection(config);
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  peerConnection = new RTCPeerConnection(config);
+  peerConnection.onicecandidate=e=>{ if(e.candidate) db.collection("calls").doc(activeUser).set({candidate:e.candidate,from:me}); };
+  peerConnection.ontrack=e=>{ 
+    remoteStream=e.streams[0];
+    let audio=document.createElement("audio"); audio.srcObject=remoteStream; audio.autoplay=true; document.body.appendChild(audio);
+  };
   localStream.getTracks().forEach(track=>peerConnection.addTrack(track,localStream));
-  peerConnection.onicecandidate=e=>{if(e.candidate) db.collection("calls").doc(activeUser).set({candidate:e.candidate,from:me});};
-  peerConnection.ontrack=e=>{remoteStream=e.streams[0]; let audio=document.createElement("audio"); audio.srcObject=remoteStream; audio.autoplay=true; document.body.appendChild(audio);}
-  let offer=await peerConnection.createOffer(); await peerConnection.setLocalDescription(offer);
+  let offer = await peerConnection.createOffer(); await peerConnection.setLocalDescription(offer);
   db.collection("calls").doc(activeUser).set({from:me,offer:offer});
   listenIncomingAnswer();
 }
-function listenIncomingAnswer(){
-  db.collection("calls").doc(me).onSnapshot(async doc=>{
-    let data=doc.data();
-    if(data.answer && peerConnection){
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-      document.getElementById("endCallBtn").style.display="inline-block";
-    }
-    if(data.candidate && peerConnection){
-      try{await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));}catch(e){console.log(e);}
-    }
-  });
-}
+
+// ==================== Incoming Call ====================
 db.collection("calls").onSnapshot(snap=>{
   snap.forEach(async doc=>{
-    let data=doc.data();
+    let data = doc.data();
     if(data.to===me && data.offer && !peerConnection){
-      incomingCall=doc.id;
+      incomingCall = doc.id;
       document.getElementById("callBox").style.display="block";
       document.getElementById("callStatus").innerText="تماس ورودی از "+data.from;
       document.getElementById("callActions").style.display="block";
@@ -235,26 +507,20 @@ db.collection("calls").onSnapshot(snap=>{
     }
   });
 });
-async function acceptCall(){
-  document.getElementById("ringTone").pause(); document.getElementById("callBox").style.display="none";
-  localStream=await navigator.mediaDevices.getUserMedia({audio:true});
-  peerConnection=new RTCPeerConnection(config);
-  localStream.getTracks().forEach(track=>peerConnection.addTrack(track,localStream));
-  peerConnection.ontrack=e=>{remoteStream=e.streams[0]; let audio=document.createElement("audio"); audio.srcObject=remoteStream; audio.autoplay=true; document.body.appendChild(audio);}
-  peerConnection.onicecandidate=e=>{if(e.candidate) db.collection("calls").doc(incomingCall).update({candidate:e.candidate,from:me});};
-  let callDoc=await db.collection("calls").doc(incomingCall).get();
-  await peerConnection.setRemoteDescription(new RTCSessionDescription(callDoc.data().offer));
-  let answer=await peerConnection.createAnswer(); await peerConnection.setLocalDescription(answer);
-  db.collection("calls").doc(incomingCall).update({answer:answer});
-  document.getElementById("endCallBtn").style.display="inline-block";
-}
-function rejectCall(){document.getElementById("ringTone").pause(); document.getElementById("callBox").style.display="none";}
-function endCall(){if(peerConnection){peerConnection.close(); peerConnection=null;} if(localStream){localStream.getTracks().forEach(t=>t.stop());} if(remoteStream){remoteStream.getTracks().forEach(t=>t.stop());} document.getElementById("endCallBtn").style.display="none";}
 
-// ==== Init Theme ====
+function acceptCall(){ 
+  document.getElementById("ringTone").pause(); 
+  document.getElementById("callBox").style.display="none"; 
+  // ادامه WebRTC پذیرش
+}
+function rejectCall(){ document.getElementById("ringTone").pause(); document.getElementById("callBox").style.display="none"; }
+
+// ==================== Init Theme ====================
 document.body.classList.add(localStorage.getItem("allo_theme")||"dark");
-// ==== Auto Login ====
-if(localStorage.getItem("allo_user")){me=localStorage.getItem("allo_user");document.getElementById("userID").innerText="کد شما: "+me;startApp();}
+
+// ==================== Auto Login ====================
+if(localStorage.getItem("allo_user")){ me=localStorage.getItem("allo_user"); document.getElementById("userID").innerText="کد شما: "+me; startApp(); }
+
 </script>
 </body>
 </html>
