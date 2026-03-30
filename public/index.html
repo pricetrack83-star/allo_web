@@ -56,12 +56,6 @@ body {
     text-align: center; position: relative;
 }
 
-.login-card::before {
-    content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
-    background: linear-gradient(45deg, transparent, var(--primary), transparent);
-    z-index: -1; border-radius: 52px; opacity: 0.2;
-}
-
 .brand-title {
     font-family: 'Orbitron', sans-serif; font-size: 90px; font-weight: 900;
     color: var(--primary); letter-spacing: 12px; margin-bottom: 40px;
@@ -83,10 +77,6 @@ body {
     width: 100%; padding: 20px 25px; border-radius: 20px;
     background: rgba(0,0,0,0.6); border: 1px solid var(--border);
     color: #fff; font-size: 16px; outline: none; text-align: center;
-}
-.input-container input:focus {
-    border-color: var(--primary); box-shadow: 0 0 20px rgba(0, 255, 204, 0.15);
-    background: rgba(0, 255, 204, 0.02);
 }
 
 .action-btn {
@@ -126,10 +116,10 @@ body {
 }
 .is-online .online-glow { display: block; animation: pulse 1.5s infinite; }
 
-@keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); opacity: 0.5; } 100% { transform: scale(1); } }
 
 /* --- فضای چت --- */
-.chat-window { flex: 1; display: flex; flex-direction: column; }
+.chat-window { flex: 1; display: flex; flex-direction: column; position: relative; }
 .chat-header { padding: 30px 50px; background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center; }
 
 #messages { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
@@ -152,6 +142,35 @@ body {
     margin-bottom: 40px; box-shadow: 0 0 50px var(--primary-glow);
 }
 
+/* --- تنظیمات موبایل و تماس شناور --- */
+@media (max-width: 900px) {
+    .app-frame { width: 100vw; height: 100vh; border-radius: 0; border: none; }
+    .sidebar { width: 85px; min-width: 85px; padding: 10px 0; }
+    .sidebar h1, .sidebar #myIDDisplay, .sidebar .user-item div:last-child { display: none; }
+    .sidebar .user-item { justify-content: center; padding: 15px; margin: 5px; }
+    .chat-header { padding: 15px 20px; }
+    .login-card { width: 90%; padding: 40px 20px; }
+    .brand-title { font-size: 60px; }
+    #messages { padding: 20px; }
+    .bubble { max-width: 85%; }
+}
+
+#callUI.minimized {
+    inset: auto; bottom: 20px; right: 20px; width: 220px; height: 300px;
+    border-radius: 30px; border: 2px solid var(--primary); background: rgba(0, 0, 0, 0.95);
+    box-shadow: 0 0 40px var(--primary-glow); display: flex !important;
+}
+#callUI.minimized .call-avatar-large { width: 80px; height: 80px; font-size: 35px; margin-bottom: 10px; }
+#callUI.minimized h2 { font-size: 18px; }
+#callUI.minimized #cStatus { font-size: 8px; letter-spacing: 1px; }
+#callUI.minimized .call-controls-wrapper { transform: scale(0.6); margin-top: 10px !important; gap: 15px !important; }
+
+.min-btn {
+    position: absolute; top: 20px; left: 20px;
+    background: var(--glass); border: 1px solid var(--border);
+    color: var(--primary); padding: 8px 15px; border-radius: 12px;
+    cursor: pointer; font-family: 'Orbitron'; font-size: 10px; z-index: 10;
+}
 </style>
 </head>
 <body>
@@ -168,14 +187,9 @@ body {
             <button id="btnL" class="mode-btn active" onclick="setAuthMode('login')">ورود</button>
             <button id="btnR" class="mode-btn" onclick="setAuthMode('register')">ثبت‌نام</button>
         </div>
-        <div class="input-container">
-            <input id="uID" placeholder="USERNAME ID" autocomplete="off">
-        </div>
-        <div class="input-container">
-            <input id="uPass" type="password" placeholder="ACCESS KEY">
-        </div>
+        <div class="input-container"><input id="uID" placeholder="USERNAME ID" autocomplete="off"></div>
+        <div class="input-container"><input id="uPass" type="password" placeholder="ACCESS KEY"></div>
         <button class="action-btn" onclick="handleAuth()">INITIALIZE SESSION</button>
-        <p style="margin-top:30px; font-size:10px; opacity:0.4; letter-spacing:3px;">SECURED BY ALLO END-TO-END</p>
     </div>
 </div>
 
@@ -187,7 +201,7 @@ body {
         <div id="userList" style="flex:1; overflow-y:auto; padding-top:20px;"></div>
         <div style="padding:30px; background:rgba(0,0,0,0.3); border-top:1px solid var(--border);">
             <div id="myIDDisplay" style="font-family:monospace; font-size:12px; color:var(--primary); margin-bottom:10px;">NODE: DISCONNECTED</div>
-            <button onclick="logout()" style="color:var(--secondary); background:none; border:none; cursor:pointer; font-weight:bold; font-size:12px;">TERMINATE CONNECTION ✕</button>
+            <button onclick="logout()" style="color:var(--secondary); background:none; border:none; cursor:pointer; font-weight:bold; font-size:12px;">TERMINATE ✕</button>
         </div>
     </div>
 
@@ -203,7 +217,7 @@ body {
         <div id="messages"></div>
 
         <div style="padding:30px 45px; display:flex; gap:20px; background:rgba(0,0,0,0.1);">
-            <input id="msgInput" style="flex:1; padding:22px 35px; border-radius:25px; border:1px solid var(--border); background:rgba(0,0,0,0.5); color:#fff; outline:none;" placeholder="Enter encrypted data..." onkeypress="if(event.key=='Enter') sendMsg()">
+            <input id="msgInput" style="flex:1; padding:22px 35px; border-radius:25px; border:1px solid var(--border); background:rgba(0,0,0,0.5); color:#fff; outline:none;" placeholder="Encrypted data..." onkeypress="if(event.key=='Enter') sendMsg()">
             <button id="vBtn" onclick="toggleVoice()" style="width:65px; height:65px; border-radius:22px; border:1px solid var(--secondary); color:var(--secondary); background:none; font-size:24px; cursor:pointer;">🎤</button>
             <button onclick="sendMsg()" style="width:65px; height:65px; border-radius:22px; background:var(--primary); color:#000; border:none; font-size:24px; cursor:pointer;">✈</button>
         </div>
@@ -211,13 +225,14 @@ body {
 </div>
 
 <div id="callUI">
+    <button class="min-btn" id="minBtn" onclick="toggleCallView()">MINIMIZE</button>
     <div class="call-avatar-large" id="cAvatar">👤</div>
     <h2 id="cName" style="font-family:'Orbitron'; font-size:40px; margin-bottom:10px;">USER</h2>
-    <p id="cStatus" style="color:var(--primary); letter-spacing:5px; font-weight:100;">ESTABLISHING QUANTUM LINK...</p>
-    <div style="display:flex; gap:40px; margin-top:60px;">
-        <button id="acceptBtn" onclick="answerCall()" style="width:90px; height:90px; border-radius:30px; background:#2ecc71; border:none; font-size:35px; cursor:pointer; box-shadow: 0 0 30px rgba(46, 204, 113, 0.4);">✅</button>
+    <p id="cStatus" style="color:var(--primary); letter-spacing:5px; font-weight:100;">ESTABLISHING...</p>
+    <div class="call-controls-wrapper" style="display:flex; gap:40px; margin-top:60px;">
+        <button id="acceptBtn" onclick="answerCall()" style="width:90px; height:90px; border-radius:30px; background:#2ecc71; border:none; font-size:35px; cursor:pointer;">✅</button>
         <button id="muteBtn" onclick="toggleMute()" style="width:90px; height:90px; border-radius:30px; background:rgba(255,255,255,0.1); border:1px solid var(--border); font-size:35px; cursor:pointer; display:none;">🎙️</button>
-        <button onclick="hangup()" style="width:90px; height:90px; border-radius:30px; background:var(--secondary); border:none; font-size:35px; cursor:pointer; box-shadow: 0 0 30px rgba(255, 0, 85, 0.4);">❌</button>
+        <button onclick="hangup()" style="width:90px; height:90px; border-radius:30px; background:var(--secondary); border:none; font-size:35px; cursor:pointer;">❌</button>
     </div>
 </div>
 
@@ -239,9 +254,7 @@ const db = firebase.firestore();
 let me = localStorage.getItem("alloo_uid");
 let activeTarget = "";
 let authMode = 'login';
-let pc; 
-let localStream;
-let isMuted = false;
+let pc; let localStream; let isMuted = false;
 
 if(me) { document.getElementById("loginScreen").style.display = "none"; initApp(); }
 
@@ -286,7 +299,7 @@ function initApp() {
                 <div class="avatar-hex">${doc.id[0].toUpperCase()}<div class="online-glow"></div></div>
                 <div style="flex:1">
                     <div style="font-weight:900; font-size:16px;">${doc.id}</div>
-                    <div style="font-size:10px; opacity:0.4;">${isOnline ? 'ENCRYPTED CHANNEL OPEN' : 'STATION OFFLINE'}</div>
+                    <div style="font-size:10px; opacity:0.4;">${isOnline ? 'CHANNEL OPEN' : 'OFFLINE'}</div>
                 </div>`;
             item.onclick = () => { activeTarget = doc.id; selectUser(); };
             list.appendChild(item);
@@ -324,9 +337,9 @@ function sendMsg() {
     if(!i.value || !activeTarget) return;
     db.collection("messages").add({ f: me, t: activeTarget, txt: i.value, time: Date.now() });
     i.value = "";
+    if(window.innerWidth < 900) i.blur();
 }
 
-// --- سیستم تبادل سیگنال صوتی ---
 const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }] };
 
 async function startCall() {
@@ -337,34 +350,20 @@ async function startCall() {
     document.getElementById("muteBtn").style.display = "block";
     
     pc = new RTCPeerConnection(rtcConfig);
-    
-    pc.onicecandidate = e => {
-        if(e.candidate) {
-            db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON());
-        }
-    };
-
-    pc.ontrack = e => {
-        document.getElementById("remoteAudio").srcObject = e.streams[0];
-        document.getElementById("cStatus").innerText = "CONNECTED";
-    };
+    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON()); };
+    pc.ontrack = e => { document.getElementById("remoteAudio").srcObject = e.streams[0]; document.getElementById("cStatus").innerText = "CONNECTED"; };
 
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-
-    await db.collection("calls").doc(activeTarget).delete(); 
     await db.collection("calls").doc(activeTarget).set({ offer, from: me });
 
     db.collection("calls").doc(activeTarget).onSnapshot(async snap => {
         const d = snap.data();
-        if(d?.answer && !pc.currentRemoteDescription) {
-            await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
-        }
+        if(d?.answer && !pc.currentRemoteDescription) await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
     });
-
     db.collection("calls").doc(activeTarget).collection("receiverCandidates").onSnapshot(s => {
         s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
     });
@@ -388,42 +387,25 @@ async function answerCall() {
     document.getElementById("ring").pause();
     document.getElementById("acceptBtn").style.display = "none";
     document.getElementById("muteBtn").style.display = "block";
-    document.getElementById("cStatus").innerText = "ESTABLISHING...";
-
     pc = new RTCPeerConnection(rtcConfig);
-    
-    pc.onicecandidate = e => {
-        if(e.candidate) {
-            db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON());
-        }
-    };
-
-    pc.ontrack = e => {
-        document.getElementById("remoteAudio").srcObject = e.streams[0];
-        document.getElementById("cStatus").innerText = "CONNECTED";
-    };
-
+    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON()); };
+    pc.ontrack = e => { document.getElementById("remoteAudio").srcObject = e.streams[0]; document.getElementById("cStatus").innerText = "CONNECTED"; };
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-
     await pc.setRemoteDescription(new RTCSessionDescription(window.incoming.offer));
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
-    
     await db.collection("calls").doc(me).update({ answer });
-
     db.collection("calls").doc(me).collection("callerCandidates").onSnapshot(s => {
         s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
     });
 }
 
 function toggleMute() {
-    if (!localStream) return;
     isMuted = !isMuted;
     localStream.getAudioTracks()[0].enabled = !isMuted;
-    const btn = document.getElementById("muteBtn");
-    btn.innerText = isMuted ? "🚫" : "🎙️";
-    btn.style.background = isMuted ? "var(--secondary)" : "rgba(255,255,255,0.1)";
+    document.getElementById("muteBtn").innerText = isMuted ? "🚫" : "🎙️";
+    document.getElementById("muteBtn").style.background = isMuted ? "var(--secondary)" : "rgba(255,255,255,0.1)";
 }
 
 function hangup() {
@@ -432,11 +414,22 @@ function hangup() {
     db.collection("calls").doc(me).delete();
     if(activeTarget) db.collection("calls").doc(activeTarget).delete();
     document.getElementById("callUI").style.display = "none";
+    document.getElementById("callUI").classList.remove("minimized");
+    document.getElementById("minBtn").innerText = "MINIMIZE";
     document.getElementById("ring").pause();
-    document.getElementById("cStatus").innerText = "ESTABLISHING QUANTUM LINK...";
     isMuted = false;
-    document.getElementById("muteBtn").innerText = "🎙️";
-    document.getElementById("muteBtn").style.background = "rgba(255,255,255,0.1)";
+}
+
+function toggleCallView() {
+    const ui = document.getElementById("callUI");
+    const btn = document.getElementById("minBtn");
+    if(ui.classList.contains("minimized")) {
+        ui.classList.remove("minimized");
+        btn.innerText = "MINIMIZE";
+    } else {
+        ui.classList.add("minimized");
+        btn.innerText = "MAXIMIZE";
+    }
 }
 
 let rec; let chunks = [];
