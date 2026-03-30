@@ -326,7 +326,6 @@ body.light .footer input:focus{background:#ccc; box-shadow:0 0 8px #00aaff;}
   padding:10px 20px;
   border:none;
   border-radius:15px;
-  background:#ff5252;
   cursor:pointer;
 }
 </style>
@@ -374,8 +373,14 @@ body.light .footer input:focus{background:#ccc; box-shadow:0 0 8px #00aaff;}
 <!-- Call Box -->
 <div id="callBox">
   <div id="callStatus">در انتظار تماس...</div>
-  <button id="endCallBtn" onclick="endCall()">قطع تماس</button>
+  <div id="callActions" style="margin-top:10px; display:none;">
+    <button onclick="acceptCall()" style="background:#4caf50;">✅ قبول</button>
+    <button onclick="rejectCall()" style="background:#f44336;">❌ رد</button>
+  </div>
+  <button id="endCallBtn" onclick="endCall()" style="display:none;">قطع تماس</button>
 </div>
+
+<audio id="ringTone" src="https://actions.google.com/sounds/v1/alarms/phone_alerts_and_ringtones.ogg" loop></audio>
 
 <script>
 // ==================== Firebase ====================
@@ -395,6 +400,7 @@ let me="", activeUser="", recorder=null, recChunks=[], recInterval=null, recSeco
 let typingTimeout;
 let localStream=null, remoteStream=null, peerConnection=null;
 const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+const ringTone = document.getElementById("ringTone");
 
 // ==================== Theme ====================
 function toggleTheme(){
@@ -487,54 +493,48 @@ function sendMessage(){
     from: me,
     to: activeUser,
     text: text,
-    time: firebase.firestore.FieldValue.serverTimestamp(),
-    seen: false
+    time: Date.now()
   });
   document.getElementById("msgInput").value="";
 }
 
 // ==================== Logout ====================
 function logout(){
-  db.collection("users").doc(me).update({online:false});
+  if(me) db.collection("users").doc(me).update({online:false});
   localStorage.removeItem("allo_user");
   location.reload();
 }
 
-// ==================== Recording ====================
+// ==================== Voice Recording ====================
 async function toggleRecording(){
-  if(recorder && recorder.state=="recording"){
-    recorder.stop(); clearInterval(recInterval); recSeconds=0;
-    document.getElementById("recordBtn").classList.remove("recording");
-  }else{
+  if(recorder){
+    recorder.stop();
+  } else {
     let stream = await navigator.mediaDevices.getUserMedia({audio:true});
     recorder = new MediaRecorder(stream);
-    recorder.start();
-    recChunks=[]; recSeconds=0;
-    document.getElementById("recordBtn").classList.add("recording");
-    recInterval=setInterval(()=>{ recSeconds++; let m=Math.floor(recSeconds/60); let s=recSeconds%60; document.getElementById("recTimer").innerText=`${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; },1000);
-    recorder.ondataavailable=e=>{ recChunks.push(e.data); }
+    recChunks=[];
+    recorder.ondataavailable=e=>recChunks.push(e.data);
     recorder.onstop=()=>{
-      let blob=new Blob(recChunks,{type:'audio/webm'});
-      let url=URL.createObjectURL(blob);
-      if(activeUser){
-        db.collection("messages").add({
-          from: me,
-          to: activeUser,
-          audio: url,
-          time: firebase.firestore.FieldValue.serverTimestamp(),
-          seen:false
-        });
-      }
-    }
+      let blob = new Blob(recChunks,{type:"audio/webm"});
+      let url = URL.createObjectURL(blob);
+      db.collection("messages").add({from:me,to:activeUser,audio:url,time:Date.now()});
+      recorder=null; recChunks=[];
+      clearInterval(recInterval); recInterval=null; recSeconds=0; document.getElementById("recTimer").innerText="00:00";
+    };
+    recorder.start();
+    recInterval = setInterval(()=>{
+      recSeconds++;
+      let min = Math.floor(recSeconds/60).toString().padStart(2,"0");
+      let sec = (recSeconds%60).toString().padStart(2,"0");
+      document.getElementById("recTimer").innerText = min+":"+sec;
+    },1000);
   }
 }
 
-// ==================== WebRTC Call ====================
+// ==================== WebRTC Call (همانطور که در پیام قبل) ====================
 async function startCall(){
   if(!activeUser) return alert("ابتدا کاربر را انتخاب کنید");
-  document.getElementById("callBox").style.display="block";
-  const callStatus = document.getElementById("callStatus");
-  callStatus.innerText = "در حال تماس با " + activeUser;
+  showCallBox("در حال تماس با " + activeUser, false);
 
   localStream = await navigator.mediaDevices.getUserMedia({audio:true});
   remoteStream = new MediaStream();
@@ -542,34 +542,32 @@ async function startCall(){
 
   peerConnection = new RTCPeerConnection(config);
   localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
   peerConnection.ontrack = e => { e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t)); };
   peerConnection.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(activeUser).set({from:me,candidate:e.candidate},{merge:true}); };
 
   const offer = await peerConnection.createOffer();
   await peerConnection.setLocalDescription(offer);
-  await db.collection("calls").doc(activeUser).set({from:me, offer:offer},{merge:true});
+  await db.collection("calls").doc(activeUser).set({from:me, offer:offer, to:activeUser},{merge:true});
 
   db.collection("calls").doc(me).onSnapshot(async snap=>{
     if(!snap.exists) return;
     const data = snap.data();
     if(data.answer && !peerConnection.currentRemoteDescription){
       await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-      callStatus.innerText = "تماس برقرار شد ✅";
+      showCallBox("تماس برقرار شد ✅", true);
     }
     if(data.candidate){ try{ await peerConnection.addIceCandidate(data.candidate); }catch(e){console.log(e);} }
   });
 }
 
 db.collection("calls").where("to", "==", me)
-.onSnapshot(async snapshot=>{
+.onSnapshot(snapshot=>{
   snapshot.docChanges().forEach(async change=>{
     if(change.type==="added"){
       const call = change.doc.data();
       if(call.offer && !peerConnection){
-        document.getElementById("callBox").style.display="block";
-        const callStatus = document.getElementById("callStatus");
-        callStatus.innerText = "تماس ورودی از " + call.from;
+        showCallBox("تماس ورودی از " + call.from, false, true);
+        ringTone.play();
 
         localStream = await navigator.mediaDevices.getUserMedia({audio:true});
         remoteStream = new MediaStream();
@@ -581,27 +579,78 @@ db.collection("calls").where("to", "==", me)
         peerConnection.onicecandidate = e=>{
           if(e.candidate) db.collection("calls").doc(call.from).set({candidate:e.candidate},{merge:true});
         };
-
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        await db.collection("calls").doc(call.from).set({answer:answer},{merge:true});
-
-        callStatus.innerText = "تماس برقرار شد ✅";
+        peerConnection.pendingCall = call;
       }
     }
   });
 });
 
+async function acceptCall(){
+  const call = peerConnection.pendingCall;
+  if(!call) return;
+
+  await peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
+  const answer = await peerConnection.createAnswer();
+  await peerConnection.setLocalDescription(answer);
+  await db.collection("calls").doc(call.from).set({answer:answer},{merge:true});
+
+  showCallBox("تماس برقرار شد ✅", true);
+  ringTone.pause();
+}
+
+function rejectCall(){
+  if(peerConnection && peerConnection.pendingCall){
+    db.collection("calls").doc(peerConnection.pendingCall.from).delete().catch(()=>{});
+    peerConnection.close(); peerConnection=null;
+  }
+  ringTone.pause();
+  hideCallBox();
+}
+
 async function endCall(){
   if(peerConnection) peerConnection.close(); peerConnection=null;
   if(localStream) localStream.getTracks().forEach(t=>t.stop()); localStream=null;
-  document.getElementById("callBox").style.display="none";
+  ringTone.pause();
+  hideCallBox();
   if(activeUser){
     await db.collection("calls").doc(activeUser).delete().catch(()=>{});
     await db.collection("calls").doc(me).delete().catch(()=>{});
   }
 }
+
+function showCallBox(text, inCall=false, incoming=false){
+  const box = document.getElementById("callBox");
+  const status = document.getElementById("callStatus");
+  const actions = document.getElementById("callActions");
+  const endBtn = document.getElementById("endCallBtn");
+  status.innerText = text;
+  box.style.display = "block";
+  if(incoming){
+    actions.style.display="block"; 
+    endBtn.style.display="none";
+  } else if(inCall){
+    actions.style.display="none"; 
+    endBtn.style.display="block";
+  } else {
+    actions.style.display="none"; 
+    endBtn.style.display="none";
+  }
+}
+
+function hideCallBox(){
+  const box = document.getElementById("callBox");
+  box.style.display="none";
+  document.getElementById("callActions").style.display="none";
+  document.getElementById("endCallBtn").style.display="none";
+}
+
+// ==================== Init ====================
+window.onload = ()=>{
+  const theme = localStorage.getItem("allo_theme");
+  if(theme) document.body.className=theme;
+  const storedUser = localStorage.getItem("allo_user");
+  if(storedUser) { me=storedUser; startApp(); document.getElementById("userID").innerText="کد شما: "+me; }
+};
 </script>
 </body>
 </html>
