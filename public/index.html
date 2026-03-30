@@ -2,13 +2,12 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>ALLO</title> <!-- تغییر عنوان تب -->
+<title>ALLO</title> 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/wavesurfer.js"></script>
 
 <style>
-/* ==== Reset & Base ==== */
 body{
   margin:0;
   font-family:'Vazirmatn',sans-serif;
@@ -26,8 +25,6 @@ body.dark{
   background:linear-gradient(135deg,#0f0f0f,#1a1a1a);
   color:white;
 }
-
-/* ==== App Container ==== */
 .app{
   width:980px;
   height:720px;
@@ -45,8 +42,6 @@ body.dark .app{
   background:rgba(20,20,20,0.9);
   box-shadow:0 0 60px rgba(0,255,118,0.4);
 }
-
-/* ==== Login ==== */
 #loginBox{
   flex:1;
   display:flex;
@@ -84,8 +79,6 @@ body.light #loginBox input:focus{background:#ccc;}
   transform:scale(1.08);
   box-shadow:0 8px 25px rgba(0,255,118,0.6);
 }
-
-/* ==== Chat ==== */
 #chatBox{display:none; flex:1; flex-direction:row; transition:0.5s;}
 #onlineList{
   width:220px;
@@ -126,8 +119,6 @@ body.dark #onlineList{
   box-shadow:0 5px 18px rgba(0,255,118,0.5);
 }
 body.light .user:hover{box-shadow:0 5px 18px rgba(0,170,255,0.5);}
-
-/* ==== Chat Area ==== */
 #chatArea{
   flex:1;
   display:flex;
@@ -173,8 +164,6 @@ body.dark #chatArea{background:rgba(10,10,10,0.9);}
   display:block;
   margin-top:5px;
 }
-
-/* ==== Footer ==== */
 .footer{
   display:flex;
   gap:10px;
@@ -210,8 +199,6 @@ body.light .footer input:focus{background:#ccc;}
   transform:scale(1.2);
   box-shadow:0 6px 20px rgba(0,255,118,0.6);
 }
-
-/* ==== Waveform ==== */
 .waveform-container{
   width:100%;
   height:50px;
@@ -221,15 +208,11 @@ body.light .footer input:focus{background:#ccc;}
   box-shadow:0 0 10px rgba(0,255,118,0.4);
   cursor:pointer;
 }
-
-/* ==== Image ==== */
 img{
   max-width:220px;
   border-radius:15px;
   margin-top:5px;
 }
-
-/* ==== Typing animation ==== */
 .typing{
   font-size:13px;
   font-weight:bold;
@@ -242,8 +225,6 @@ img{
   0%,100%{opacity:1;}
   50%{opacity:0.3;}
 }
-
-/* ==== Theme toggle button ==== */
 #themeToggle{
   margin:10px;
   padding:10px 15px;
@@ -259,8 +240,6 @@ img{
   transform:scale(1.1);
   box-shadow:0 6px 20px rgba(0,255,118,0.5);
 }
-
-/* ==== Voice Recorder UI ==== */
 #voiceControls{
   display:flex;
   align-items:center;
@@ -290,8 +269,6 @@ img{
   font-weight:bold;
   color:#ff5252;
 }
-
-/* ==== Added User ID Display ==== */
 #userID{
   font-size:12px;
   color:#00ff80;
@@ -303,10 +280,9 @@ img{
 <body class="dark">
 
 <div class="app">
-
 <!-- Login -->
 <div id="loginBox">
-  <div style="font-size:38px;font-weight:bold;color:#00ff80;text-shadow:0 0 20px #00ff80;">ALLO 🚀</div>
+  <div style="font-size:38px;font-weight:bold;color:#00ff80;text-shadow:0 0 20px #00ff80;">ALLO</div>
   <input id="usernameInput" placeholder="نام کاربری">
   <input id="passwordInput" type="password" placeholder="رمز عبور">
   <button onclick="registerUser()">ثبت نام</button>
@@ -321,7 +297,7 @@ img{
     <div id="users"></div>
   </div>
   <div id="chatArea">
-    <div id="userID"></div> <!-- نمایش کد کاربر -->
+    <div id="userID"></div>
     <div id="messages"></div>
     <div class="typing" id="typingInfo"></div>
     <div class="footer">
@@ -411,25 +387,49 @@ function loadUsers(){
 // Messages
 function loadMessages(){
   db.collection("messages").orderBy("time").onSnapshot(snap=>{
-    const msgDiv=document.getElementById("messages"); msgDiv.innerHTML="";
+    const msgDiv = document.getElementById("messages");
+    msgDiv.innerHTML = "";
     snap.forEach(doc=>{
-      let m=doc.data();
-      if(!((m.from===me&&m.to===activeUser)||(m.from===activeUser&&m.to===me))) return;
-      let div=document.createElement("div");
-      div.className="msg "+(m.from===me?"me":"other");
-      if(m.text) div.innerText=m.text;
-      if(m.image){let img=document.createElement("img"); img.src=m.image; div.appendChild(img);}
+      let m = doc.data();
+      if(!((m.from===me && m.to===activeUser) || (m.from===activeUser && m.to===me))) return;
+
+      let div = document.createElement("div");
+      div.className = "msg " + (m.from===me ? "me" : "other");
+
+      if(m.text) div.innerText = m.text;
+      if(m.image){
+        let img = document.createElement("img");
+        img.src = m.image;
+        div.appendChild(img);
+      }
+
       if(m.audio){
-        let container=document.createElement("div"); container.className='waveform-container';
-        let ws=WaveSurfer.create({container:container,waveColor:'#00e676',progressColor:'#fff',cursorColor:'#fff',barWidth:2,height:50,responsive:true});
-        ws.load(m.audio);
-        container.onclick=()=>ws.isPlaying()?ws.pause():ws.play();
+        let container = document.createElement("div");
+        container.className = 'waveform-container';
+        let ws = WaveSurfer.create({
+          container: container,
+          waveColor: '#00e676',
+          progressColor: '#fff',
+          cursorColor: '#fff',
+          barWidth: 2,
+          height: 50,
+          responsive: true
+        });
+
+        if(m.audio.startsWith("blob:")){
+          fetch(m.audio).then(r => r.blob()).then(blob => ws.loadBlob(blob));
+        } else {
+          ws.load(m.audio);
+        }
+
+        container.onclick = ()=> ws.isPlaying() ? ws.pause() : ws.play();
         div.appendChild(container);
       }
-      if(m.seen && m.from===me) div.innerHTML+='<small>✔✔ Seen</small>';
+
+      if(m.seen && m.from===me) div.innerHTML += '<small>✔✔ Seen</small>';
       msgDiv.appendChild(div);
     });
-    msgDiv.scrollTop=99999;
+    msgDiv.scrollTop = 99999;
   });
 }
 
@@ -453,6 +453,7 @@ document.getElementById("imgInput").addEventListener("change",function(e){
 async function toggleRecording(){
   const btn=document.getElementById("recordBtn");
   const timer=document.getElementById("recTimer");
+
   if(recorder && recorder.state==="recording"){
     recorder.stop();
     clearInterval(recInterval);
@@ -460,16 +461,23 @@ async function toggleRecording(){
     recSeconds=0; timer.innerText="00:00";
     return;
   }
+
   const stream=await navigator.mediaDevices.getUserMedia({audio:true});
   recorder=new MediaRecorder(stream); recChunks=[];
+
   recorder.ondataavailable=e=>recChunks.push(e.data);
+
   recorder.onstop=()=>{
     const blob=new Blob(recChunks,{type:'audio/webm'});
-    const url=URL.createObjectURL(blob);
-    if(activeUser) db.collection("messages").add({from:me,to:activeUser,audio:url,time:Date.now()});
+    if(activeUser){
+      const blobUrl=URL.createObjectURL(blob);
+      db.collection("messages").add({from:me,to:activeUser,audio:blobUrl,time:Date.now()});
+    }
   };
+
   recorder.start();
   btn.classList.add("recording");
+
   recInterval=setInterval(()=>{
     recSeconds++;
     let m=Math.floor(recSeconds/60).toString().padStart(2,'0');
