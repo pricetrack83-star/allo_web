@@ -144,6 +144,7 @@ body.light .user:hover{background:linear-gradient(135deg,#00aaff,#00d4ff); color
   padding:10px;
   transition:0.5s;
   background:rgba(10,10,10,0.9);
+  position:relative;
 }
 body.light #chatArea{background:rgba(255,255,255,0.95);}
 #userID{
@@ -304,6 +305,30 @@ body.light .footer input:focus{background:#ccc; box-shadow:0 0 8px #00aaff;}
   transform:scale(1.1);
   box-shadow:0 6px 20px rgba(0,255,118,0.5);
 }
+
+/* ==================== CALL BOX ==================== */
+#callBox{
+  display:none;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:rgba(0,0,0,0.9);
+  padding:20px;
+  border-radius:20px;
+  color:white;
+  z-index:999;
+  width:300px;
+  text-align:center;
+}
+#callBox button{
+  margin-top:15px;
+  padding:10px 20px;
+  border:none;
+  border-radius:15px;
+  background:#ff5252;
+  cursor:pointer;
+}
 </style>
 </head>
 <body class="dark">
@@ -339,10 +364,17 @@ body.light .footer input:focus{background:#ccc; box-shadow:0 0 8px #00aaff;}
         <button id="recordBtn" onclick="toggleRecording()">🎤</button>
         <span id="recTimer">00:00</span>
       </div>
+      <button onclick="startCall()">📞 تماس صوتی</button>
       <button onclick="toggleTheme()">🌗</button>
     </div>
     <button onclick="logout()" style="margin:10px;background:#ff5252;border-radius:25px;padding:10px;font-weight:bold;cursor:pointer;">خروج</button>
   </div>
+</div>
+
+<!-- Call Box -->
+<div id="callBox">
+  <div id="callStatus">در انتظار تماس...</div>
+  <button id="endCallBtn" onclick="endCall()">قطع تماس</button>
 </div>
 
 <script>
@@ -361,6 +393,8 @@ const db = firebase.firestore();
 // ==================== Global ====================
 let me="", activeUser="", recorder=null, recChunks=[], recInterval=null, recSeconds=0;
 let typingTimeout;
+let localStream=null, remoteStream=null, peerConnection=null;
+const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
 // ==================== Theme ====================
 function toggleTheme(){
@@ -471,80 +505,33 @@ function loadMessages(){
         container.addEventListener('click', ()=> ws.isPlaying() ? ws.pause() : ws.play());
       }
 
-      if(m.seen && m.from===me) div.innerHTML += '<small>✔✔ Seen</small>';
+      if(m.seen && m.from===me) div.innerHTML += '<small>✔</small>';
       msgDiv.appendChild(div);
     });
-    msgDiv.scrollTop = 99999;
+    msgDiv.scrollTop = msgDiv.scrollHeight;
   });
 }
 
-// ==================== Send message ====================
+// ==================== Send Message ====================
 function sendMessage(){
-  let text=document.getElementById("msgInput").value.trim();
-  if(!text||!activeUser) return;
-  db.collection("messages").add({from:me,to:activeUser,text,time:Date.now()});
+  let text = document.getElementById("msgInput").value.trim();
+  if(!text || !activeUser) return;
+  db.collection("messages").add({
+    from: me,
+    to: activeUser,
+    text: text,
+    time: firebase.firestore.FieldValue.serverTimestamp(),
+    seen: false
+  });
   document.getElementById("msgInput").value="";
-}
-
-// ==================== Send image ====================
-document.getElementById("imgInput").addEventListener("change",function(e){
-  const file=e.target.files[0];
-  if(!file||!activeUser) return;
-  const url=URL.createObjectURL(file);
-  db.collection("messages").add({from:me,to:activeUser,image:url,time:Date.now()});
-});
-
-// ==================== Voice Recorder ====================
-async function toggleRecording(){
-  const btn=document.getElementById("recordBtn");
-  const timer=document.getElementById("recTimer");
-
-  if(recorder && recorder.state==="recording"){
-    recorder.stop();
-    clearInterval(recInterval);
-    btn.classList.remove("recording");
-    recSeconds=0; timer.innerText="00:00";
-    return;
-  }
-
-  const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-  recorder=new MediaRecorder(stream); recChunks=[];
-
-  recorder.ondataavailable=e=>recChunks.push(e.data);
-
-  recorder.onstop=()=>{
-    const blob=new Blob(recChunks,{type:'audio/webm'});
-    if(activeUser){
-      const blobUrl=URL.createObjectURL(blob);
-      db.collection("messages").add({from:me,to:activeUser,audio:blobUrl,time:Date.now()});
-    }
-  };
-
-  recorder.start();
-  btn.classList.add("recording");
-
-  recInterval=setInterval(()=>{
-    recSeconds++;
-    let m=Math.floor(recSeconds/60).toString().padStart(2,'0');
-    let s=(recSeconds%60).toString().padStart(2,'0');
-    timer.innerText=`${m}:${s}`;
-  },1000);
 }
 
 // ==================== Logout ====================
 function logout(){
-  if(me) db.collection("users").doc(me).update({online:false});
+  db.collection("users").doc(me).update({online:false});
   localStorage.removeItem("allo_user");
   location.reload();
 }
-
-// ==================== Auto login ====================
-window.onload=()=>{
-  let t=localStorage.getItem("allo_theme");
-  if(t) document.body.className=t;
-  let u=localStorage.getItem("allo_user");
-  if(u){ me=u; document.getElementById("userID").innerText="کد شما: "+me; startApp(); }
-};
 </script>
 </body>
 </html>
