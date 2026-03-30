@@ -14,8 +14,8 @@
 <style>
 body{
   margin:0;
-  font-family:sans-serif;
-  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  font-family:'Segoe UI',sans-serif;
+  background:linear-gradient(135deg,#141e30,#243b55);
   height:100vh;
   display:flex;
   justify-content:center;
@@ -25,57 +25,75 @@ body{
 
 .container{
   width:380px;
-  height:620px;
-  background:#111;
-  border-radius:25px;
+  height:640px;
+  border-radius:30px;
+  backdrop-filter:blur(20px);
+  background:rgba(255,255,255,0.05);
+  box-shadow:0 20px 60px rgba(0,0,0,0.6);
   display:flex;
   flex-direction:column;
   overflow:hidden;
 }
 
 .header{
-  background:#00e676;
-  padding:10px;
+  padding:15px;
   text-align:center;
-  color:black;
   font-weight:bold;
+  font-size:18px;
+  background:linear-gradient(90deg,#00e676,#00c853);
+  color:black;
 }
 
 #login,#chat{
   flex:1;
   display:flex;
   flex-direction:column;
-  padding:10px;
+  padding:15px;
 }
 
 #chat{display:none;}
 
-input,button{
-  padding:10px;
+input{
+  padding:12px;
   border:none;
-  border-radius:10px;
-  margin-top:5px;
+  border-radius:15px;
+  margin-top:10px;
+  background:rgba(255,255,255,0.1);
+  color:white;
+  outline:none;
 }
 
 button{
-  background:#00e676;
+  padding:12px;
+  border:none;
+  border-radius:15px;
+  margin-top:10px;
+  background:linear-gradient(90deg,#00e676,#00c853);
+  color:black;
+  font-weight:bold;
   cursor:pointer;
+  transition:0.2s;
 }
+
+button:hover{ transform:scale(1.05); }
 
 #users{
   display:flex;
-  overflow:auto;
-  gap:5px;
+  gap:8px;
+  overflow-x:auto;
 }
 
 .user{
-  background:#222;
-  padding:5px 10px;
-  border-radius:10px;
+  padding:6px 12px;
+  border-radius:20px;
+  background:rgba(255,255,255,0.1);
+  font-size:13px;
   cursor:pointer;
 }
 
-.online{background:#00e676;color:black;}
+.online{
+  border:1px solid #00e676;
+}
 
 #messages{
   flex:1;
@@ -83,26 +101,38 @@ button{
 }
 
 .msg{
-  margin:5px;
-  padding:10px;
-  border-radius:15px;
+  margin:8px 0;
+  padding:12px;
+  border-radius:20px;
   max-width:75%;
 }
 
-.me{background:#00e676;color:black;align-self:flex-end;}
-.other{background:#333;}
+.me{
+  background:linear-gradient(135deg,#00e676,#00c853);
+  color:black;
+  align-self:flex-end;
+}
+
+.other{
+  background:rgba(255,255,255,0.1);
+}
 
 .wave{
   height:50px;
+  margin-top:5px;
 }
 
 .footer{
   display:flex;
   gap:5px;
 }
-.footer input{flex:1;}
 
-.voice-btn{background:#ff5252;}
+.footer input{ flex:1; }
+
+.voice-btn{
+  background:linear-gradient(135deg,#ff5252,#ff1744);
+  color:white;
+}
 </style>
 </head>
 
@@ -110,7 +140,7 @@ button{
 
 <div class="container">
 
-<div class="header">ALLOO PRO 🚀</div>
+<div class="header">ALLOO ✨</div>
 
 <div id="login">
   <input id="name" placeholder="اسمتو بنویس">
@@ -119,10 +149,8 @@ button{
 
 <div id="chat">
 
-  <!-- کاربران -->
   <div id="users"></div>
 
-  <!-- پیام -->
   <div id="messages"></div>
 
   <div class="footer">
@@ -141,7 +169,10 @@ button{
 const firebaseConfig = {
   apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
   authDomain: "alloo-web.firebaseapp.com",
-  projectId: "alloo-web"
+  projectId: "alloo-web",
+  storageBucket: "alloo-web.firebasestorage.app",
+  messagingSenderId: "132232824762",
+  appId: "1:132232824762:web:4e3c25557c072f0feabf83"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -152,10 +183,9 @@ let activeUser="";
 let mediaRecorder;
 let chunks=[];
 
-// login
 function login(){
   const name=document.getElementById("name").value.trim();
-  if(!name)return alert("اسم بزن");
+  if(!name)return alert("اسم بزن 😐");
 
   me=name;
   localStorage.setItem("allo_user",name);
@@ -168,7 +198,6 @@ function login(){
   start();
 }
 
-// start
 function start(){
   document.getElementById("login").style.display="none";
   document.getElementById("chat").style.display="flex";
@@ -177,7 +206,6 @@ function start(){
   loadMessages();
 }
 
-// users (online/offline)
 function loadUsers(){
   db.collection("users").onSnapshot(snap=>{
     const box=document.getElementById("users");
@@ -200,7 +228,6 @@ function loadUsers(){
   });
 }
 
-// messages (private)
 function loadMessages(){
   db.collection("messages").orderBy("time")
   .onSnapshot(snap=>{
@@ -210,7 +237,6 @@ function loadMessages(){
     snap.forEach(doc=>{
       const m=doc.data();
 
-      // فقط چت خصوصی
       if(!(m.from===me && m.to===activeUser) &&
          !(m.from===activeUser && m.to===me)) return;
 
@@ -222,15 +248,14 @@ function loadMessages(){
       }
 
       if(m.audio){
+        div.innerHTML=`<b>${m.from}</b>`;
         const wave=document.createElement("div");
         wave.className="wave";
-
-        div.innerHTML=`<b>${m.from}</b>`;
         div.appendChild(wave);
 
         const ws=WaveSurfer.create({
           container:wave,
-          waveColor:m.from===me?'#00e676':'#ff5252',
+          waveColor:'#00e676',
           progressColor:'#fff',
           height:50
         });
@@ -246,10 +271,9 @@ function loadMessages(){
   });
 }
 
-// send text
 function send(){
   const txt=document.getElementById("msg").value.trim();
-  if(!txt || !activeUser)return;
+  if(!txt || !activeUser) return alert("یه نفر انتخاب کن");
 
   db.collection("messages").add({
     from:me,
@@ -261,8 +285,9 @@ function send(){
   document.getElementById("msg").value="";
 }
 
-// 🎤 record
 async function record(){
+  if(!activeUser) return alert("اول یوزر انتخاب کن");
+
   if(!mediaRecorder){
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     mediaRecorder=new MediaRecorder(stream);
@@ -295,7 +320,6 @@ async function record(){
   }
 }
 
-// logout
 function logout(){
   db.collection("users").doc(me).update({
     online:false,
@@ -306,7 +330,6 @@ function logout(){
   location.reload();
 }
 
-// auto login
 window.onload=()=>{
   const user=localStorage.getItem("allo_user");
   if(user){
