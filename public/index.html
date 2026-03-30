@@ -5,46 +5,108 @@
 <title>ALLO</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://unpkg.com/wavesurfer.js"></script>
 <style>
+/* همان CSS قبلی بدون تغییر */
 *{box-sizing:border-box;margin:0;padding:0;}
-body{margin:0;font-family:'Vazirmatn',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;transition:0.5s;background:linear-gradient(135deg,#0f0f0f,#1a1a1a);color:white;}
+body{margin:0;font-family:'Vazirmatn',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;transition:0.5s;background:linear-gradient(135deg,#0f0f0f,#1a1a1a);color:white;overflow:hidden;}
 body.light{background:linear-gradient(135deg,#f5f5f5,#ddd);color:#111;}
+body.dark{background:linear-gradient(135deg,#0f0f0f,#1a1a1a);color:white;}
 
-.app{width:800px;height:600px;border-radius:20px;backdrop-filter:blur(20px);display:flex;flex-direction:column;overflow:hidden;transition:0.5s;box-shadow:0 0 50px rgba(0,255,118,0.5);}
-body.light .app{box-shadow:0 0 60px rgba(0,170,255,0.5);backdrop-filter:blur(25px);border:2px solid rgba(0,170,255,0.3);}
+.app{width:1000px;height:720px;border-radius:30px;backdrop-filter:blur(25px);display:flex;overflow:hidden;transition:0.5s;box-shadow:0 0 100px rgba(0,255,118,0.5);}
+body.light .app{box-shadow:0 0 120px rgba(0,170,255,0.5);backdrop-filter:blur(30px);border:2px solid rgba(0,170,255,0.3);}
 
-#loginBox,#chatBox{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:15px;}
-#loginBox input,#chatBox input{width:300px;padding:12px;border-radius:25px;border:none;background:#222;color:white;outline:none;transition:0.3s;}
-body.light #loginBox input, body.light #chatBox input{background:linear-gradient(145deg,#fff,#e0f7ff);color:#111;box-shadow:0 4px 15px rgba(0,170,255,0.3);border:1px solid rgba(0,170,255,0.2);}
-#loginBox button,#chatBox button{width:150px;padding:12px;border-radius:25px;border:none;background:linear-gradient(135deg,#00ff80,#00e676);color:black;cursor:pointer;font-weight:bold;transition:0.3s;}
-body.light #loginBox button,body.light #chatBox button{background:linear-gradient(135deg,#00cfff,#00aaff);color:white;box-shadow:0 6px 25px rgba(0,170,255,0.5);}
-#messages{flex:1;width:95%;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:10px;border-radius:10px;}
-.msg{padding:10px 16px;border-radius:25px;max-width:70%;word-break:break-word;}
-.msg.me{background:linear-gradient(135deg,#00ff80,#00e676);color:black;align-self:flex-end;}
-body.light .msg.me{background:linear-gradient(135deg,#00cfff,#00aaff);color:#111;}
-.msg.other{background:linear-gradient(135deg,#333,#111);color:white;align-self:flex-start;}
-body.light .msg.other{background:linear-gradient(135deg,#d0f0ff,#a0e0ff);color:#111;}
+#loginBox{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;transition:0.5s;}
+#loginBox input{width:280px;padding:16px;border-radius:35px;border:none;background:#222;color:white;outline:none;transition:0.3s;box-shadow:0 3px 15px rgba(0,255,118,0.2);}
+body.light #loginBox input{background:linear-gradient(145deg,#fff,#e0f7ff);color:#111;box-shadow:0 5px 25px rgba(0,170,255,0.3);border:1px solid rgba(0,170,255,0.2);}
+#loginBox button{width:180px;padding:16px;border-radius:35px;border:none;background:linear-gradient(135deg,#00ff80,#00e676);color:black;font-weight:bold;cursor:pointer;box-shadow:0 5px 25px rgba(0,255,118,0.5);transition:0.3s;}
+body.light #loginBox button{background:linear-gradient(135deg,#00cfff,#00aaff);color:white;box-shadow:0 8px 35px rgba(0,170,255,0.6);text-shadow:0 0 8px rgba(0,255,255,0.5);}
+#loginBox .title{font-size:50px;font-weight:bold;color:#00ff80;text-shadow:0 0 30px #00ff80;transition:0.5s;}
+
+#chatBox{display:none;flex:1;flex-direction:row;transition:0.5s;}
+#onlineList{width:240px;padding:20px;display:flex;flex-direction:column;border-radius:0 0 0 30px;transition:0.5s;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#00e676 #111;}
+#onlineList::-webkit-scrollbar{width:8px;}
+#onlineList::-webkit-scrollbar-thumb{background:#00e676;border-radius:4px;}
+body.light #onlineList{background:rgba(240,250,255,0.95);border-right:2px solid rgba(0,170,255,0.5);box-shadow:0 0 20px rgba(0,170,255,0.2);}
+.user{padding:12px;margin:6px 0;border-radius:25px;cursor:pointer;transition:0.3s;box-shadow:0 2px 15px rgba(0,255,118,0.2);}
+body.light .user{background:linear-gradient(135deg,#ccf7ff,#a0e5ff);color:#111;box-shadow:0 3px 15px rgba(0,170,255,0.3);}
+.user:hover{transform:scale(1.08);box-shadow:0 5px 20px rgba(0,255,118,0.5);}
+body.light .user:hover{transform:scale(1.1);box-shadow:0 8px 25px rgba(0,170,255,0.6);}
+
+#chatArea{flex:1;display:flex;flex-direction:column;margin-left:15px;border-radius:0 30px 30px 0;padding:15px;transition:0.5s;position:relative;}
+body.light #chatArea{background:rgba(255,255,255,0.95);box-shadow:0 0 50px rgba(0,170,255,0.3);border:2px solid rgba(0,170,255,0.2);}
+#messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:10px;scrollbar-width:thin;scrollbar-color:#00e676 #111;}
+#messages::-webkit-scrollbar{width:8px;}
+#messages::-webkit-scrollbar-thumb{background:#00e676;border-radius:4px;}
+.msg{padding:16px 22px;border-radius:30px;max-width:70%;position:relative;transition:0.3s;cursor:pointer;font-size:15px;word-break:break-word;box-shadow:0 3px 15px rgba(0,255,118,0.2);}
+.msg.me{background:linear-gradient(135deg,#00ff80,#00e676);color:black;align-self:flex-end;animation:slideInRight 0.5s;}
+body.light #messages .msg.me{background:linear-gradient(135deg,#00e0ff,#00aaff);color:#111;box-shadow:0 4px 20px rgba(0,170,255,0.4);}
+.msg.other{background:linear-gradient(135deg,#333,#111);color:white;align-self:flex-start;animation:slideInLeft 0.5s;}
+body.light #messages .msg.other{background:linear-gradient(135deg,#d0f0ff,#a0e0ff);color:#111;box-shadow:0 4px 20px rgba(0,170,255,0.3);}
+.msg small{font-size:11px;color:#ccc;display:block;margin-top:5px;}
+@keyframes slideInRight{0%{opacity:0;transform:translateX(50px);}100%{opacity:1;transform:translateX(0);}}
+@keyframes slideInLeft{0%{opacity:0;transform:translateX(-50px);}100%{opacity:1;transform:translateX(0);}}
+
+.footer{display:flex;gap:12px;padding:12px;border-top:2px solid currentColor;border-radius:0 0 30px 0;}
+.footer input{flex:1;padding:16px;border-radius:30px;border:none;background:#222;color:white;outline:none;transition:0.3s;box-shadow:0 2px 10px rgba(0,255,118,0.2);}
+body.light .footer input{background:linear-gradient(145deg,#fff,#e0f7ff);color:#111;box-shadow:0 4px 15px rgba(0,170,255,0.3);border:1px solid rgba(0,170,255,0.2);}
+.footer button{padding:16px;border-radius:50%;border:none;background:linear-gradient(135deg,#00ff80,#00e676);color:black;cursor:pointer;font-size:20px;transition:0.2s;box-shadow:0 3px 15px rgba(0,255,118,0.3);}
+body.light .footer button{background:linear-gradient(135deg,#00cfff,#00aaff);color:white;box-shadow:0 6px 25px rgba(0,170,255,0.5);text-shadow:0 0 5px rgba(0,255,255,0.5);}
+.footer button:hover{transform:scale(1.2);box-shadow:0 6px 25px rgba(0,255,118,0.6);}
+body.light .footer button:hover{transform:scale(1.2);box-shadow:0 8px 35px rgba(0,170,255,0.7);}
+
+.waveform-container{width:100%;height:55px;border-radius:20px;overflow:hidden;margin-top:5px;box-shadow:0 0 20px rgba(0,255,118,0.6);}
+body.light .waveform-container{box-shadow:0 0 25px rgba(0,170,255,0.4);border:1px solid rgba(0,170,255,0.2);}
+
+.typing{font-size:14px;font-weight:bold;color:#00ff80;margin-left:5px;font-style:italic;animation:blink 1s infinite;text-shadow:0 0 8px #00ff80;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+#themeToggle{margin:12px;padding:12px 18px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;background:linear-gradient(135deg,#00ff80,#00e676);box-shadow:0 3px 15px rgba(0,255,118,0.4);transition:0.3s;}
+#themeToggle:hover{transform:scale(1.12);box-shadow:0 6px 25px rgba(0,255,118,0.6);}
+
+#settingsModal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);color:white;padding:20px;border-radius:25px;display:none;flex-direction:column;gap:15px;z-index:999;box-shadow:0 0 50px #00ff80;}
+body.light #settingsModal{background:rgba(255,255,255,0.95);color:#111;box-shadow:0 0 50px #00aaff;}
+#settingsModal input{padding:10px;border-radius:20px;border:none;outline:none;}
+#settingsModal button{padding:10px;border-radius:20px;border:none;background:#00ff80;color:black;cursor:pointer;}
 </style>
 </head>
 <body class="dark">
 <div class="app">
 
 <div id="loginBox">
+  <div class="title">ALLO</div>
   <input id="usernameInput" placeholder="نام کاربری">
   <input id="passwordInput" type="password" placeholder="رمز عبور">
   <button onclick="registerUser()">ثبت نام</button>
   <button onclick="loginUser()">ورود</button>
-  <button onclick="toggleTheme()">تغییر تم 🌗</button>
+  <button id="themeToggle" onclick="toggleTheme()">تغییر تم 🌗</button>
 </div>
 
-<div id="chatBox" style="display:none;">
-  <input id="targetUser" placeholder="نام کاربری گیرنده">
-  <div id="messages"></div>
-  <div style="display:flex;gap:10px;width:95%;">
-    <input id="msgInput" placeholder="پیام...">
-    <button onclick="sendMessage()">💬 ارسال</button>
+<div id="chatBox">
+  <div id="onlineList">
+    <h3>آنلاین‌ها</h3>
+    <div id="users"></div>
   </div>
-  <button onclick="logout()" style="margin-top:10px;background:#ff5252;color:white;">خروج</button>
+  <div id="chatArea">
+    <input id="targetUser" placeholder="نام کاربری گیرنده" style="margin-bottom:10px;padding:12px;border-radius:20px;width:100%;outline:none;">
+    <div id="messages"></div>
+    <div class="typing" id="typingInfo"></div>
+    <div class="footer">
+      <input id="msgInput" placeholder="پیام...">
+      <button onclick="sendMessage()">💬</button>
+      <button onclick="sendVoice()">🎤</button>
+      <input type="file" id="imgInput" style="display:none;" accept="image/*">
+      <button onclick="document.getElementById('imgInput').click()">📸</button>
+      <button onclick="openSettings()">⚙️</button>
+    </div>
+    <button onclick="logout()" style="margin:10px;background:#ff5252;border-radius:25px;padding:12px;font-weight:bold;cursor:pointer;">خروج</button>
+  </div>
+</div>
+
+<div id="settingsModal">
+  <h3>تنظیمات کاربر</h3>
+  <div>شناسه شما: <span id="userID"></span></div>
+  <button onclick="closeSettings()">بستن</button>
 </div>
 
 <script>
@@ -60,7 +122,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let me="";
+let me="", meID="", activeUser="", typingTimeout;
+
+// Generate unique ID
+function generateID(){ return 'user-'+Date.now()+'-'+Math.floor(Math.random()*1000); }
 
 // Theme
 function toggleTheme(){document.body.classList.toggle('light');document.body.classList.toggle('dark');}
@@ -72,8 +137,10 @@ function registerUser(){
   if(!u||!p) return alert("هر دو فیلد لازم است");
   db.collection("users").doc(u).get().then(doc=>{
     if(doc.exists) return alert("این کاربر قبلاً ساخته شده است");
-    db.collection("users").doc(u).set({password:p});
-    me=u; localStorage.setItem("allo_user",me); startApp();
+    meID = generateID();
+    db.collection("users").doc(u).set({password:p, online:true, id:meID});
+    me = u; localStorage.setItem("allo_user",me);
+    startApp();
   });
 }
 
@@ -84,59 +151,104 @@ function loginUser(){
   db.collection("users").doc(u).get().then(doc=>{
     if(!doc.exists) return alert("کاربر وجود ندارد");
     if(doc.data().password!==p) return alert("رمز اشتباه است");
-    me=u; localStorage.setItem("allo_user",me); startApp();
+    me = u; meID = doc.data().id;
+    localStorage.setItem("allo_user",me);
+    db.collection("users").doc(me).update({online:true});
+    startApp();
   });
 }
 
-// Keep login
+// Keep login after refresh
 window.onload = function(){
   let saved = localStorage.getItem("allo_user");
-  if(saved){ me = saved; startApp(); }
+  if(saved){ me = saved; db.collection("users").doc(me).get().then(doc=>{
+    if(doc.exists){ meID=doc.data().id; startApp(); }
+  });}
 }
 
-// Start Chat
+// Notifications
+if(Notification.permission!=="granted"){ Notification.requestPermission();}
+
+// Start App
 function startApp(){
   document.getElementById("loginBox").style.display="none";
   document.getElementById("chatBox").style.display="flex";
-  loadMessages();
+  document.getElementById("userID").innerText = meID;
+  loadUsers(); 
 }
 
-// Load messages
+// Load Users (نمایش آنلاین‌ها)
+function loadUsers(){
+  db.collection("users").onSnapshot(snap=>{
+    const usersDiv=document.getElementById("users"); usersDiv.innerHTML="";
+    snap.forEach(doc=>{
+      if(doc.id===me) return;
+      let div=document.createElement("div");
+      div.className="user";
+      div.innerText=doc.id + (doc.data().online?" ✅":" ❌");
+      usersDiv.appendChild(div);
+    });
+  });
+}
+
+// Messages
 function loadMessages(){
+  let targetInput = document.getElementById("targetUser").value.trim();
+  if(!targetInput) return;
+  activeUser = targetInput;
   db.collection("messages")
+    .where("users", "array-contains", me)
     .orderBy("timestamp")
     .onSnapshot(snap=>{
       const msgs=document.getElementById("messages");
       msgs.innerHTML="";
       snap.forEach(doc=>{
-        const data=doc.data();
-        if(data.from===me || data.to===me){
-          let div=document.createElement("div");
-          div.className="msg "+(data.from===me?"me":"other");
-          div.innerText=data.msg;
+        const data = doc.data();
+        if(data.users.includes(activeUser)){
+          let div=document.createElement("div"); div.className="msg "+(data.from===me?"me":"other");
+          if(data.type==="text") div.innerHTML=data.msg;
+          else if(data.type==="image") div.innerHTML=`<img src="${data.msg}">`;
+          else if(data.type==="voice"){
+            let wf=document.createElement("div"); wf.className="waveform-container"; div.appendChild(wf);
+            let wavesurfer = WaveSurfer.create({container:wf, waveColor:'#00ff80', progressColor:'#00e676', height:50});
+            wavesurfer.load(data.msg);
+          }
           msgs.appendChild(div);
         }
       });
-      msgs.scrollTop = msgs.scrollHeight;
+      msgs.scrollTop=msgs.scrollHeight;
     });
 }
 
-// Send message
+// Send Text
 function sendMessage(){
-  let input=document.getElementById("msgInput");
-  let target=document.getElementById("targetUser").value.trim();
-  if(!input.value||!target) return alert("پیام و نام کاربری گیرنده لازم است");
+  let input = document.getElementById("msgInput");
+  let targetInput = document.getElementById("targetUser").value.trim();
+  if(!input.value.trim()) return;
+  if(!targetInput){ alert("ابتدا نام کاربری گیرنده را وارد کنید"); return; }
+  activeUser = targetInput;
   db.collection("messages").add({
-    from: me, to: target, msg: input.value,
+    from: me, to: activeUser, msg: input.value, type:"text",
+    users:[me, activeUser],
     timestamp: firebase.firestore.FieldValue.serverTimestamp()
   });
   input.value="";
 }
 
-// Logout
-function logout(){ localStorage.removeItem("allo_user"); location.reload(); }
-</script>
+// Send Voice
+function sendVoice(){
+  alert("ویس هنوز آماده نشده"); 
+}
 
-</div>
+// Logout
+function logout(){
+  if(me) db.collection("users").doc(me).update({online:false});
+  localStorage.removeItem("allo_user"); location.reload();
+}
+
+// Settings
+function openSettings(){ document.getElementById("settingsModal").style.display="flex"; }
+function closeSettings(){ document.getElementById("settingsModal").style.display="none"; }
+</script>
 </body>
 </html>
