@@ -7,6 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/wavesurfer.js"></script>
 <style>
+/* ==== استایل‌ها مثل قبل ==== */
 *{box-sizing:border-box;margin:0;padding:0;}
 body{margin:0;font-family:'Vazirmatn',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;transition:0.5s;background:linear-gradient(135deg,#0f0f0f,#1a1a1a);color:white;overflow:hidden;}
 body.light{background:linear-gradient(135deg,#f5f5f5,#ddd);color:#111;}
@@ -121,7 +122,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let me="", meCode="", meID="", activeUser="", typingTimeout;
+let me="", meCode="", meID="", activeUser="";
+let messagesUnsub = null;
 
 // Generate short code & unique ID
 function generateCode(){ return 'ALLO-'+Math.floor(1000+Math.random()*9000); }
@@ -176,7 +178,7 @@ function startApp(){
   document.getElementById("chatBox").style.display="flex";
   document.getElementById("userCode").innerText = meCode;
   document.getElementById("userID").innerText = meID;
-  loadUsers(); 
+  loadUsers();
 }
 
 // Load Users
@@ -188,32 +190,40 @@ function loadUsers(){
       let div=document.createElement("div");
       div.className="user";
       div.innerText=doc.id+" ("+doc.data().code+")"+(doc.data().online?" ✅":" ❌");
-      div.onclick=()=>{ activeUser=doc.id; loadMessages(); };
+      div.onclick = ()=>selectUser(doc.id);
       usersDiv.appendChild(div);
     });
   });
 }
 
-// Messages
+// Select User & Load Messages
+function selectUser(username){
+  activeUser = username;
+  loadMessages();
+}
+
+// Load Messages for activeUser
 function loadMessages(){
   if(!activeUser) return;
-  const msgs=document.getElementById("messages");
-  msgs.innerHTML="";
-  db.collection("messages")
-    .where("users", "array-contains", me)
+
+  if(messagesUnsub) messagesUnsub();
+  const msgs=document.getElementById("messages"); msgs.innerHTML="";
+
+  messagesUnsub = db.collection("messages")
+    .where("users","array-contains",me)
     .orderBy("timestamp")
     .onSnapshot(snap=>{
       msgs.innerHTML="";
       snap.forEach(doc=>{
-        const data = doc.data();
+        const data=doc.data();
         if(data.users.includes(activeUser)){
-          let div=document.createElement("div"); 
+          let div=document.createElement("div");
           div.className="msg "+(data.from===me?"me":"other");
           if(data.type==="text") div.innerHTML=data.msg;
           else if(data.type==="image") div.innerHTML=`<img src="${data.msg}" style="max-width:250px;border-radius:15px;">`;
           else if(data.type==="voice"){
             let wf=document.createElement("div"); wf.className="waveform-container"; div.appendChild(wf);
-            let wavesurfer = WaveSurfer.create({container:wf, waveColor:'#00ff80', progressColor:'#00e676', height:50});
+            let wavesurfer = WaveSurfer.create({container:wf,waveColor:'#00ff80',progressColor:'#00e676',height:50});
             wavesurfer.load(data.msg);
           }
           msgs.appendChild(div);
@@ -223,37 +233,36 @@ function loadMessages(){
     });
 }
 
-// Send Text
+// Send Message
 function sendMessage(){
-  let input = document.getElementById("msgInput");
+  let input=document.getElementById("msgInput");
   if(!input.value.trim()) return;
-  if(!activeUser){ alert("ابتدا یک کاربر را از لیست انتخاب کنید"); return; }
+  if(!activeUser){ alert("ابتدا یک کاربر را انتخاب کنید"); return; }
   db.collection("messages").add({
-    from: me,
-    to: activeUser,
-    msg: input.value,
+    from:me,
+    to:activeUser,
+    msg:input.value,
     type:"text",
-    users:[me, activeUser],
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    users:[me,activeUser],
+    timestamp:firebase.firestore.FieldValue.serverTimestamp()
   });
   input.value="";
 }
 
-// Send Voice
-function sendVoice(){
-  alert("ویس هنوز آماده نشده");
-}
+// Send Voice Placeholder
+function sendVoice(){ alert("ویس هنوز آماده نشده"); }
 
 // Logout
 function logout(){
   if(me) db.collection("users").doc(me).update({online:false});
-  localStorage.removeItem("allo_user"); location.reload();
+  localStorage.removeItem("allo_user");
+  location.reload();
 }
 
 // Settings
 function openSettings(){ document.getElementById("settingsModal").style.display="flex"; }
 function closeSettings(){ document.getElementById("settingsModal").style.display="none"; }
-
 </script>
+</div>
 </body>
 </html>
