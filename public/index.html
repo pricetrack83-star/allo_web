@@ -224,7 +224,6 @@ body {
 <audio id="remoteAudio" autoplay></audio>
 
 <script>
-// --- فایربیس بدون تغییر ---
 const firebaseConfig = {
     apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
     authDomain: "alloo-web.firebaseapp.com",
@@ -239,7 +238,8 @@ const db = firebase.firestore();
 let me = localStorage.getItem("alloo_uid");
 let activeTarget = "";
 let authMode = 'login';
-let pc; let localStream;
+let pc; 
+let localStream;
 
 if(me) { document.getElementById("loginScreen").style.display = "none"; initApp(); }
 
@@ -253,10 +253,8 @@ async function handleAuth() {
     const id = document.getElementById("uID").value.trim().toLowerCase();
     const ps = document.getElementById("uPass").value.trim();
     if(!id || !ps) return;
-
     const userRef = db.collection("users").doc(id);
     const doc = await userRef.get();
-
     if(authMode === 'register') {
         if(doc.exists) return alert("آی‌دی رزرو شده است.");
         await userRef.set({ pass: ps, online: true, lastSeen: Date.now() });
@@ -271,8 +269,6 @@ async function handleAuth() {
 function initApp() {
     document.getElementById("myIDDisplay").innerText = "NODE: " + me.toUpperCase();
     db.collection("users").doc(me).update({ online: true, lastSeen: Date.now() });
-
-    // وضعیت آنلاین
     setInterval(() => db.collection("users").doc(me).update({ lastSeen: Date.now(), online: true }), 20000);
 
     db.collection("users").onSnapshot(snap => {
@@ -285,15 +281,11 @@ function initApp() {
             const item = document.createElement("div");
             item.className = `user-item ${activeTarget === doc.id ? 'active' : ''} ${isOnline ? 'is-online' : ''}`;
             item.innerHTML = `
-                <div class="avatar-hex">
-                    ${doc.id[0].toUpperCase()}
-                    <div class="online-glow"></div>
-                </div>
+                <div class="avatar-hex">${doc.id[0].toUpperCase()}<div class="online-glow"></div></div>
                 <div style="flex:1">
                     <div style="font-weight:900; font-size:16px;">${doc.id}</div>
                     <div style="font-size:10px; opacity:0.4;">${isOnline ? 'ENCRYPTED CHANNEL OPEN' : 'STATION OFFLINE'}</div>
-                </div>
-            `;
+                </div>`;
             item.onclick = () => { activeTarget = doc.id; selectUser(); };
             list.appendChild(item);
         });
@@ -332,7 +324,7 @@ function sendMsg() {
     i.value = "";
 }
 
-// --- تماس صوتی ثابت شده ---
+// --- اصلاح شده: سیستم تبادل سیگنال صوتی ---
 const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }] };
 
 async function startCall() {
@@ -342,19 +334,41 @@ async function startCall() {
     document.getElementById("acceptBtn").style.display = "none";
     
     pc = new RTCPeerConnection(rtcConfig);
+    
+    // کاندیدها را برای طرف مقابل بفرست
+    pc.onicecandidate = e => {
+        if(e.candidate) {
+            db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON());
+        }
+    };
+
+    // دریافت صدا از طرف مقابل
+    pc.ontrack = e => {
+        document.getElementById("remoteAudio").srcObject = e.streams[0];
+        document.getElementById("cStatus").innerText = "CONNECTED";
+    };
+
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
 
-    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON()); };
-    pc.ontrack = e => document.getElementById("remoteAudio").srcObject = e.streams[0];
-
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
+
+    // پاکسازی تماس قبلی و ایجاد تماس جدید
+    await db.collection("calls").doc(activeTarget).delete(); 
     await db.collection("calls").doc(activeTarget).set({ offer, from: me });
 
+    // گوش دادن به جواب طرف مقابل
     db.collection("calls").doc(activeTarget).onSnapshot(async snap => {
         const d = snap.data();
-        if(d?.answer && !pc.currentRemoteDescription) await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+        if(d?.answer && !pc.currentRemoteDescription) {
+            await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+        }
+    });
+
+    // گوش دادن به کاندیدهای طرف مقابل
+    db.collection("calls").doc(activeTarget).collection("receiverCandidates").onSnapshot(s => {
+        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
     });
 }
 
@@ -374,24 +388,60 @@ function listenForCalls() {
 async function answerCall() {
     document.getElementById("ring").pause();
     document.getElementById("acceptBtn").style.display = "none";
+    document.getElementById("cStatus").innerText = "ESTABLISHING...";
+
     pc = new RTCPeerConnection(rtcConfig);
+    
+    pc.onicecandidate = e => {
+        if(e.candidate) {
+            db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON());
+        }
+    };
+
+    pc.ontrack = e => {
+        document.getElementById("remoteAudio").srcObject = e.streams[0];
+        document.getElementById("cStatus").innerText = "CONNECTED";
+    };
+
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON()); };
-    pc.ontrack = e => document.getElementById("remoteAudio").srcObject = e.streams[0];
+
     await pc.setRemoteDescription(new RTCSessionDescription(window.incoming.offer));
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
+    
     await db.collection("calls").doc(me).update({ answer });
+
+    // گوش دادن به کاندیدهای تماس‌گیرنده
+    db.collection("calls").doc(me).collection("callerCandidates").onSnapshot(s => {
+        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
+    });
 }
 
 function hangup() {
     if(localStream) localStream.getTracks().forEach(t => t.stop());
-    if(pc) pc.close(); pc = null;
+    if(pc) { pc.close(); pc = null; }
     db.collection("calls").doc(me).delete();
     if(activeTarget) db.collection("calls").doc(activeTarget).delete();
     document.getElementById("callUI").style.display = "none";
     document.getElementById("ring").pause();
+    document.getElementById("cStatus").innerText = "ESTABLISHING QUANTUM LINK...";
+}
+
+let rec; let chunks = [];
+async function toggleVoice() {
+    const v = document.getElementById("vBtn");
+    if(!rec || rec.state === 'inactive') {
+        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+        rec = new MediaRecorder(s); chunks = [];
+        rec.ondataavailable = e => chunks.push(e.data);
+        rec.onstop = () => {
+            const b = new Blob(chunks, { type: 'audio/webm' });
+            const r = new FileReader(); r.readAsDataURL(b);
+            r.onloadend = () => db.collection("messages").add({ f: me, t: activeTarget, audio: r.result, time: Date.now() });
+        };
+        rec.start(); v.style.background = "var(--secondary)";
+    } else { rec.stop(); v.style.background = "none"; }
 }
 
 function logout() { db.collection("users").doc(me).update({ online: false }); localStorage.clear(); location.reload(); }
