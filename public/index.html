@@ -10,7 +10,7 @@
 <script src="https://unpkg.com/wavesurfer.js"></script>
 
 <style>
-/* تمام استایل‌های شما بدون تغییر */
+/* کدهای استایل قبلی شما بدون تغییر */
 body{
   margin:0;
   font-family:'Vazirmatn',sans-serif;
@@ -238,19 +238,48 @@ body.light .footer input{background:#eee; color:#111;}
   50%{box-shadow:0 0 20px #ff1744;}
   100%{box-shadow:0 0 5px #ff5252;}
 }
+
+/* ==================== استایل‌های جدید برای تماس ==================== */
 #callBox{
   display:none;
   position:absolute;
   top:50%; left:50%;
   transform:translate(-50%,-50%);
-  background:rgba(0,0,0,0.9);
-  padding:20px;
-  border-radius:20px;
+  background:rgba(20, 20, 20, 0.8);
+  backdrop-filter: blur(15px);
+  padding:30px;
+  border-radius:40px;
   color:white;
-  z-index:999;
-  width:300px;
+  z-index:1000;
+  width:320px;
   text-align:center;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5), border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid #00ff8033;
 }
+.calling-anim {
+  width: 80px; height: 80px;
+  background: #00ff80;
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px;
+  animation: callPulse 1.5s infinite;
+}
+@keyframes callPulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 255, 128, 0.7); }
+  70% { box-shadow: 0 0 0 20px rgba(0, 255, 128, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 255, 128, 0); }
+}
+.call-btn {
+  width: 55px; height: 55px;
+  border-radius: 50%; border: none;
+  cursor: pointer; transition: 0.3s;
+  font-size: 20px; margin: 10px 5px;
+}
+.mute-btn { background: #555; color: white; }
+.mute-btn.active { background: #ff9800; }
+.hangup-btn { background: #f44336; color: white; }
+.accept-btn { background: #4caf50; color: white; }
 </style>
 </head>
 <body class="dark">
@@ -294,12 +323,20 @@ body.light .footer input{background:#eee; color:#111;}
 </div>
 
 <div id="callBox">
-  <div id="callStatus">در انتظار تماس...</div>
-  <div id="callActions" style="margin-top:10px; display:none;">
-    <button onclick="acceptCall()" style="background:#4caf50;color:white;border:none;padding:10px;border-radius:10px;cursor:pointer;">✅ قبول</button>
-    <button onclick="rejectCall()" style="background:#f44336;color:white;border:none;padding:10px;border-radius:10px;cursor:pointer;margin-right:5px;">❌ رد</button>
+  <div class="calling-anim">📞</div>
+  <div id="callStatus" style="font-size:18px; font-weight:bold; margin-bottom:10px;">در انتظار...</div>
+  <div id="callerName" style="color:#00ff80; margin-bottom:20px;"></div>
+  
+  <div id="callActions">
+    <div id="incomingActions" style="display:none;">
+       <button class="call-btn accept-btn" onclick="acceptCall()">✅</button>
+       <button class="call-btn hangup-btn" onclick="rejectCall()">❌</button>
+    </div>
+    <div id="inCallActions" style="display:none;">
+       <button id="muteBtn" class="call-btn mute-btn" onclick="toggleMute()">🎤</button>
+       <button class="call-btn hangup-btn" onclick="endCall()">📞</button>
+    </div>
   </div>
-  <button id="hangupBtn" onclick="endCall()" style="display:none; background:#f44336; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; margin-top:10px;">📞 قطع تماس</button>
 </div>
 
 <audio id="ringTone" src="https://actions.google.com/sounds/v1/alarms/phone_alerts_and_ringtones.ogg" loop></audio>
@@ -318,7 +355,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let me="", activeUser="", recorder=null, recChunks=[], recInterval=null, recSeconds=0;
-let localStream=null, peerConnection=null, currentCallDocId = null;
+let localStream=null, peerConnection=null, currentCallDocId = null, isMuted = false;
 const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
 // --- پوسته و اجرا ---
@@ -411,7 +448,6 @@ function sendMessage(){
   }
 }
 
-// --- ضبط صدا ---
 async function toggleRecording(){
   if(recorder && recorder.state=="recording"){
     recorder.stop(); clearInterval(recInterval); recSeconds=0;
@@ -433,12 +469,22 @@ async function toggleRecording(){
   }
 }
 
-// ==================== تماس صوتی هوشمند (با قابلیت قطع تماس) ====================
+// ==================== بخش جدید تماس و میوت ====================
+
+function toggleMute() {
+  if (localStream) {
+    isMuted = !isMuted;
+    localStream.getAudioTracks()[0].enabled = !isMuted;
+    const btn = document.getElementById("muteBtn");
+    btn.innerText = isMuted ? "🔇" : "🎤";
+    btn.classList.toggle("active", isMuted);
+  }
+}
 
 async function startCall(){
   if(!activeUser) return alert("ابتدا یک کاربر را انتخاب کنید");
   
-  currentCallDocId = activeUser; // سندی که برای طرف مقابل ساخته می‌شود
+  currentCallDocId = activeUser;
   localStream = await navigator.mediaDevices.getUserMedia({audio:true});
   peerConnection = new RTCPeerConnection(config);
   localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
@@ -461,19 +507,18 @@ async function startCall(){
     status: "calling" 
   });
 
-  // نمایش پنل قطع تماس
   document.getElementById("callBox").style.display = "block";
   document.getElementById("callStatus").innerText = "در حال زنگ زدن...";
-  document.getElementById("hangupBtn").style.display = "inline-block";
-  document.getElementById("callActions").style.display = "none";
+  document.getElementById("callerName").innerText = activeUser;
+  document.getElementById("inCallActions").style.display = "block";
+  document.getElementById("incomingActions").style.display = "none";
 
-  // گوش دادن به پاسخ یا قطع تماس
   db.collection("calls").doc(currentCallDocId).onSnapshot(doc => {
     let data = doc.data();
-    if(!data) { cleanupCall(); return; } // اگر سند حذف شد یعنی طرف مقابل قطع کرده
+    if(!data) { cleanupCall(); return; }
     if(data.answer && !peerConnection.currentRemoteDescription) {
       peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-      document.getElementById("callStatus").innerText = "در حال مکالمه...";
+      document.getElementById("callStatus").innerText = "درحال مکالمه";
     }
   });
 }
@@ -487,9 +532,10 @@ function listenForCalls(){
       window.incomingCallData = data;
       currentCallDocId = me;
       document.getElementById("callBox").style.display="block";
-      document.getElementById("callStatus").innerText="تماس از طرف: " + data.from;
-      document.getElementById("callActions").style.display="block";
-      document.getElementById("hangupBtn").style.display = "none";
+      document.getElementById("callStatus").innerText="تماس ورودی";
+      document.getElementById("callerName").innerText = data.from;
+      document.getElementById("incomingActions").style.display="block";
+      document.getElementById("inCallActions").style.display = "none";
       document.getElementById("ringTone").play();
     }
   });
@@ -497,9 +543,9 @@ function listenForCalls(){
 
 async function acceptCall(){
   document.getElementById("ringTone").pause();
-  document.getElementById("callActions").style.display="none";
-  document.getElementById("hangupBtn").style.display = "inline-block";
-  document.getElementById("callStatus").innerText = "در حال اتصال...";
+  document.getElementById("incomingActions").style.display="none";
+  document.getElementById("inCallActions").style.display = "block";
+  document.getElementById("callStatus").innerText = "متصل شد";
 
   let data = window.incomingCallData;
   localStream = await navigator.mediaDevices.getUserMedia({audio:true});
@@ -531,7 +577,6 @@ async function acceptCall(){
   });
 }
 
-// تابع قطع تماس توسط کاربر
 async function endCall() {
   if(currentCallDocId) {
     await db.collection("calls").doc(currentCallDocId).delete();
@@ -539,7 +584,6 @@ async function endCall() {
   cleanupCall();
 }
 
-// تابع پاکسازی رابط کاربری و حافظه
 function cleanupCall() {
   if(localStream) {
     localStream.getTracks().forEach(track => track.stop());
@@ -552,9 +596,10 @@ function cleanupCall() {
   let aud = document.getElementById("remoteAudio");
   if(aud) aud.remove();
   
+  isMuted = false;
+  document.getElementById("muteBtn").innerText = "🎤";
   document.getElementById("ringTone").pause();
   document.getElementById("callBox").style.display = "none";
-  document.getElementById("hangupBtn").style.display = "none";
 }
 
 function rejectCall(){ 
