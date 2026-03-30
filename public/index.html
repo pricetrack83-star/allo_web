@@ -156,6 +156,29 @@ body {
     margin-bottom: 40px; box-shadow: 0 0 60px var(--primary-glow);
 }
 
+/* انیمیشن ضبط ویس */
+@keyframes recPulse {
+    0% { box-shadow: 0 0 0px var(--secondary); }
+    50% { box-shadow: 0 0 20px var(--secondary); }
+    100% { box-shadow: 0 0 0px var(--secondary); }
+}
+.is-recording {
+    animation: recPulse 1s infinite !important;
+    background: var(--secondary) !important;
+    color: white !important;
+}
+#recIndicator {
+    font-family: 'Orbitron';
+    font-size: 10px;
+    color: var(--secondary);
+    letter-spacing: 2px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    animation: blink 1s infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
 /* --- ریسپانسیو و جزئیات --- */
 @media (max-width: 900px) {
     .app-frame { width: 100vw; height: 100vh; border-radius: 0; border: none; }
@@ -227,10 +250,13 @@ body {
 
         <div id="messages"></div>
 
-        <div style="padding:25px 40px; display:flex; gap:15px; background:rgba(0,0,0,0.2); backdrop-filter:blur(20px);">
-            <input id="msgInput" placeholder="Secure transmission..." onkeypress="if(event.key=='Enter') sendMsg()">
-            <button id="vBtn" onclick="toggleVoice()" class="icon-btn" style="border:1px solid var(--secondary); color:var(--secondary); background:none;">🎤</button>
-            <button onclick="sendMsg()" class="icon-btn" style="background:var(--primary); color:#000;">✈</button>
+        <div style="padding:25px 40px; display:flex; flex-direction:column; gap:10px; background:rgba(0,0,0,0.2); backdrop-filter:blur(20px);">
+            <div id="recIndicator">🔴 RECORDING DATA...</div>
+            <div style="display:flex; gap:15px; width:100%;">
+                <input id="msgInput" placeholder="Secure transmission..." onkeypress="if(event.key=='Enter') sendMsg()">
+                <button id="vBtn" onclick="toggleVoice()" class="icon-btn" style="border:1px solid var(--secondary); color:var(--secondary); background:none;">🎤</button>
+                <button onclick="sendMsg()" class="icon-btn" style="background:var(--primary); color:#000;">✈</button>
+            </div>
         </div>
     </div>
 </div>
@@ -420,6 +446,17 @@ function toggleMute() {
 }
 
 function hangup() {
+    // ارسال پیام پایان تماس به چت
+    const target = activeTarget || (window.incoming ? window.incoming.from : null);
+    if(target && me) {
+        db.collection("messages").add({ 
+            f: me, 
+            t: target, 
+            txt: "📞 تماس پایان یافت", 
+            time: Date.now() 
+        });
+    }
+
     if(localStream) localStream.getTracks().forEach(t => t.stop());
     if(pc) { pc.close(); pc = null; }
     db.collection("calls").doc(me).delete();
@@ -446,6 +483,8 @@ function toggleCallView() {
 let rec; let chunks = [];
 async function toggleVoice() {
     const v = document.getElementById("vBtn");
+    const indicator = document.getElementById("recIndicator");
+
     if(!rec || rec.state === 'inactive') {
         const s = await navigator.mediaDevices.getUserMedia({ audio: true });
         rec = new MediaRecorder(s); chunks = [];
@@ -454,9 +493,15 @@ async function toggleVoice() {
             const b = new Blob(chunks, { type: 'audio/webm' });
             const r = new FileReader(); r.readAsDataURL(b);
             r.onloadend = () => db.collection("messages").add({ f: me, t: activeTarget, audio: r.result, time: Date.now() });
+            v.classList.remove("is-recording");
+            indicator.style.display = "none";
         };
-        rec.start(); v.style.background = "var(--secondary)";
-    } else { rec.stop(); v.style.background = "none"; }
+        rec.start(); 
+        v.classList.add("is-recording");
+        indicator.style.display = "flex";
+    } else { 
+        rec.stop(); 
+    }
 }
 
 function logout() { 
