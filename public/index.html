@@ -3,299 +3,134 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ALLOO - Pro Messenger</title> 
+<title>ALLO | Next-Gen Cyber Terminal</title> 
 
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;400;700;900&display=swap" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;300;500;800;900&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <style>
-/* --- متغیرها و تنظیمات اصلی --- */
 :root {
-    --primary-color: #00ff80;
-    --secondary-color: #ff4081;
-    --dark-bg: #0a0a0a;
-    --glass: rgba(255, 255, 255, 0.05);
-    --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --primary: #00ffcc;
+    --primary-glow: rgba(0, 255, 204, 0.4);
+    --secondary: #ff0055;
+    --accent: #bc13fe;
+    --dark-bg: #020202;
+    --glass: rgba(255, 255, 255, 0.03);
+    --border: rgba(255, 255, 255, 0.08);
 }
+
+* { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); }
 
 body { 
-    margin: 0; 
-    font-family: 'Vazirmatn', sans-serif; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    height: 100vh; 
-    transition: background 0.5s ease; 
-    overflow: hidden; 
+    font-family: 'Vazirmatn', sans-serif; background: var(--dark-bg); color: white;
+    height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: center;
 }
 
-body.dark { background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); color: white; }
-body.light { background: radial-gradient(circle at center, #f5f5f5 0%, #ccc 100%); color: #111; }
+/* --- پس‌زمینه --- */
+.bg-canvas { position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at 50% 50%, #0a0f1a 0%, #000 100%); }
+.particle { position: absolute; border-radius: 50%; background: var(--primary); filter: blur(80px); opacity: 0.1; animation: float 20s infinite alternate; }
+@keyframes float { from { transform: translate(0, 0) scale(1); } to { transform: translate(100px, 100px) scale(1.5); } }
 
-.app { 
-    width: 1100px; 
-    height: 800px; 
-    border-radius: 40px; 
-    backdrop-filter: blur(30px); 
-    display: flex; 
-    overflow: hidden; 
-    transition: var(--transition); 
-    box-shadow: 0 40px 100px rgba(0,0,0,0.6); 
-    position: relative; 
-    border: 1px solid rgba(255,255,255,0.1);
+/* --- لاگین --- */
+#loginScreen { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(25px); }
+.login-card { width: 420px; padding: 60px 40px; border-radius: 50px; background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01)); border: 1px solid var(--border); text-align: center; }
+.brand-title { font-family: 'Orbitron', sans-serif; font-size: 80px; color: var(--primary); margin-bottom: 30px; text-shadow: 0 0 30px var(--primary-glow); }
+.auth-mode-switch { display: flex; background: rgba(0,0,0,0.5); border-radius: 20px; margin-bottom: 25px; padding: 5px; border: 1px solid var(--border); }
+.mode-btn { flex: 1; padding: 12px; border-radius: 15px; cursor: pointer; color: #666; border: none; background: none; font-weight: 800; }
+.mode-btn.active { background: var(--primary); color: #000; }
+.input-container input { width: 100%; padding: 18px; border-radius: 15px; background: rgba(0,0,0,0.6); border: 1px solid var(--border); color: #fff; margin-bottom: 15px; text-align: center; outline: none; }
+.action-btn { width: 100%; padding: 18px; border-radius: 15px; background: var(--primary); color: #000; font-weight: 900; cursor: pointer; border: none; }
+
+/* --- اپلیکیشن --- */
+.app-frame { width: 96vw; height: 94vh; display: flex; background: rgba(10, 10, 10, 0.4); border: 1px solid var(--border); border-radius: 40px; backdrop-filter: blur(60px); overflow: hidden; position: relative; }
+.sidebar { width: 320px; border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+.user-item { padding: 15px 25px; margin: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 15px; cursor: pointer; }
+.user-item.active { background: rgba(0, 255, 204, 0.1); border: 1px solid rgba(0, 255, 204, 0.2); }
+.avatar-hex { width: 45px; height: 45px; background: #111; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-family: 'Orbitron'; position: relative; }
+.is-online .avatar-hex::after { content: ''; position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; background: var(--primary); border-radius: 50%; border: 2px solid #000; }
+
+.chat-window { flex: 1; display: flex; flex-direction: column; }
+.chat-header { padding: 20px 40px; background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center; }
+#messages { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+.bubble { padding: 14px 22px; border-radius: 20px; max-width: 70%; font-size: 14px; }
+.bubble.me { align-self: flex-end; background: var(--primary); color: #000; font-weight: 600; }
+.bubble.other { align-self: flex-start; background: #1a1a1a; border: 1px solid var(--border); }
+.bubble.system { align-self: center; background: none; border: 1px dashed var(--border); opacity: 0.6; font-size: 11px; }
+
+/* --- سیستم تماس شناور (تغییر یافته) --- */
+#callUI {
+    position: absolute; top: 20px; left: 20px; width: 280px; 
+    background: rgba(5, 5, 5, 0.95); border: 1px solid var(--primary);
+    border-radius: 30px; padding: 25px; z-index: 5000;
+    display: none; flex-direction: column; align-items: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8); backdrop-filter: blur(20px);
 }
-
-body.light .app { background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.1); }
-body.dark .app { background: rgba(20,20,20,0.8); }
-
-#loginBox { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-    justify-content: center; 
-    align-items: center; 
-    gap: 20px; 
-    animation: slideUp 0.8s ease;
-}
-
-@keyframes slideUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
-
-.login-container {
-    background: var(--glass);
-    padding: 50px;
-    border-radius: 35px;
-    border: 1px solid rgba(255,255,255,0.1);
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    width: 350px;
-    text-align: center;
-}
-
-#loginBox input { 
-    width: 100%; 
-    padding: 18px; 
-    border-radius: 15px; 
-    border: none; 
-    background: rgba(255,255,255,0.1); 
-    color: inherit; 
-    outline: none; 
-    box-sizing: border-box;
-    font-family: inherit;
-}
-
-#loginBox button { 
-    width: 100%; 
-    padding: 16px; 
-    border-radius: 15px; 
-    border: none; 
-    background: linear-gradient(135deg, var(--primary-color), #00e676); 
-    color: black; 
-    font-weight: 900; 
-    cursor: pointer; 
-    transition: var(--transition);
-}
-
-#chatBox { display: none; flex: 1; flex-direction: row; transition: 0.5s; }
-
-#onlineList { 
-    width: 300px; 
-    padding: 25px; 
-    display: flex; 
-    flex-direction: column; 
-    background: rgba(0,0,0,0.3); 
-    border-left: 1px solid rgba(255,255,255,0.05); 
-}
-
-#chatArea { flex: 1; display: flex; flex-direction: column; background: transparent; position: relative; }
-
-.user-card {
-    padding: 15px 20px;
-    margin-bottom: 10px;
-    border-radius: 20px;
-    background: var(--glass);
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: 0.3s;
-    border: 1px solid transparent;
-}
-.user-card:hover { background: rgba(255,255,255,0.1); }
-.user-card.active { border-color: var(--primary-color); background: rgba(0,255,128,0.1); }
-
-.status-indicator { width: 10px; height: 10px; border-radius: 50%; }
-.online-dot { background: var(--primary-color); box-shadow: 0 0 10px var(--primary-color); }
-.offline-dot { background: #555; }
-
-#messages { 
-    flex: 1; 
-    overflow-y: auto; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 15px; 
-    padding: 30px; 
-    scroll-behavior: smooth;
-}
-
-.msg { 
-    padding: 14px 20px; 
-    border-radius: 25px; 
-    max-width: 70%; 
-    font-size: 14.5px; 
-    line-height: 1.6; 
-    position: relative;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    animation: msgPop 0.3s ease-out;
-}
-
-@keyframes msgPop { from { opacity: 0; scale: 0.8; } to { opacity: 1; scale: 1; } }
-
-.me { 
-    background: linear-gradient(135deg, var(--primary-color), #00e676); 
-    color: black; 
-    align-self: flex-end; 
-    border-bottom-right-radius: 4px; 
-}
-
-.other { 
-    background: rgba(255,255,255,0.1); 
-    color: white; 
-    align-self: flex-start; 
-    border-bottom-left-radius: 4px; 
-}
-
-.footer { 
-    display: flex; 
-    gap: 12px; 
-    padding: 25px; 
-    background: rgba(0,0,0,0.2); 
-    align-items: center; 
-}
-
-.input-wrapper { flex: 1; position: relative; display: flex; align-items: center; }
-
-#msgInput { 
-    width: 100%;
-    padding: 15px 25px; 
-    border-radius: 30px; 
-    border: none; 
-    background: rgba(255,255,255,0.08); 
-    color: inherit; 
-    outline: none; 
-    font-family: inherit;
-}
-
-.btn-icon { 
-    width: 50px; 
-    height: 50px; 
-    border-radius: 50%; 
-    border: none; 
-    cursor: pointer; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    transition: 0.3s; 
-    font-size: 20px; 
-}
-
-.btn-send { background: var(--primary-color); color: black; }
-.btn-record { background: var(--secondary-color); color: white; }
-.btn-record.recording { animation: pulseRec 1.2s infinite; background: #ff1744; }
-
-@keyframes pulseRec { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(255, 23, 68, 0); } 100% { transform: scale(1); } }
-
-/* --- استایل جدید پنجره تماس شناور --- */
-#callBox {
-    display: none; 
-    position: absolute; 
-    top: 30px; 
-    left: 30px; 
-    background: rgba(15, 15, 15, 0.9); 
-    backdrop-filter: blur(20px);
-    padding: 25px; 
-    border-radius: 35px; 
-    color: white; 
-    z-index: 9999; 
-    width: 260px;
-    text-align: center; 
-    border: 1px solid var(--primary-color);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-    animation: slideRight 0.5s ease;
-}
-
-@keyframes slideRight { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
-
-.call-anim { 
-    width: 60px; height: 60px; background: var(--primary-color); border-radius: 50%; 
-    margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; 
-    font-size: 25px; animation: ring 1.5s infinite; 
-}
-
-@keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 128, 0.5); } 100% { box-shadow: 0 0 0 25px rgba(0, 255, 128, 0); } }
-
-audio { height: 35px; width: 220px; filter: hue-rotate(90deg); }
+.call-avatar-small { width: 70px; height: 70px; border-radius: 20px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 30px; color: #000; margin-bottom: 15px; }
+.call-btns { display: flex; gap: 15px; margin-top: 20px; }
+.c-btn { width: 50px; height: 50px; border-radius: 15px; border: none; cursor: pointer; font-size: 20px; }
 </style>
 </head>
-<body class="dark">
+<body>
 
-<div class="app">
-    <div id="loginBox">
-        <div style="font-size:60px; font-weight:900; color:var(--primary-color); letter-spacing:10px;">ALLOO</div>
-        <div class="login-container">
-            <input id="userIDInput" placeholder="شناسه کاربری (ID)">
-            <input id="passwordInput" type="password" placeholder="رمز عبور">
-            <button onclick="loginUser()">ورود به حساب</button>
-            <button onclick="registerUser()" style="background:transparent; color:var(--primary-color); border:2px solid var(--primary-color);">ساخت حساب جدید</button>
+<div class="bg-canvas">
+    <div class="particle" style="width:400px; height:400px; top:10%; left:10%;"></div>
+    <div class="particle" style="width:500px; height:500px; bottom:10%; right:10%; background:var(--accent);"></div>
+</div>
+
+<div id="loginScreen">
+    <div class="brand-title">ALLO</div>
+    <div class="login-card">
+        <div class="auth-mode-switch">
+            <button id="btnL" class="mode-btn active" onclick="setAuthMode('login')">ورود</button>
+            <button id="btnR" class="mode-btn" onclick="setAuthMode('register')">ثبت‌نام</button>
+        </div>
+        <div class="input-container"><input id="uID" placeholder="USERNAME ID"></div>
+        <div class="input-container"><input id="uPass" type="password" placeholder="ACCESS KEY"></div>
+        <button class="action-btn" onclick="handleAuth()">INITIALIZE</button>
+    </div>
+</div>
+
+<div class="app-frame">
+    <div class="sidebar">
+        <div style="padding:30px; border-bottom:1px solid var(--border);"><h2 style="font-family:'Orbitron'; color:var(--primary);">ALLO</h2></div>
+        <div id="userList" style="flex:1; overflow-y:auto; padding-top:10px;"></div>
+        <div style="padding:20px; border-top:1px solid var(--border);">
+            <div id="myIDDisplay" style="font-size:10px; color:var(--primary); margin-bottom:5px;">OFFLINE</div>
+            <button onclick="logout()" style="color:var(--secondary); background:none; border:none; cursor:pointer; font-size:11px;">TERMINATE ✕</button>
         </div>
     </div>
 
-    <div id="chatBox">
-        <div id="onlineList">
-            <h2 style="color:var(--primary-color); margin-bottom:30px; text-align:center;">دوستان</h2>
-            <div id="users"></div>
-            <div style="margin-top:auto; padding:20px; background:rgba(255,255,255,0.05); border-radius:20px;">
-                <div id="userID" style="font-size:14px; opacity:0.7; margin-bottom:10px;">ID: -</div>
-                <button onclick="logout()" style="color:var(--secondary-color); background:none; border:none; cursor:pointer; font-weight:bold;">خروج ⬅</button>
+    <div class="chat-window">
+        <div class="chat-header">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <div id="hAvatar" style="width:40px; height:40px; background:var(--glass); border-radius:10px; display:flex; align-items:center; justify-content:center;">?</div>
+                <h4 id="targetName">Terminal</h4>
             </div>
+            <button onclick="startCall()" style="background:var(--primary); color:#000; border:none; padding:10px 20px; border-radius:12px; font-weight:900; cursor:pointer;">CALL</button>
         </div>
-
-        <div id="chatArea">
-            <div id="chatHeader" style="padding:20px 30px; background:rgba(0,0,0,0.1); display:flex; justify-content:space-between; align-items:center;">
-                <h3 id="activeChatName" style="margin:0;">انتخاب مخاطب...</h3>
-                <div style="display:flex; gap:15px;">
-                    <button class="btn-icon" style="background:var(--glass);" onclick="startCall()">📞</button>
-                    <button class="btn-icon" style="background:var(--glass);" onclick="toggleTheme()">🌗</button>
-                </div>
-            </div>
-            <div id="messages"></div>
-            <div id="recordingStatus" style="display:none; padding:10px; text-align:center; background:var(--secondary-color);">🎤 در حال ضبط... <b id="recTimerDisplay">00:00</b></div>
-            <div class="footer">
-                <div class="input-wrapper"><input id="msgInput" placeholder="پیام..." onkeypress="if(event.key=='Enter') sendMessage()"></div>
-                <button id="recordBtn" class="btn-icon btn-record" onclick="toggleRecording()">🎤</button>
-                <button class="btn-icon btn-send" onclick="sendMessage()">✈</button>
-            </div>
+        <div id="messages"></div>
+        <div style="padding:20px 30px; display:flex; gap:15px;">
+            <input id="msgInput" style="flex:1; padding:18px; border-radius:15px; border:1px solid var(--border); background:rgba(0,0,0,0.4); color:#fff; outline:none;" placeholder="Encrypted message..." onkeypress="if(event.key=='Enter') sendMsg()">
+            <button id="vBtn" onclick="toggleVoice()" style="width:55px; height:55px; border-radius:15px; border:1px solid var(--secondary); color:var(--secondary); background:none; cursor:pointer;">🎤</button>
+            <button onclick="sendMsg()" style="width:55px; height:55px; border-radius:15px; background:var(--primary); color:#000; border:none; cursor:pointer;">✈</button>
         </div>
     </div>
 
-    <div id="callBox">
-        <div class="call-anim">📞</div>
-        <h4 id="callerName" style="margin: 5px 0;">User</h4>
-        <p id="callStatus" style="font-size: 12px; opacity: 0.8;">در حال تماس...</p>
-        <div id="incomingActions" style="display:none; gap:15px; justify-content:center; margin-top:20px;">
-             <button class="btn-icon" style="background:#4caf50; width:50px; height:50px;" onclick="acceptCall()">✅</button>
-             <button class="btn-icon" style="background:#f44336; width:50px; height:50px;" onclick="rejectCall()">❌</button>
-        </div>
-        <div id="inCallActions" style="display:none; gap:15px; justify-content:center; margin-top:20px;">
-             <button id="muteBtn" class="btn-icon" style="background:#555; width:50px; height:50px;" onclick="toggleMute()">🎙️</button>
-             <button class="btn-icon" style="background:#f44336; width:50px; height:50px;" onclick="endCall()">📞</button>
+    <div id="callUI">
+        <div class="call-avatar-small" id="cAvatar">👤</div>
+        <h4 id="cName">USER</h4>
+        <p id="cStatus" style="font-size:10px; color:var(--primary); margin-top:5px;">CONNECTING...</p>
+        <div class="call-btns">
+            <button id="acceptBtn" onclick="answerCall()" class="c-btn" style="background:#2ecc71;">✅</button>
+            <button id="muteBtn" onclick="toggleMute()" class="c-btn" style="background:rgba(255,255,255,0.1); display:none;">🎙️</button>
+            <button onclick="hangup()" class="c-btn" style="background:var(--secondary);">❌</button>
         </div>
     </div>
 </div>
 
-<audio id="ringTone" src="https://actions.google.com/sounds/v1/alarms/phone_alerts_and_ringtones.ogg" loop></audio>
+<audio id="ring" src="https://actions.google.com/sounds/v1/alarms/phone_alerts_and_ringtones.ogg" loop></audio>
+<audio id="remoteAudio" autoplay></audio>
 
 <script>
 const firebaseConfig = {
@@ -309,220 +144,210 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let me="", activeUser="", recorder=null, recChunks=[], recInterval=null, recSeconds=0;
-let localStream=null, peerConnection=null, currentCallDocId = null, isMuted = false, callPartner = "";
-const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+let me = localStorage.getItem("alloo_uid");
+let activeTarget = "";
+let authMode = 'login';
+let pc; let localStream; let isMuted = false;
+let currentCallPartner = "";
 
-if(localStorage.getItem("allo_user")){ me=localStorage.getItem("allo_user"); startApp(); }
+if(me) { document.getElementById("loginScreen").style.display = "none"; initApp(); }
 
-function startApp(){
-    document.getElementById("loginBox").style.display="none";
-    document.getElementById("chatBox").style.display="flex";
-    document.getElementById("userID").innerText="ID: " + me;
-    db.collection("users").doc(me).update({online:true});
-    loadUsers();
+function setAuthMode(m) {
+    authMode = m;
+    document.getElementById('btnL').className = `mode-btn ${m==='login'?'active':''}`;
+    document.getElementById('btnR').className = `mode-btn ${m==='register'?'active':''}`;
+}
+
+async function handleAuth() {
+    const id = document.getElementById("uID").value.trim().toLowerCase();
+    const ps = document.getElementById("uPass").value.trim();
+    if(!id || !ps) return;
+    const userRef = db.collection("users").doc(id);
+    const doc = await userRef.get();
+    if(authMode === 'register') {
+        if(doc.exists) return alert("ID Reserved");
+        await userRef.set({ pass: ps, online: true, lastSeen: Date.now() });
+    } else {
+        if(!doc.exists || doc.data().pass !== ps) return alert("Error");
+        await userRef.update({ online: true, lastSeen: Date.now() });
+    }
+    localStorage.setItem("alloo_uid", id);
+    location.reload();
+}
+
+function initApp() {
+    document.getElementById("myIDDisplay").innerText = "NODE: " + me.toUpperCase();
+    db.collection("users").doc(me).update({ online: true, lastSeen: Date.now() });
+    
+    db.collection("users").onSnapshot(snap => {
+        const list = document.getElementById("userList");
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            if(doc.id === me) return;
+            const d = doc.data();
+            const isOnline = d.online && (Date.now() - d.lastSeen < 60000);
+            const item = document.createElement("div");
+            item.className = `user-item ${activeTarget === doc.id ? 'active' : ''} ${isOnline ? 'is-online' : ''}`;
+            item.innerHTML = `<div class="avatar-hex">${doc.id[0].toUpperCase()}</div><div style="flex:1"><div style="font-weight:800;">${doc.id}</div></div>`;
+            item.onclick = () => { activeTarget = doc.id; selectUser(); };
+            list.appendChild(item);
+        });
+    });
     listenForCalls();
 }
 
-function loginUser(){
-    let id=document.getElementById("userIDInput").value.trim();
-    let p=document.getElementById("passwordInput").value.trim();
-    if(!id || !p) return;
-    db.collection("users").doc(id).get().then(doc => {
-        if(doc.exists && doc.data().password === p){
-            me=id; localStorage.setItem("allo_user", me);
-            startApp();
-        } else alert("خطا در ورود");
-    });
+function selectUser() {
+    document.getElementById("targetName").innerText = activeTarget.toUpperCase();
+    document.getElementById("hAvatar").innerText = activeTarget[0].toUpperCase();
+    loadMessages();
 }
 
-function registerUser(){
-    let id=document.getElementById("userIDInput").value.trim();
-    let p=document.getElementById("passwordInput").value.trim();
-    if(!id || !p) return;
-    db.collection("users").doc(id).set({username: id, password: p, online: true}).then(() => {
-        me=id; localStorage.setItem("allo_user", me);
-        startApp();
-    });
-}
-
-function loadUsers(){
-    db.collection("users").onSnapshot(snap => {
-        const div = document.getElementById("users"); div.innerHTML = "";
-        snap.forEach(doc => {
-            if(doc.id === me) return;
-            let userEl = document.createElement("div");
-            userEl.className = `user-card ${activeUser === doc.id ? 'active' : ''}`;
-            userEl.innerHTML = `<b>${doc.id}</b><div class="status-indicator ${doc.data().online?'online-dot':'offline-dot'}"></div>`;
-            userEl.onclick = () => { activeUser = doc.id; document.getElementById("activeChatName").innerText = activeUser; loadMessages(); loadUsers(); };
-            div.appendChild(userEl);
-        });
-    });
-}
-
-function loadMessages(){
-    if(!activeUser) return;
+function loadMessages() {
     db.collection("messages").orderBy("time", "asc").onSnapshot(snap => {
-        const msgDiv = document.getElementById("messages");
-        msgDiv.innerHTML = "";
+        const box = document.getElementById("messages");
+        box.innerHTML = "";
         snap.forEach(doc => {
-            let m = doc.data();
-            if((m.from==me && m.to==activeUser) || (m.from==activeUser && m.to==me)){
-                let div = document.createElement("div");
-                div.className = "msg " + (m.from==me ? "me" : "other");
-                div.innerText = m.text || (m.audio ? "🎤 ویس ارسال شد" : "");
-                if(m.audio){
-                    let aud = document.createElement("audio"); aud.src = m.audio; aud.controls = true; div.innerHTML = ""; div.appendChild(aud);
-                }
-                msgDiv.appendChild(div);
+            const d = doc.data();
+            if((d.f==me && d.t==activeTarget) || (d.f==activeTarget && d.t==me)) {
+                const m = document.createElement("div");
+                m.className = `bubble ${d.type==='sys' ? 'system' : (d.f==me ? 'me' : 'other')}`;
+                if(d.audio) m.innerHTML = `<audio src="${d.audio}" controls style="filter:invert(1); height:30px;"></audio>`;
+                else m.innerText = d.txt;
+                box.appendChild(m);
             }
         });
-        msgDiv.scrollTop = msgDiv.scrollHeight;
+        box.scrollTop = box.scrollHeight;
     });
 }
 
-function sendMessage(){
-    let input = document.getElementById("msgInput");
-    if(!input.value.trim() || !activeUser) return;
-    db.collection("messages").add({ from: me, to: activeUser, text: input.value, time: firebase.firestore.FieldValue.serverTimestamp() });
-    input.value = "";
+function sendMsg(txt = null, type = 'text') {
+    const i = document.getElementById("msgInput");
+    const message = txt || i.value;
+    if(!message || !activeTarget) return;
+    db.collection("messages").add({ f: me, t: activeTarget, txt: message, type: type, time: Date.now() });
+    if(!txt) i.value = "";
 }
 
-// ==================== بخش تماس اصلاح شده (هماهنگ و شناور) ====================
-async function startCall(){
-    if(!activeUser) return alert("مخاطب را انتخاب کنید");
-    callPartner = activeUser;
-    currentCallDocId = activeUser;
-    
-    document.getElementById("callBox").style.display = "block";
-    document.getElementById("callerName").innerText = callPartner;
-    document.getElementById("inCallActions").style.display = "flex";
-    document.getElementById("incomingActions").style.display = "none";
+// --- سیستم تماس (WebRTC + Sync) ---
+const rtcConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-    localStream = await navigator.mediaDevices.getUserMedia({audio:true});
-    peerConnection = new RTCPeerConnection(config);
-    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-    peerConnection.onicecandidate = e => {
-        if(e.candidate) db.collection("calls").doc(currentCallDocId).collection("candidates").add(e.candidate.toJSON());
-    };
-
-    const offer = await peerConnection.createOffer();
-    await peerConnection.setLocalDescription(offer);
-    await db.collection("calls").doc(currentCallDocId).set({ offer, from: me, status: "calling" });
-}
-
-function listenForCalls(){
-    // شنود برای تماس ورودی
-    db.collection("calls").doc(me).onSnapshot(async doc => {
-        let data = doc.data();
-        if(!data && peerConnection) { cleanupCall(true); return; } // اگر طرف مقابل قطع کرد
-        if(data && data.offer && !peerConnection){
-            callPartner = data.from;
-            currentCallDocId = me;
-            window.incomingData = data;
-            document.getElementById("callBox").style.display = "block";
-            document.getElementById("callerName").innerText = callPartner;
-            document.getElementById("incomingActions").style.display = "flex";
-            document.getElementById("inCallActions").style.display = "none";
-            document.getElementById("ringTone").play();
+function listenForCalls() {
+    db.collection("calls").doc(me).onSnapshot(async snap => {
+        const d = snap.data();
+        // قطع دوطرفه: اگر در حال تماس بودیم و سند حذف شد
+        if(!d && currentCallPartner) {
+            stopCallUI();
+            return;
         }
-        if(data && data.answer && peerConnection) {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-            document.getElementById("callStatus").innerText = "در حال مکالمه...";
-        }
-    });
-
-    // شنود برای کاندیداها و وضعیت قطع تماس در حالت تماس‌گیرنده
-    db.collection("users").doc(me).onSnapshot(() => {
-        if(currentCallDocId && currentCallDocId != me){
-            db.collection("calls").doc(currentCallDocId).onSnapshot(doc => {
-                if(!doc.exists && peerConnection) cleanupCall(true);
-            });
+        // تماس ورودی
+        if(d?.offer && !pc) {
+            currentCallPartner = d.from;
+            window.incoming = d;
+            document.getElementById("callUI").style.display = "flex";
+            document.getElementById("cName").innerText = d.from.toUpperCase();
+            document.getElementById("acceptBtn").style.display = "block";
+            document.getElementById("muteBtn").style.display = "none";
+            document.getElementById("ring").play();
+        } else if(d?.answer && pc) {
+            await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+            document.getElementById("cStatus").innerText = "SECURE LINE";
         }
     });
 }
 
-async function acceptCall(){
-    document.getElementById("ringTone").pause();
-    localStream = await navigator.mediaDevices.getUserMedia({audio:true});
-    peerConnection = new RTCPeerConnection(config);
-    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+async function startCall() {
+    if(!activeTarget) return;
+    currentCallPartner = activeTarget;
+    document.getElementById("callUI").style.display = "flex";
+    document.getElementById("cName").innerText = activeTarget.toUpperCase();
+    document.getElementById("acceptBtn").style.display = "none";
+    document.getElementById("muteBtn").style.display = "block";
 
-    peerConnection.ontrack = e => {
-        let aud = document.getElementById("remoteAudio") || document.createElement("audio");
-        aud.id = "remoteAudio"; aud.srcObject = e.streams[0]; aud.autoplay = true; document.body.appendChild(aud);
-    };
+    pc = new RTCPeerConnection(rtcConfig);
+    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON()); };
+    pc.ontrack = e => document.getElementById("remoteAudio").srcObject = e.streams[0];
 
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(window.incomingData.offer));
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await db.collection("calls").doc(activeTarget).set({ offer, from: me });
+
+    // ثبت ICE Candidates طرف مقابل
+    db.collection("calls").doc(activeTarget).collection("receiverCandidates").onSnapshot(s => {
+        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
+    });
+}
+
+async function answerCall() {
+    document.getElementById("ring").pause();
+    document.getElementById("acceptBtn").style.display = "none";
+    document.getElementById("muteBtn").style.display = "block";
+
+    pc = new RTCPeerConnection(rtcConfig);
+    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON()); };
+    pc.ontrack = e => document.getElementById("remoteAudio").srcObject = e.streams[0];
+
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+    await pc.setRemoteDescription(new RTCSessionDescription(window.incoming.offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
     await db.collection("calls").doc(me).update({ answer });
 
-    document.getElementById("incomingActions").style.display = "none";
-    document.getElementById("inCallActions").style.display = "flex";
-    document.getElementById("callStatus").innerText = "در حال مکالمه...";
+    db.collection("calls").doc(me).collection("callerCandidates").onSnapshot(s => {
+        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
+    });
 }
 
-function toggleMute(){
+async function hangup() {
+    const partner = currentCallPartner;
+    if(partner) {
+        await db.collection("calls").doc(me).delete();
+        await db.collection("calls").doc(partner).delete();
+        // ثبت در چت
+        db.collection("messages").add({ f: me, t: partner, txt: "📞 TERMINATED", type: 'sys', time: Date.now() });
+    }
+    stopCallUI();
+}
+
+function stopCallUI() {
+    if(localStream) localStream.getTracks().forEach(t => t.stop());
+    if(pc) { pc.close(); pc = null; }
+    document.getElementById("callUI").style.display = "none";
+    document.getElementById("ring").pause();
+    document.getElementById("remoteAudio").srcObject = null;
+    currentCallPartner = "";
+    isMuted = false;
+    document.getElementById("muteBtn").innerText = "🎙️";
+}
+
+function toggleMute() {
     isMuted = !isMuted;
     localStream.getAudioTracks()[0].enabled = !isMuted;
-    document.getElementById("muteBtn").style.background = isMuted ? "#ff9800" : "#555";
+    document.getElementById("muteBtn").innerText = isMuted ? "🚫" : "🎙️";
 }
 
-async function endCall(){
-    if(currentCallDocId) {
-        await db.collection("calls").doc(currentCallDocId).delete();
-        // ثبت در چت
-        db.collection("messages").add({
-            from: "SYSTEM", to: callPartner, text: `📞 تماس با ${callPartner} پایان یافت.`, time: firebase.firestore.FieldValue.serverTimestamp()
-        });
-    }
-    cleanupCall(false);
-}
-
-function cleanupCall(remoteEnded){
-    if(localStream) localStream.getTracks().forEach(t => t.stop());
-    if(peerConnection) { peerConnection.close(); peerConnection = null; }
-    document.getElementById("callBox").style.display = "none";
-    document.getElementById("ringTone").pause();
-    document.getElementById("callStatus").innerText = "در حال تماس...";
-    let ra = document.getElementById("remoteAudio"); if(ra) ra.remove();
-    
-    if(remoteEnded) {
-        // اگر طرف مقابل قطع کرد، پیامی برای خودمان نشان دهیم
-        console.log("Call ended by partner");
-    }
-}
-
-function rejectCall(){ endCall(); }
-function logout(){ db.collection("users").doc(me).update({online:false}); localStorage.clear(); location.reload(); }
-function toggleTheme(){ document.body.className = document.body.className=='dark'?'light':'dark'; }
-
-// ویس رکورد (ساده شده)
-async function toggleRecording(){
-    if(recorder && recorder.state == "recording") {
-        recorder.stop();
-        document.getElementById("recordBtn").classList.remove("recording");
-        document.getElementById("recordingStatus").style.display = "none";
-    } else {
-        const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-        recorder = new MediaRecorder(stream);
-        recChunks = [];
-        recorder.ondataavailable = e => recChunks.push(e.data);
-        recorder.onstop = async () => {
-            const blob = new Blob(recChunks, { type: 'audio/webm' });
-            const reader = new FileReader();
-            reader.readAsDataURL(blob);
-            reader.onloadend = () => {
-                db.collection("messages").add({ from: me, to: activeUser, audio: reader.result, time: firebase.firestore.FieldValue.serverTimestamp() });
-            };
+// --- ویس مسیج ---
+let rec; let chunks = [];
+async function toggleVoice() {
+    const v = document.getElementById("vBtn");
+    if(!rec || rec.state === 'inactive') {
+        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+        rec = new MediaRecorder(s); chunks = [];
+        rec.ondataavailable = e => chunks.push(e.data);
+        rec.onstop = () => {
+            const b = new Blob(chunks, { type: 'audio/webm' });
+            const r = new FileReader(); r.readAsDataURL(b);
+            r.onloadend = () => db.collection("messages").add({ f: me, t: activeTarget, audio: r.result, time: Date.now() });
         };
-        recorder.start();
-        document.getElementById("recordBtn").classList.add("recording");
-        document.getElementById("recordingStatus").style.display = "block";
-    }
+        rec.start(); v.style.background = "var(--secondary)";
+    } else { rec.stop(); v.style.background = "none"; }
 }
+
+function logout() { db.collection("users").doc(me).update({ online: false }); localStorage.clear(); location.reload(); }
 </script>
 </body>
 </html>
