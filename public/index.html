@@ -2,7 +2,9 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>ALLO</title> 
+<title>ALLOO</title> 
+<link rel="icon" type="image/jpeg" href="ic_launcher.png.jpg">
+
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/wavesurfer.js"></script>
@@ -45,6 +47,22 @@ body.light .app{
 body.dark .app{
   background:rgba(20,20,20,0.95);
   box-shadow:0 0 60px rgba(0,255,118,0.4);
+}
+
+/* استایل جدید برای نمایش درست لوگو */
+.main-logo-img {
+  width: 120px;
+  height: auto;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 0 10px rgba(0,255,128,0.3));
+}
+
+.sidebar-logo-img {
+  width: 60px;
+  height: auto;
+  display: block;
+  margin: 10px auto;
+  border-radius: 12px;
 }
 
 /* ==================== LOGIN ==================== */
@@ -291,9 +309,10 @@ body.light .footer input:focus{background:#ccc; box-shadow:0 0 8px #00aaff;}
 <body class="dark">
 
 <div class="app">
-<!-- Login -->
 <div id="loginBox">
-  <div style="font-size:38px;font-weight:bold;color:#00ff80;text-shadow:0 0 20px #00ff80;">ALLO</div>
+  <img src="ic_launcher.png.jpg" alt="Logo" class="main-logo-img">
+  <div style="font-size:38px;font-weight:bold;color:#00ff80;text-shadow:0 0 20px #00ff80;">ALLOO</div>
+  
   <input id="usernameInput" placeholder="نام کاربری">
   <input id="passwordInput" type="password" placeholder="رمز عبور">
   <input id="userIDInput" placeholder="شناسه یکتا (مثلاً: user123)">
@@ -302,9 +321,9 @@ body.light .footer input:focus{background:#ccc; box-shadow:0 0 8px #00aaff;}
   <button id="themeToggle" onclick="toggleTheme()">تغییر تم 🌗</button>
 </div>
 
-<!-- Chat -->
 <div id="chatBox">
   <div id="onlineList">
+    <img src="ic_launcher.png.jpg" alt="ALLOO" class="sidebar-logo-img">
     <h3>آنلاین‌ها</h3>
     <div id="users"></div>
   </div>
@@ -327,7 +346,6 @@ body.light .footer input:focus{background:#ccc; box-shadow:0 0 8px #00aaff;}
   </div>
 </div>
 
-<!-- Call Box -->
 <div id="callBox">
   <div id="callStatus">در انتظار تماس...</div>
   <div id="callActions" style="margin-top:10px; display:none;">
@@ -352,20 +370,17 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ==================== Global ====================
 let me="", activeUser="", recorder=null, recChunks=[], recInterval=null, recSeconds=0;
 let localStream=null, remoteStream=null, peerConnection=null;
 let incomingCall=null;
 const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-// ==================== Theme ====================
 function toggleTheme(){
   document.body.classList.toggle('light');
   document.body.classList.toggle('dark');
   localStorage.setItem("allo_theme", document.body.classList.contains('dark')?"dark":"light");
 }
 
-// ==================== Register & Login ====================
 function registerUser(){
   let u=document.getElementById("usernameInput").value.trim();
   let p=document.getElementById("passwordInput").value.trim();
@@ -394,14 +409,12 @@ function loginUser(){
   });
 }
 
-// ==================== Start App ====================
 function startApp(){
   document.getElementById("loginBox").style.display="none";
   document.getElementById("chatBox").style.display="flex";
   loadUsers(); loadMessages();
 }
 
-// ==================== Users ====================
 function loadUsers(){
   db.collection("users").onSnapshot(snap=>{
     const usersDiv=document.getElementById("users"); usersDiv.innerHTML="";
@@ -416,7 +429,6 @@ function loadUsers(){
   });
 }
 
-// ==================== Messages ====================
 function loadMessages(){
   if(!activeUser) return;
   db.collection("messages").orderBy("time").onSnapshot(snap=>{
@@ -440,7 +452,6 @@ function loadMessages(){
   });
 }
 
-// ==================== Send Message ====================
 function sendMessage(){
   let text = document.getElementById("msgInput").value.trim();
   if(!text || !activeUser) return;
@@ -454,14 +465,12 @@ function sendMessage(){
   document.getElementById("msgInput").value="";
 }
 
-// ==================== Logout ====================
 function logout(){
   db.collection("users").doc(me).update({online:false});
   localStorage.removeItem("allo_user");
   location.reload();
 }
 
-// ==================== Recording ====================
 async function toggleRecording(){
   if(recorder && recorder.state=="recording"){
     recorder.stop(); clearInterval(recInterval); recSeconds=0;
@@ -478,7 +487,6 @@ async function toggleRecording(){
   }
 }
 
-// ==================== WebRTC Call ====================
 async function startCall(){
   if(!activeUser) return alert("ابتدا یک کاربر را انتخاب کنید");
   localStream = await navigator.mediaDevices.getUserMedia({audio:true});
@@ -491,10 +499,8 @@ async function startCall(){
   localStream.getTracks().forEach(track=>peerConnection.addTrack(track,localStream));
   let offer = await peerConnection.createOffer(); await peerConnection.setLocalDescription(offer);
   db.collection("calls").doc(activeUser).set({from:me,offer:offer});
-  listenIncomingAnswer();
 }
 
-// ==================== Incoming Call ====================
 db.collection("calls").onSnapshot(snap=>{
   snap.forEach(async doc=>{
     let data = doc.data();
@@ -511,16 +517,11 @@ db.collection("calls").onSnapshot(snap=>{
 function acceptCall(){ 
   document.getElementById("ringTone").pause(); 
   document.getElementById("callBox").style.display="none"; 
-  // ادامه WebRTC پذیرش
 }
 function rejectCall(){ document.getElementById("ringTone").pause(); document.getElementById("callBox").style.display="none"; }
 
-// ==================== Init Theme ====================
 document.body.classList.add(localStorage.getItem("allo_theme")||"dark");
-
-// ==================== Auto Login ====================
 if(localStorage.getItem("allo_user")){ me=localStorage.getItem("allo_user"); document.getElementById("userID").innerText="کد شما: "+me; startApp(); }
-
 </script>
 </body>
 </html>
