@@ -6,116 +6,58 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://unpkg.com/wavesurfer.js"></script>
 
 <style>
 body{
   margin:0;
   font-family:sans-serif;
-  background:linear-gradient(135deg,#1d2671,#c33764);
+  background:linear-gradient(135deg,#0f0f0f,#1a1a1a);
+  color:white;
   display:flex;
   justify-content:center;
   align-items:center;
   height:100vh;
-  color:white;
 }
-
 .app{
-  width:850px;
+  width:900px;
   height:700px;
   border-radius:25px;
-  background:rgba(255,255,255,0.05);
-  backdrop-filter:blur(20px);
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(15px);
   display:flex;
-  flex-direction:row;
   overflow:hidden;
 }
-
-#loginBox{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  padding:20px;
-}
-
-#chatBox{
-  flex:2;
-  display:none;
-  flex-direction:row;
-}
-
+#loginBox,#chatBox{flex:1;display:flex;flex-direction:column;padding:20px;}
+#loginBox{justify-content:center;align-items:center;}
+#chatBox{display:none;flex-direction:row;}
 #onlineList{
-  width:200px;
-  background:rgba(0,0,0,0.4);
-  padding:10px;
+  width:220px;
+  background:rgba(30,30,30,0.8);
+  padding:15px;
   display:flex;
   flex-direction:column;
   overflow-y:auto;
 }
-
-#onlineList h3{
-  text-align:center;
-  margin-bottom:10px;
-  color:#00e676;
-  text-shadow:0 0 10px #00e676;
-}
-
-.user{
-  padding:10px;
-  margin:5px 0;
-  background:#222;
-  border-radius:15px;
-  cursor:pointer;
-  transition:0.3s;
-}
-
+#onlineList h3{color:#00e676;text-align:center;margin-bottom:10px;text-shadow:0 0 8px #00e676;}
+.user{padding:10px;margin:5px 0;background:#222;border-radius:15px;cursor:pointer;transition:0.3s;}
 .user:hover{background:#00e676;color:black;}
-
-#chatArea{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  margin-left:10px;
-}
-
-#messages{
-  flex:1;
-  overflow:auto;
-  padding:10px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-
-.msg{
-  padding:10px;
-  border-radius:15px;
-  max-width:70%;
-}
-
+#chatArea{flex:1;display:flex;flex-direction:column;margin-left:10px;}
+#messages{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:10px;}
+.msg{padding:10px;border-radius:15px;max-width:70%;position:relative;transition:0.3s;cursor:pointer;}
 .me{background:#00e676;color:black;align-self:flex-end;}
 .other{background:#333;}
-
-.footer{
-  display:flex;
-  gap:5px;
-  padding:5px;
-}
-
+.msg small{font-size:10px;color:#ccc;display:block;margin-top:5px;}
+.footer{display:flex;gap:5px;padding:5px;}
 .footer input{flex:1;padding:10px;border-radius:10px;border:none;}
 .footer button{padding:10px;border-radius:10px;border:none;background:#00e676;color:black;cursor:pointer;transition:0.3s;}
 .footer button:hover{background:#00ff80;}
-
-input{padding:10px;border-radius:10px;border:none;margin-top:5px;width:80%;}
-
-button{padding:10px;border-radius:10px;border:none;margin-top:5px;cursor:pointer;background:#00e676;color:black;transition:0.3s;}
-button:hover{background:#00ff80;}
-
-.header{text-align:center;font-size:24px;font-weight:bold;margin-bottom:20px;color:#00e676;text-shadow:0 0 10px #00e676;}
+.header{text-align:center;font-size:28px;font-weight:bold;margin-bottom:20px;color:#00e676;text-shadow:0 0 12px #00e676;}
+.waveform-container{width:100%;height:50px;border-radius:10px;overflow:hidden;margin-top:5px;box-shadow:0 0 10px rgba(0,255,118,0.4);}
+img{max-width:200px;border-radius:10px;margin-top:5px;}
+.typing{font-size:12px;color:#ccc;margin-left:5px;}
 </style>
 </head>
-
 <body>
 
 <div class="app">
@@ -131,21 +73,21 @@ button:hover{background:#00ff80;}
 
 <!-- Chat -->
 <div id="chatBox">
-
 <div id="onlineList">
 <h3>آنلاین‌ها</h3>
 <div id="users"></div>
 </div>
-
 <div id="chatArea">
 <div id="messages"></div>
+<div class="typing" id="typingInfo"></div>
 <div class="footer">
 <input id="msgInput" placeholder="پیام...">
 <button onclick="sendMessage()">ارسال</button>
+<button onclick="sendVoice()">🎤</button>
+<input type="file" id="imgInput" style="display:none;" accept="image/*">
+<button onclick="document.getElementById('imgInput').click()">📸</button>
 </div>
 <button onclick="logout()">خروج</button>
-</div>
-
 </div>
 
 </div>
@@ -159,46 +101,35 @@ const firebaseConfig = {
   messagingSenderId: "132232824762",
   appId: "1:132232824762:web:4e3c25557c072f0feabf83"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let me = "";
-let activeUser = "";
+let me="", activeUser="", recorder=null;
+let typingTimeout;
 
 // 🔐 ثبت نام
 function registerUser(){
-  let u = document.getElementById("usernameInput").value.trim();
-  let p = document.getElementById("passwordInput").value.trim();
-  if(!u || !p) return alert("هر دو فیلد لازم است");
+  let u=document.getElementById("usernameInput").value.trim();
+  let p=document.getElementById("passwordInput").value.trim();
+  if(!u||!p) return alert("هر دو فیلد لازم است");
 
   db.collection("users").doc(u).get().then(doc=>{
-    if(doc.exists){
-      alert("این کاربر قبلاً ساخته شده است");
-    }else{
-      db.collection("users").doc(u).set({
-        password: p,
-        online:true
-      });
-      me = u;
-      localStorage.setItem("allo_user", me);
-      startApp();
-    }
+    if(doc.exists) return alert("این کاربر قبلاً ساخته شده است");
+    db.collection("users").doc(u).set({password:p,online:true});
+    me=u; localStorage.setItem("allo_user",me); startApp();
   });
 }
 
 // 🔐 ورود
 function loginUser(){
-  let u = document.getElementById("usernameInput").value.trim();
-  let p = document.getElementById("passwordInput").value.trim();
-  if(!u || !p) return alert("هر دو فیلد لازم است");
+  let u=document.getElementById("usernameInput").value.trim();
+  let p=document.getElementById("passwordInput").value.trim();
+  if(!u||!p) return alert("هر دو فیلد لازم است");
 
   db.collection("users").doc(u).get().then(doc=>{
     if(!doc.exists) return alert("کاربر وجود ندارد");
-    if(doc.data().password !== p) return alert("رمز اشتباه است");
-
-    me = u;
-    localStorage.setItem("allo_user", me);
+    if(doc.data().password!==p) return alert("رمز اشتباه است");
+    me=u; localStorage.setItem("allo_user",me);
     db.collection("users").doc(me).update({online:true});
     startApp();
   });
@@ -208,23 +139,19 @@ function loginUser(){
 function startApp(){
   document.getElementById("loginBox").style.display="none";
   document.getElementById("chatBox").style.display="flex";
-  loadUsers();
+  loadUsers(); loadMessages();
 }
 
 // کاربران آنلاین
 function loadUsers(){
   db.collection("users").onSnapshot(snap=>{
-    const usersDiv = document.getElementById("users");
-    usersDiv.innerHTML="";
+    const usersDiv=document.getElementById("users"); usersDiv.innerHTML="";
     snap.forEach(doc=>{
       if(doc.id===me) return;
       let div=document.createElement("div");
       div.className="user";
-      div.innerText=doc.id + (doc.data().online ? " ✅" : " ❌");
-      div.onclick=()=>{
-        activeUser=doc.id;
-        loadMessages();
-      };
+      div.innerText=doc.id+(doc.data().online?" ✅":" ❌");
+      div.onclick=()=>{ activeUser=doc.id; loadMessages(); };
       usersDiv.appendChild(div);
     });
   });
@@ -232,36 +159,74 @@ function loadUsers(){
 
 // پیام‌ها
 function loadMessages(){
-  db.collection("messages")
-  .orderBy("time")
-  .onSnapshot(snap=>{
-    const msgDiv = document.getElementById("messages");
-    msgDiv.innerHTML="";
+  db.collection("messages").orderBy("time").onSnapshot(snap=>{
+    const msgDiv=document.getElementById("messages"); msgDiv.innerHTML="";
     snap.forEach(doc=>{
-      let m = doc.data();
-      if(!(m.from===me && m.to===activeUser) &&
-         !(m.from===activeUser && m.to===me)) return;
-      let div = document.createElement("div");
+      let m=doc.data();
+      if(!(m.from===me&&m.to===activeUser)||(m.from===activeUser&&m.to===me)) return;
+      let div=document.createElement("div");
       div.className="msg "+(m.from===me?"me":"other");
-      div.innerText = m.text;
+      if(m.text) div.innerText=m.text;
+      if(m.image){
+        let img=document.createElement("img"); img.src=m.image; div.appendChild(img);
+      }
+      if(m.audio){
+        let container=document.createElement("div"); container.className='waveform-container';
+        let ws=WaveSurfer.create({container:container,waveColor:'#00e676',progressColor:'#fff',cursorColor:'#fff',barWidth:2,height:50,responsive:true});
+        ws.load(m.audio);
+        container.onclick=()=>ws.isPlaying()?ws.pause():ws.play();
+        div.appendChild(container);
+      }
+      if(m.seen && m.from===me) div.innerHTML+='<small>✔✔ Seen</small>';
       msgDiv.appendChild(div);
     });
-    msgDiv.scrollTop = 99999;
+    msgDiv.scrollTop=99999;
   });
 }
 
 // ارسال پیام
 function sendMessage(){
-  let text = document.getElementById("msgInput").value.trim();
-  if(!text || !activeUser) return;
-  db.collection("messages").add({
-    from: me,
-    to: activeUser,
-    text: text,
-    time: Date.now()
-  });
+  let text=document.getElementById("msgInput").value.trim();
+  if(!text||!activeUser) return;
+  db.collection("messages").add({from:me,to:activeUser,text,time:Date.now()});
   document.getElementById("msgInput").value="";
 }
+
+// ارسال عکس
+document.getElementById("imgInput").addEventListener("change",function(e){
+  const file=e.target.files[0];
+  if(!file||!activeUser) return;
+  const url=URL.createObjectURL(file);
+  db.collection("messages").add({from:me,to:activeUser,image:url,time:Date.now()});
+});
+
+// ضبط و ارسال ویس
+async function sendVoice(){
+  if(recorder && recorder.state==="recording"){ recorder.stop(); return; }
+  const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+  recorder=new MediaRecorder(stream); let chunks=[];
+  recorder.ondataavailable=e=>chunks.push(e.data);
+  recorder.onstop=()=>{
+    const blob=new Blob(chunks,{type:'audio/webm'});
+    const url=URL.createObjectURL(blob);
+    db.collection("messages").add({from:me,to:activeUser,audio:url,time:Date.now()});
+  };
+  recorder.start();
+}
+
+// تایپینگ
+document.getElementById("msgInput").addEventListener("input",()=>{
+  if(!activeUser) return;
+  db.collection("typing").doc(activeUser).set({typing:true});
+  clearTimeout(typingTimeout);
+  typingTimeout=setTimeout(()=>db.collection("typing").doc(activeUser).set({typing:false}),1000);
+});
+db.collection("typing").onSnapshot(snap=>{
+  snap.forEach(doc=>{
+    if(doc.id===me) return;
+    document.getElementById("typingInfo").innerText=doc.data().typing?`${doc.id} در حال تایپ...`:"";
+  });
+});
 
 // خروج
 function logout(){
@@ -272,14 +237,9 @@ function logout(){
 
 // ورود خودکار
 window.onload=()=>{
-  let saved = localStorage.getItem("allo_user");
-  if(saved){
-    me = saved;
-    db.collection("users").doc(me).update({online:true});
-    startApp();
-  }
+  let saved=localStorage.getItem("allo_user");
+  if(saved){ me=saved; db.collection("users").doc(me).update({online:true}); startApp(); }
 };
 </script>
-
 </body>
 </html>
