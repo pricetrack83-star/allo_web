@@ -54,7 +54,7 @@ body.dark .app{
   flex-direction:column;
   justify-content:center;
   align-items:center;
-  gap:20px;
+  gap:15px;
 }
 #loginBox input{
   width:300px;
@@ -262,12 +262,6 @@ body.light .footer input:focus{background:#ccc; box-shadow:0 0 8px #00aaff;}
   50%{box-shadow:0 0 20px #ff1744;}
   100%{box-shadow:0 0 5px #ff5252;}
 }
-#recTimer{
-  font-weight:bold;
-  color:#ff5252;
-  min-width:50px;
-  text-align:center;
-}
 
 /* ==================== WAVEFORM ==================== */
 .waveform-container{
@@ -320,6 +314,7 @@ body.light .footer input:focus{background:#ccc; box-shadow:0 0 8px #00aaff;}
   <div style="font-size:38px;font-weight:bold;color:#00ff80;text-shadow:0 0 20px #00ff80;">ALLO</div>
   <input id="usernameInput" placeholder="نام کاربری">
   <input id="passwordInput" type="password" placeholder="رمز عبور">
+  <input id="userIDInput" placeholder="شناسه یکتا (مثلاً: user123)">
   <button onclick="registerUser()">ثبت نام</button>
   <button onclick="loginUser()">ورود</button>
   <button id="themeToggle" onclick="toggleTheme()">تغییر تم 🌗</button>
@@ -378,17 +373,24 @@ function toggleTheme(){
 function registerUser(){
   let u=document.getElementById("usernameInput").value.trim();
   let p=document.getElementById("passwordInput").value.trim();
-  if(!u||!p) return alert("هر دو فیلد لازم است");
-  db.collection("users").doc(u).get().then(doc=>{
-    if(doc.exists) return alert("این کاربر قبلاً ساخته شده است");
-    db.collection("users").doc(u).set({password:p,online:true});
-    me=u; localStorage.setItem("allo_user",me); document.getElementById("userID").innerText="کد شما: "+me; startApp();
+  let id=document.getElementById("userIDInput").value.trim();
+  if(!u||!p||!id) return alert("تمام فیلدها لازم است");
+
+  db.collection("users").doc(id).get().then(doc=>{
+    if(doc.exists) return alert("این شناسه یکتا قبلاً استفاده شده");
+    db.collection("users").doc(id).set({username:u,password:p,online:true});
+    me=id; 
+    localStorage.setItem("allo_user",me); 
+    document.getElementById("userID").innerText="کد شما: "+me; 
+    startApp();
   });
 }
+
 function loginUser(){
-  let u=document.getElementById("usernameInput").value.trim();
+  let u=document.getElementById("userIDInput").value.trim();
   let p=document.getElementById("passwordInput").value.trim();
-  if(!u||!p) return alert("هر دو فیلد لازم است");
+  if(!u||!p) return alert("تمام فیلدها لازم است");
+
   db.collection("users").doc(u).get().then(doc=>{
     if(!doc.exists) return alert("کاربر وجود ندارد");
     if(doc.data().password!==p) return alert("رمز اشتباه است");
@@ -414,7 +416,7 @@ function loadUsers(){
       if(doc.id===me) return;
       let div=document.createElement("div");
       div.className="user";
-      div.innerHTML=`<span>${doc.id}</span><span>${doc.data().online?"✅ آنلاین":"❌ آفلاین"}</span>`;
+      div.innerHTML=`<span>${doc.data().username} (${doc.id})</span><span>${doc.data().online?"✅ آنلاین":"❌ آفلاین"}</span>`;
       div.onclick=()=>{ activeUser=doc.id; loadMessages(); };
       usersDiv.appendChild(div);
     });
@@ -423,6 +425,7 @@ function loadUsers(){
 
 // ==================== Messages ====================
 function loadMessages(){
+  if(!activeUser) return;
   db.collection("messages").orderBy("time").onSnapshot(snap=>{
     const msgDiv = document.getElementById("messages");
     msgDiv.innerHTML = "";
