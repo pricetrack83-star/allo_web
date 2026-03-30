@@ -503,55 +503,104 @@ function logout(){
 // ==================== Recording ====================
 async function toggleRecording(){
   if(recorder && recorder.state=="recording"){
-    recorder.stop(); clearInterval(recInterval); recInterval=null; recSeconds=0; 
+    recorder.stop(); clearInterval(recInterval); recSeconds=0;
     document.getElementById("recordBtn").classList.remove("recording");
-    document.getElementById("recTimer").innerText="00:00";
-    return;
+  }else{
+    let stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    recorder = new MediaRecorder(stream);
+    recorder.start();
+    recChunks=[]; recSeconds=0;
+    document.getElementById("recordBtn").classList.add("recording");
+    recInterval=setInterval(()=>{ recSeconds++; let m=Math.floor(recSeconds/60); let s=recSeconds%60; document.getElementById("recTimer").innerText=`${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; },1000);
+    recorder.ondataavailable=e=>{ recChunks.push(e.data); }
+    recorder.onstop=()=>{
+      let blob=new Blob(recChunks,{type:'audio/webm'});
+      let url=URL.createObjectURL(blob);
+      if(activeUser){
+        db.collection("messages").add({
+          from: me,
+          to: activeUser,
+          audio: url,
+          time: firebase.firestore.FieldValue.serverTimestamp(),
+          seen:false
+        });
+      }
+    }
   }
-  const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-  recorder = new MediaRecorder(stream);
-  recChunks = [];
-  recorder.ondataavailable = e=>recChunks.push(e.data);
-  recorder.onstop = async ()=>{
-    const blob = new Blob(recChunks,{type:'audio/webm'});
-    const audioURL = URL.createObjectURL(blob);
-    db.collection("messages").add({from:me,to:activeUser,audio:audioURL,time:firebase.firestore.FieldValue.serverTimestamp()});
-  };
-  recorder.start();
-  document.getElementById("recordBtn").classList.add("recording");
-  recInterval = setInterval(()=>{ recSeconds++; document.getElementById("recTimer").innerText = `${String(Math.floor(recSeconds/60)).padStart(2,'0')}:${String(recSeconds%60).padStart(2,'0')}`;},1000);
 }
 
-// ==================== Call ====================
+// ==================== WebRTC Call ====================
 async function startCall(){
   if(!activeUser) return alert("ابتدا کاربر را انتخاب کنید");
   document.getElementById("callBox").style.display="block";
   const callStatus = document.getElementById("callStatus");
+  callStatus.innerText = "در حال تماس با " + activeUser;
+
   localStream = await navigator.mediaDevices.getUserMedia({audio:true});
   remoteStream = new MediaStream();
   const audioEl = document.createElement("audio"); audioEl.autoplay=true; audioEl.srcObject=remoteStream; document.body.appendChild(audioEl);
 
   peerConnection = new RTCPeerConnection(config);
-  localStream.getTracks().forEach(track=>peerConnection.addTrack(track,localStream));
-  peerConnection.ontrack = e=>{ e.streams[0].getTracks().forEach(t=>remoteStream.addTrack(t)); };
-  peerConnection.onicecandidate = e=>{ if(e.candidate) db.collection("calls").doc(activeUser).set({from:me,candidate:e.candidate}); };
+  localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+  peerConnection.ontrack = e => { e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t)); };
+  peerConnection.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(activeUser).set({from:me,candidate:e.candidate},{merge:true}); };
 
   const offer = await peerConnection.createOffer();
   await peerConnection.setLocalDescription(offer);
-  db.collection("calls").doc(activeUser).set({from:me,offer:offer});
+  await db.collection("calls").doc(activeUser).set({from:me, offer:offer},{merge:true});
 
   db.collection("calls").doc(me).onSnapshot(async snap=>{
     if(!snap.exists) return;
     const data = snap.data();
-    if(data.answer){ await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer)); }
+    if(data.answer && !peerConnection.currentRemoteDescription){
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+      callStatus.innerText = "تماس برقرار شد ✅";
+    }
     if(data.candidate){ try{ await peerConnection.addIceCandidate(data.candidate); }catch(e){console.log(e);} }
   });
 }
+
+db.collection("calls").where("to", "==", me)
+.onSnapshot(async snapshot=>{
+  snapshot.docChanges().forEach(async change=>{
+    if(change.type==="added"){
+      const call = change.doc.data();
+      if(call.offer && !peerConnection){
+        document.getElementById("callBox").style.display="block";
+        const callStatus = document.getElementById("callStatus");
+        callStatus.innerText = "تماس ورودی از " + call.from;
+
+        localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+        remoteStream = new MediaStream();
+        const audioEl = document.createElement("audio"); audioEl.autoplay=true; audioEl.srcObject=remoteStream; document.body.appendChild(audioEl);
+
+        peerConnection = new RTCPeerConnection(config);
+        localStream.getTracks().forEach(track=>peerConnection.addTrack(track,localStream));
+        peerConnection.ontrack = e=>{ e.streams[0].getTracks().forEach(t=>remoteStream.addTrack(t)); };
+        peerConnection.onicecandidate = e=>{
+          if(e.candidate) db.collection("calls").doc(call.from).set({candidate:e.candidate},{merge:true});
+        };
+
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        await db.collection("calls").doc(call.from).set({answer:answer},{merge:true});
+
+        callStatus.innerText = "تماس برقرار شد ✅";
+      }
+    }
+  });
+});
 
 async function endCall(){
   if(peerConnection) peerConnection.close(); peerConnection=null;
   if(localStream) localStream.getTracks().forEach(t=>t.stop()); localStream=null;
   document.getElementById("callBox").style.display="none";
+  if(activeUser){
+    await db.collection("calls").doc(activeUser).delete().catch(()=>{});
+    await db.collection("calls").doc(me).delete().catch(()=>{});
+  }
 }
 </script>
 </body>
