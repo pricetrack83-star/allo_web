@@ -36,13 +36,14 @@ body.dark{
   display:flex;
   overflow:hidden;
   transition:0.5s;
+  box-shadow:0 10px 40px rgba(0,0,0,0.2);
 }
 body.light .app{
-  background:rgba(255,255,255,0.9);
+  background:rgba(255,255,255,0.95);
   box-shadow:0 0 60px rgba(0,200,255,0.2);
 }
 body.dark .app{
-  background:rgba(20,20,20,0.9);
+  background:rgba(20,20,20,0.95);
   box-shadow:0 0 60px rgba(0,255,118,0.4);
 }
 
@@ -56,45 +57,49 @@ body.dark .app{
   gap:20px;
 }
 #loginBox input{
-  width:280px;
-  padding:14px;
+  width:300px;
+  padding:16px;
   border-radius:30px;
   border:none;
   background:#222;
   color:white;
   outline:none;
+  font-size:15px;
   transition:0.3s;
+  box-shadow:0 4px 15px rgba(0,0,0,0.2);
 }
-body.light #loginBox input{background:#ddd; color:#111;}
-#loginBox input:focus{background:#333;}
-body.light #loginBox input:focus{background:#ccc;}
+body.light #loginBox input{background:#eee; color:#111;}
+#loginBox input:focus{background:#333; box-shadow:0 0 10px #00ff80;}
+body.light #loginBox input:focus{background:#ccc; box-shadow:0 0 10px #00aaff;}
 #loginBox button{
-  width:180px;
-  padding:14px;
+  width:200px;
+  padding:16px;
   border-radius:30px;
   border:none;
   background:linear-gradient(135deg,#00ff80,#00e676);
   color:black;
   font-weight:bold;
   cursor:pointer;
+  font-size:15px;
   box-shadow:0 5px 15px rgba(0,255,118,0.4);
-  transition:0.2s;
+  transition:0.3s;
 }
 #loginBox button:hover{
-  transform:scale(1.08);
+  transform:scale(1.1);
   box-shadow:0 8px 25px rgba(0,255,118,0.6);
 }
 
 /* ==================== CHAT ==================== */
 #chatBox{display:none; flex:1; flex-direction:row; transition:0.5s;}
 #onlineList{
-  width:220px;
+  width:240px;
   padding:15px;
   display:flex;
   flex-direction:column;
   border-radius:0 0 0 30px;
   transition:0.5s;
   overflow-y:auto;
+  background:rgba(30,30,30,0.95);
 }
 body.light #onlineList{
   background:rgba(240,240,240,0.95);
@@ -110,22 +115,26 @@ body.dark #onlineList{
   text-shadow:0 0 8px currentColor;
 }
 .user{
-  padding:12px;
+  padding:12px 15px;
   margin:5px 0;
   border-radius:25px;
   cursor:pointer;
   transition:0.3s;
-  box-shadow:0 2px 8px rgba(0,255,118,0.2);
   font-weight:bold;
   display:flex;
   justify-content:space-between;
   align-items:center;
+  background:rgba(0,0,0,0.2);
 }
 .user:hover{
   transform:scale(1.05);
+  background:linear-gradient(135deg,#00ff80,#00e676);
+  color:black;
   box-shadow:0 5px 18px rgba(0,255,118,0.5);
 }
-body.light .user:hover{box-shadow:0 5px 18px rgba(0,170,255,0.5);}
+body.light .user:hover{background:linear-gradient(135deg,#00aaff,#00d4ff); color:white;}
+
+/* ==================== CHAT AREA ==================== */
 #chatArea{
   flex:1;
   display:flex;
@@ -134,9 +143,16 @@ body.light .user:hover{box-shadow:0 5px 18px rgba(0,170,255,0.5);}
   border-radius:0 30px 30px 0;
   padding:10px;
   transition:0.5s;
+  background:rgba(10,10,10,0.9);
 }
-body.light #chatArea{background:rgba(255,255,255,0.9);}
-body.dark #chatArea{background:rgba(10,10,10,0.9);}
+body.light #chatArea{background:rgba(255,255,255,0.95);}
+#userID{
+  font-size:13px;
+  color:#00ff80;
+  text-align:center;
+  margin-bottom:5px;
+  font-weight:bold;
+}
 #messages{
   flex:1;
   overflow-y:auto;
@@ -165,12 +181,21 @@ body.dark #chatArea{background:rgba(10,10,10,0.9);}
   background:linear-gradient(135deg,#333,#111);
   color:white;
 }
+.msg img{
+  border-radius:15px;
+  max-width:220px;
+  margin-top:5px;
+  transition:0.3s;
+}
+.msg img:hover{transform:scale(1.05);}
 .msg small{
   font-size:10px;
   color:#ccc;
   display:block;
   margin-top:5px;
 }
+
+/* ==================== FOOTER ==================== */
 .footer{
   display:flex;
   gap:10px;
@@ -181,17 +206,20 @@ body.dark #chatArea{background:rgba(10,10,10,0.9);}
 }
 .footer input{
   flex:1;
-  padding:14px;
+  padding:14px 16px;
   border-radius:25px;
   border:none;
   background:#222;
   color:white;
   outline:none;
+  font-size:14px;
   transition:0.3s;
+  box-shadow:0 2px 8px rgba(0,255,118,0.2);
 }
 body.light .footer input{background:#eee; color:#111;}
-.footer input:focus{background:#333;}
-body.light .footer input:focus{background:#ccc;}
+.footer input:focus{background:#333; box-shadow:0 0 8px #00ff80;}
+body.light .footer input:focus{background:#ccc; box-shadow:0 0 8px #00aaff;}
+
 .footer button{
   padding:14px;
   border-radius:50%;
@@ -200,12 +228,48 @@ body.light .footer input:focus{background:#ccc;}
   color:black;
   cursor:pointer;
   font-size:18px;
-  transition:0.2s;
+  box-shadow:0 3px 12px rgba(0,255,118,0.4);
+  transition:0.3s;
 }
 .footer button:hover{
-  transform:scale(1.2);
+  transform:scale(1.3);
   box-shadow:0 6px 20px rgba(0,255,118,0.6);
 }
+
+/* ==================== VOICE ==================== */
+#voiceControls{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+#recordBtn{
+  padding:10px 18px;
+  border-radius:50px;
+  border:none;
+  font-weight:bold;
+  cursor:pointer;
+  background:linear-gradient(135deg,#ff4081,#f50057);
+  color:white;
+  transition:0.3s;
+  box-shadow:0 2px 10px rgba(255,82,82,0.4);
+}
+#recordBtn.recording{
+  background:linear-gradient(135deg,#ff5252,#ff1744);
+  animation:pulse 1s infinite;
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 5px #ff5252;}
+  50%{box-shadow:0 0 20px #ff1744;}
+  100%{box-shadow:0 0 5px #ff5252;}
+}
+#recTimer{
+  font-weight:bold;
+  color:#ff5252;
+  min-width:50px;
+  text-align:center;
+}
+
+/* ==================== WAVEFORM ==================== */
 .waveform-container{
   width:100%;
   height:50px;
@@ -214,12 +278,11 @@ body.light .footer input:focus{background:#ccc;}
   margin-top:5px;
   box-shadow:0 0 10px rgba(0,255,118,0.4);
   cursor:pointer;
+  transition:0.3s;
 }
-img{
-  max-width:220px;
-  border-radius:15px;
-  margin-top:5px;
-}
+.waveform-container:hover{box-shadow:0 0 20px rgba(0,255,118,0.6);}
+
+/* ==================== TYPING ==================== */
 .typing{
   font-size:13px;
   font-weight:bold;
@@ -234,7 +297,7 @@ img{
 }
 #themeToggle{
   margin:10px;
-  padding:10px 15px;
+  padding:10px 18px;
   border-radius:25px;
   border:none;
   font-weight:bold;
@@ -246,41 +309,6 @@ img{
 #themeToggle:hover{
   transform:scale(1.1);
   box-shadow:0 6px 20px rgba(0,255,118,0.5);
-}
-#voiceControls{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-top:5px;
-}
-#recordBtn{
-  padding:10px 18px;
-  border-radius:50px;
-  border:none;
-  font-weight:bold;
-  cursor:pointer;
-  background:linear-gradient(135deg,#ff4081,#f50057);
-  color:white;
-  transition:0.3s;
-}
-#recordBtn.recording{
-  background:linear-gradient(135deg,#ff5252,#ff1744);
-  animation:pulse 1s infinite;
-}
-@keyframes pulse{
-  0%{box-shadow:0 0 5px #ff5252;}
-  50%{box-shadow:0 0 20px #ff1744;}
-  100%{box-shadow:0 0 5px #ff5252;}
-}
-#recTimer{
-  font-weight:bold;
-  color:#ff5252;
-}
-#userID{
-  font-size:12px;
-  color:#00ff80;
-  margin-bottom:5px;
-  text-align:center;
 }
 </style>
 </head>
@@ -313,10 +341,10 @@ img{
       <input type="file" id="imgInput" style="display:none;" accept="image/*">
       <button onclick="document.getElementById('imgInput').click()">📸</button>
       <div id="voiceControls">
-        <button id="recordBtn" onclick="toggleRecording()">🎤 ضبط</button>
+        <button id="recordBtn" onclick="toggleRecording()">🎤</button>
         <span id="recTimer">00:00</span>
       </div>
-      <button onclick="toggleTheme()">🌗 تغییر تم</button>
+      <button onclick="toggleTheme()">🌗</button>
     </div>
     <button onclick="logout()" style="margin:10px;background:#ff5252;border-radius:25px;padding:10px;font-weight:bold;cursor:pointer;">خروج</button>
   </div>
