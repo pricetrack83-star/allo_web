@@ -8,7 +8,7 @@
 <script src="https://unpkg.com/wavesurfer.js"></script>
 
 <style>
-/* ==== Reset & base ==== */
+/* ==== Reset & Base ==== */
 body{
   margin:0;
   font-family:'Vazirmatn',sans-serif;
@@ -27,10 +27,10 @@ body.dark{
   color:white;
 }
 
-/* ==== App container ==== */
+/* ==== App Container ==== */
 .app{
-  width:950px;
-  height:700px;
+  width:980px;
+  height:720px;
   border-radius:30px;
   backdrop-filter:blur(25px);
   display:flex;
@@ -38,12 +38,12 @@ body.dark{
   transition:0.5s;
 }
 body.light .app{
-  background:rgba(255,255,255,0.85);
-  box-shadow:0 0 50px rgba(0,200,255,0.2);
+  background:rgba(255,255,255,0.9);
+  box-shadow:0 0 60px rgba(0,200,255,0.2);
 }
 body.dark .app{
-  background:rgba(20,20,20,0.85);
-  box-shadow:0 0 50px rgba(0,255,118,0.4);
+  background:rgba(20,20,20,0.9);
+  box-shadow:0 0 60px rgba(0,255,118,0.4);
 }
 
 /* ==== Login ==== */
@@ -56,9 +56,9 @@ body.dark .app{
   gap:20px;
 }
 #loginBox input{
-  width:250px;
+  width:280px;
   padding:14px;
-  border-radius:25px;
+  border-radius:30px;
   border:none;
   background:#222;
   color:white;
@@ -69,7 +69,7 @@ body.light #loginBox input{background:#ddd; color:#111;}
 #loginBox input:focus{background:#333;}
 body.light #loginBox input:focus{background:#ccc;}
 #loginBox button{
-  width:160px;
+  width:180px;
   padding:14px;
   border-radius:30px;
   border:none;
@@ -81,7 +81,7 @@ body.light #loginBox input:focus{background:#ccc;}
   transition:0.2s;
 }
 #loginBox button:hover{
-  transform:scale(1.07);
+  transform:scale(1.08);
   box-shadow:0 8px 25px rgba(0,255,118,0.6);
 }
 
@@ -94,36 +94,40 @@ body.light #loginBox input:focus{background:#ccc;}
   flex-direction:column;
   border-radius:0 0 0 30px;
   transition:0.5s;
+  overflow-y:auto;
 }
 body.light #onlineList{
-  background:rgba(240,240,240,0.9);
+  background:rgba(240,240,240,0.95);
   border-right:2px solid #00aaff;
 }
 body.dark #onlineList{
-  background:rgba(30,30,30,0.9);
+  background:rgba(30,30,30,0.95);
   border-right:2px solid #00ff80;
 }
 #onlineList h3{
   text-align:center;
-  margin-bottom:10px;
+  margin-bottom:12px;
   text-shadow:0 0 8px currentColor;
-  color:inherit;
 }
 .user{
-  padding:10px;
+  padding:12px;
   margin:5px 0;
   border-radius:25px;
   cursor:pointer;
   transition:0.3s;
   box-shadow:0 2px 8px rgba(0,255,118,0.2);
+  font-weight:bold;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
 .user:hover{
   transform:scale(1.05);
-  box-shadow:0 5px 15px rgba(0,255,118,0.5);
+  box-shadow:0 5px 18px rgba(0,255,118,0.5);
 }
-body.light .user:hover{box-shadow:0 5px 15px rgba(0,170,255,0.5);}
+body.light .user:hover{box-shadow:0 5px 18px rgba(0,170,255,0.5);}
 
-/* ==== Chat area ==== */
+/* ==== Chat Area ==== */
 #chatArea{
   flex:1;
   display:flex;
@@ -133,14 +137,14 @@ body.light .user:hover{box-shadow:0 5px 15px rgba(0,170,255,0.5);}
   padding:10px;
   transition:0.5s;
 }
-body.light #chatArea{background:rgba(255,255,255,0.85);}
-body.dark #chatArea{background:rgba(10,10,10,0.85);}
+body.light #chatArea{background:rgba(255,255,255,0.9);}
+body.dark #chatArea{background:rgba(10,10,10,0.9);}
 #messages{
   flex:1;
   overflow-y:auto;
   display:flex;
   flex-direction:column;
-  gap:12px;
+  gap:14px;
   padding:10px;
 }
 .msg{
@@ -152,7 +156,7 @@ body.dark #chatArea{background:rgba(10,10,10,0.85);}
   cursor:pointer;
   font-size:14px;
   word-break:break-word;
-  box-shadow:0 2px 10px rgba(0,255,118,0.2);
+  box-shadow:0 2px 12px rgba(0,255,118,0.2);
 }
 .me{
   background:linear-gradient(135deg,#00ff80,#00e676);
@@ -174,9 +178,10 @@ body.dark #chatArea{background:rgba(10,10,10,0.85);}
 .footer{
   display:flex;
   gap:10px;
-  padding:10px;
+  padding:12px;
   border-top:2px solid currentColor;
   border-radius:0 0 30px 0;
+  align-items:center;
 }
 .footer input{
   flex:1;
@@ -214,6 +219,7 @@ body.light .footer input:focus{background:#ccc;}
   overflow:hidden;
   margin-top:5px;
   box-shadow:0 0 10px rgba(0,255,118,0.4);
+  cursor:pointer;
 }
 
 /* ==== Image ==== */
@@ -254,6 +260,36 @@ img{
   box-shadow:0 6px 20px rgba(0,255,118,0.5);
 }
 
+/* ==== Voice Recorder UI ==== */
+#voiceControls{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:5px;
+}
+#recordBtn{
+  padding:10px 18px;
+  border-radius:50px;
+  border:none;
+  font-weight:bold;
+  cursor:pointer;
+  background:linear-gradient(135deg,#ff4081,#f50057);
+  color:white;
+  transition:0.3s;
+}
+#recordBtn.recording{
+  background:linear-gradient(135deg,#ff5252,#ff1744);
+  animation:pulse 1s infinite;
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 5px #ff5252;}
+  50%{box-shadow:0 0 20px #ff1744;}
+  100%{box-shadow:0 0 5px #ff5252;}
+}
+#recTimer{
+  font-weight:bold;
+  color:#ff5252;
+}
 </style>
 </head>
 <body class="dark">
@@ -282,9 +318,12 @@ img{
     <div class="footer">
       <input id="msgInput" placeholder="پیام...">
       <button onclick="sendMessage()">💬</button>
-      <button onclick="sendVoice()">🎤</button>
       <input type="file" id="imgInput" style="display:none;" accept="image/*">
       <button onclick="document.getElementById('imgInput').click()">📸</button>
+      <div id="voiceControls">
+        <button id="recordBtn" onclick="toggleRecording()">🎤 ضبط</button>
+        <span id="recTimer">00:00</span>
+      </div>
     </div>
     <button onclick="logout()" style="margin:10px;background:#ff5252;border-radius:25px;padding:10px;font-weight:bold;cursor:pointer;">خروج</button>
   </div>
@@ -303,7 +342,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let me="", activeUser="", recorder=null;
+let me="", activeUser="", recorder=null, recChunks=[], recInterval=null, recSeconds=0;
 let typingTimeout;
 
 // Theme toggle
@@ -351,7 +390,7 @@ function loadUsers(){
       if(doc.id===me) return;
       let div=document.createElement("div");
       div.className="user";
-      div.innerText=doc.id+(doc.data().online?" ✅":" ❌");
+      div.innerHTML=`<span>${doc.id}</span><span>${doc.data().online?"✅":"❌"}</span>`;
       div.onclick=()=>{ activeUser=doc.id; loadMessages(); };
       usersDiv.appendChild(div);
     });
@@ -364,7 +403,7 @@ function loadMessages(){
     const msgDiv=document.getElementById("messages"); msgDiv.innerHTML="";
     snap.forEach(doc=>{
       let m=doc.data();
-      if(!(m.from===me&&m.to===activeUser)||(m.from===activeUser&&m.to===me)) return;
+      if(!((m.from===me&&m.to===activeUser)||(m.from===activeUser&&m.to===me))) return;
       let div=document.createElement("div");
       div.className="msg "+(m.from===me?"me":"other");
       if(m.text) div.innerText=m.text;
@@ -399,18 +438,33 @@ document.getElementById("imgInput").addEventListener("change",function(e){
   db.collection("messages").add({from:me,to:activeUser,image:url,time:Date.now()});
 });
 
-// Send voice
-async function sendVoice(){
-  if(recorder && recorder.state==="recording"){ recorder.stop(); return; }
+// Voice Recorder
+async function toggleRecording(){
+  const btn=document.getElementById("recordBtn");
+  const timer=document.getElementById("recTimer");
+  if(recorder && recorder.state==="recording"){
+    recorder.stop();
+    clearInterval(recInterval);
+    btn.classList.remove("recording");
+    recSeconds=0; timer.innerText="00:00";
+    return;
+  }
   const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-  recorder=new MediaRecorder(stream); let chunks=[];
-  recorder.ondataavailable=e=>chunks.push(e.data);
+  recorder=new MediaRecorder(stream); recChunks=[];
+  recorder.ondataavailable=e=>recChunks.push(e.data);
   recorder.onstop=()=>{
-    const blob=new Blob(chunks,{type:'audio/webm'});
+    const blob=new Blob(recChunks,{type:'audio/webm'});
     const url=URL.createObjectURL(blob);
-    db.collection("messages").add({from:me,to:activeUser,audio:url,time:Date.now()});
+    if(activeUser) db.collection("messages").add({from:me,to:activeUser,audio:url,time:Date.now()});
   };
   recorder.start();
+  btn.classList.add("recording");
+  recInterval=setInterval(()=>{
+    recSeconds++;
+    let m=Math.floor(recSeconds/60).toString().padStart(2,'0');
+    let s=(recSeconds%60).toString().padStart(2,'0');
+    timer.innerText=`${m}:${s}`;
+  },1000);
 }
 
 // Typing
