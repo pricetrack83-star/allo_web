@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ALLO | Next-Gen Cyber Terminal</title> 
+<title>ALLO</title> 
 
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;300;500;800;900&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -337,7 +337,6 @@ function initApp() {
     db.collection("users").doc(me).update({ online: true, lastSeen: Date.now() });
     setInterval(() => db.collection("users").doc(me).update({ lastSeen: Date.now(), online: true }), 20000);
 
-    // شمارش پیام‌های نخوانده
     db.collection("messages").where("t", "==", me).where("read", "==", false).onSnapshot(snap => {
         unreadCounts = {}; 
         snap.forEach(doc => {
@@ -369,10 +368,7 @@ function updateUserListUI() {
                     <div style="font-size:9px; color:var(--primary); opacity:0.8; font-weight:800;">${isOnline ? 'ONLINE' : 'OFFLINE'}</div>
                 </div>
                 ${unread > 0 ? `<div class="unread-count">${unread}</div>` : ''}`;
-            item.onclick = () => { 
-                activeTarget = doc.id; 
-                selectUser(); 
-            };
+            item.onclick = () => { activeTarget = doc.id; selectUser(); };
             list.appendChild(item);
         });
     });
@@ -391,12 +387,9 @@ function loadMessages() {
         snap.forEach(doc => {
             const d = doc.data();
             if((d.f==me && d.t==activeTarget) || (d.f==activeTarget && d.t==me)) {
-                
-                // بخش جدید: اگر چت باز است و پیام نخوانده از طرف مقابل آمد، آن را Read کن
                 if (d.f === activeTarget && d.read === false) {
                     db.collection("messages").doc(doc.id).update({ read: true });
                 }
-
                 const m = document.createElement("div");
                 m.className = `bubble ${d.f==me ? 'me' : 'other'}`;
                 if(d.audio) m.innerHTML = `<audio src="${d.audio}" controls style="filter:invert(1) opacity:0.8; height:35px;"></audio>`;
@@ -411,12 +404,12 @@ function loadMessages() {
 function sendMsg() {
     const i = document.getElementById("msgInput");
     if(!i.value || !activeTarget) return;
-    // ارسال با وضعیت read: false
     db.collection("messages").add({ f: me, t: activeTarget, txt: i.value, time: Date.now(), read: false });
     i.value = "";
 }
 
-const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
+// --- بخش اصلاح شده WebRTC برای رفع مشکل صدا ---
+const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }] };
 
 async function startCall() {
     if(!activeTarget) return;
@@ -424,17 +417,35 @@ async function startCall() {
     document.getElementById("cName").innerText = activeTarget.toUpperCase();
     document.getElementById("acceptBtn").style.display = "none";
     document.getElementById("muteBtn").style.display = "block";
+    document.getElementById("cStatus").innerText = "CALLING...";
+
     pc = new RTCPeerConnection(rtcConfig);
-    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON()); };
-    pc.ontrack = e => { document.getElementById("remoteAudio").srcObject = e.streams[0]; document.getElementById("cStatus").innerText = "CONNECTED"; };
+    
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+    pc.onicecandidate = e => {
+        if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON());
+    };
+
+    pc.ontrack = e => {
+        document.getElementById("remoteAudio").srcObject = e.streams[0];
+        document.getElementById("cStatus").innerText = "CONNECTED";
+    };
+
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     await db.collection("calls").doc(activeTarget).set({ offer, from: me });
+
     db.collection("calls").doc(activeTarget).onSnapshot(async snap => {
         const d = snap.data();
-        if(d?.answer && !pc.currentRemoteDescription) await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+        if(d?.answer && !pc.currentRemoteDescription) {
+            await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+        }
+    });
+
+    db.collection("calls").doc(activeTarget).collection("receiverCandidates").onSnapshot(s => {
+        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
     });
 }
 
@@ -446,6 +457,8 @@ function listenForCalls() {
             document.getElementById("callUI").style.display = "flex";
             document.getElementById("cName").innerText = d.from.toUpperCase();
             document.getElementById("acceptBtn").style.display = "block";
+            document.getElementById("muteBtn").style.display = "none";
+            document.getElementById("cStatus").innerText = "INCOMING CALL";
             document.getElementById("ring").play();
         } else if(!d && pc) hangup();
     });
@@ -455,15 +468,30 @@ async function answerCall() {
     document.getElementById("ring").pause();
     document.getElementById("acceptBtn").style.display = "none";
     document.getElementById("muteBtn").style.display = "block";
+    document.getElementById("cStatus").innerText = "CONNECTING...";
+
     pc = new RTCPeerConnection(rtcConfig);
-    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON()); };
-    pc.ontrack = e => { document.getElementById("remoteAudio").srcObject = e.streams[0]; document.getElementById("cStatus").innerText = "CONNECTED"; };
+    
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+    pc.onicecandidate = e => {
+        if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON());
+    };
+
+    pc.ontrack = e => {
+        document.getElementById("remoteAudio").srcObject = e.streams[0];
+        document.getElementById("cStatus").innerText = "CONNECTED";
+    };
+
     await pc.setRemoteDescription(new RTCSessionDescription(window.incoming.offer));
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
     await db.collection("calls").doc(me).update({ answer });
+
+    db.collection("calls").doc(me).collection("callerCandidates").onSnapshot(s => {
+        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
+    });
 }
 
 function toggleMute() {
