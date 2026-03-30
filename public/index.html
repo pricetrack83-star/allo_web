@@ -107,13 +107,16 @@ img{max-width:100%;border-radius:10px;margin-top:5px;}
 
 <div class="header">ALLO 🚀</div>
 
+<!-- Login -->
 <div id="loginBox">
-<input id="nameInput" placeholder="اسم">
+<input id="usernameInput" placeholder="نام کاربری">
+<input id="passwordInput" type="password" placeholder="رمز عبور">
 <button onclick="loginUser()">ورود</button>
+<button onclick="registerUser()">ثبت نام</button>
 </div>
 
+<!-- Chat -->
 <div id="chatBox">
-
 <div id="users"></div>
 <div id="messages"></div>
 
@@ -123,7 +126,6 @@ img{max-width:100%;border-radius:10px;margin-top:5px;}
 </div>
 
 <button onclick="logout()">خروج</button>
-
 </div>
 
 </div>
@@ -144,104 +146,117 @@ const db = firebase.firestore();
 let me = "";
 let activeUser = "";
 
-// login
-function loginUser(){
-  me = document.getElementById("nameInput").value.trim();
-  if(!me) return alert("اسم بزن");
+// 🔐 ثبت نام
+function registerUser(){
+  let u = document.getElementById("usernameInput").value.trim();
+  let p = document.getElementById("passwordInput").value.trim();
+  if(!u || !p) return alert("هر دو فیلد لازم است");
 
-  localStorage.setItem("allo_user", me);
-
-  db.collection("users").doc(me).set({
-    online:true
+  // چک می‌کنیم کاربر وجود نداشته باشد
+  db.collection("users").doc(u).get().then(doc=>{
+    if(doc.exists){
+      alert("این کاربر قبلاً ثبت شده");
+    }else{
+      db.collection("users").doc(u).set({
+        password: p,
+        online: true
+      });
+      me = u;
+      localStorage.setItem("allo_user", me);
+      startApp();
+    }
   });
-
-  startApp();
 }
 
-// start
+// 🔐 ورود
+function loginUser(){
+  let u = document.getElementById("usernameInput").value.trim();
+  let p = document.getElementById("passwordInput").value.trim();
+  if(!u || !p) return alert("هر دو فیلد لازم است");
+
+  db.collection("users").doc(u).get().then(doc=>{
+    if(!doc.exists) return alert("کاربر وجود ندارد");
+    if(doc.data().password !== p) return alert("رمز اشتباه است");
+
+    me = u;
+    localStorage.setItem("allo_user", me);
+    db.collection("users").doc(me).update({online:true});
+    startApp();
+  });
+}
+
+// شروع برنامه
 function startApp(){
   document.getElementById("loginBox").style.display="none";
   document.getElementById("chatBox").style.display="flex";
-
   loadUsers();
 }
 
-// users
+// کاربران
 function loadUsers(){
   db.collection("users").onSnapshot(snap=>{
     const usersDiv = document.getElementById("users");
     usersDiv.innerHTML="";
-
     snap.forEach(doc=>{
-      if(doc.id === me) return;
-
-      let div = document.createElement("div");
-      div.className = "user";
-      div.innerText = doc.id;
-
-      div.onclick = ()=>{
-        activeUser = doc.id;
+      if(doc.id===me) return;
+      let div=document.createElement("div");
+      div.className="user";
+      div.innerText=doc.id;
+      div.onclick=()=>{
+        activeUser=doc.id;
         loadMessages();
       };
-
       usersDiv.appendChild(div);
     });
   });
 }
 
-// messages
+// پیام‌ها
 function loadMessages(){
   db.collection("messages")
   .orderBy("time")
   .onSnapshot(snap=>{
     const msgDiv = document.getElementById("messages");
     msgDiv.innerHTML="";
-
     snap.forEach(doc=>{
       let m = doc.data();
-
       if(!(m.from===me && m.to===activeUser) &&
          !(m.from===activeUser && m.to===me)) return;
-
       let div = document.createElement("div");
-      div.className = "msg " + (m.from===me ? "me" : "other");
+      div.className="msg "+(m.from===me?"me":"other");
       div.innerText = m.text;
-
       msgDiv.appendChild(div);
     });
-
     msgDiv.scrollTop = 99999;
   });
 }
 
-// send
+// ارسال پیام
 function sendMessage(){
   let text = document.getElementById("msgInput").value.trim();
   if(!text || !activeUser) return;
-
   db.collection("messages").add({
     from: me,
     to: activeUser,
     text: text,
     time: Date.now()
   });
-
   document.getElementById("msgInput").value="";
 }
 
-// logout
+// خروج
 function logout(){
   db.collection("users").doc(me).update({online:false});
   localStorage.removeItem("allo_user");
   location.reload();
 }
 
-// auto login
-window.onload = ()=>{
+// ورود خودکار
+window.onload=()=>{
   let saved = localStorage.getItem("allo_user");
   if(saved){
     me = saved;
-    db.collection("users").doc(me).set({online:true});
+    db.collection("users").doc(me).update({online:true});
     startApp();
   }
 };
