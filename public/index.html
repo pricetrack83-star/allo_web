@@ -6,263 +6,84 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/wavesurfer.js"></script>
-
 <style>
-/* ==== Reset & base ==== */
-body{
-  margin:0;
-  font-family:'Vazirmatn',sans-serif;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-  transition:0.5s;
-}
-body.light{
-  background:linear-gradient(135deg,#f5f5f5,#ddd);
-  color:#111;
-}
-body.dark{
-  background:linear-gradient(135deg,#0f0f0f,#1a1a1a);
-  color:white;
-}
+/* ==== Reset & Base ==== */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{margin:0;font-family:'Vazirmatn',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;transition:0.5s;background:linear-gradient(135deg,#0f0f0f,#1a1a1a);color:white;overflow:hidden;}
+body.light{background:linear-gradient(135deg,#f5f5f5,#ddd);color:#111;}
 
 /* ==== App container ==== */
-.app{
-  width:950px;
-  height:700px;
-  border-radius:30px;
-  backdrop-filter:blur(25px);
-  display:flex;
-  overflow:hidden;
-  transition:0.5s;
-}
-body.light .app{
-  background:rgba(255,255,255,0.85);
-  box-shadow:0 0 50px rgba(0,200,255,0.2);
-}
-body.dark .app{
-  background:rgba(20,20,20,0.85);
-  box-shadow:0 0 50px rgba(0,255,118,0.4);
-}
+.app{width:1000px;height:720px;border-radius:30px;backdrop-filter:blur(30px);display:flex;overflow:hidden;transition:0.5s;box-shadow:0 0 80px rgba(0,255,118,0.5);}
+body.light .app{box-shadow:0 0 60px rgba(0,170,255,0.3);}
 
 /* ==== Login ==== */
-#loginBox{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  gap:20px;
-}
-#loginBox input{
-  width:250px;
-  padding:14px;
-  border-radius:25px;
-  border:none;
-  background:#222;
-  color:white;
-  outline:none;
-  transition:0.3s;
-}
-body.light #loginBox input{background:#ddd; color:#111;}
+#loginBox{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;transition:0.5s;}
+#loginBox input{width:280px;padding:16px;border-radius:35px;border:none;background:#222;color:white;outline:none;transition:0.3s;box-shadow:0 3px 15px rgba(0,255,118,0.2);}
+body.light #loginBox input{background:#eee;color:#111;box-shadow:0 3px 15px rgba(0,170,255,0.2);}
 #loginBox input:focus{background:#333;}
 body.light #loginBox input:focus{background:#ccc;}
-#loginBox button{
-  width:160px;
-  padding:14px;
-  border-radius:30px;
-  border:none;
-  background:linear-gradient(135deg,#00ff80,#00e676);
-  color:black;
-  font-weight:bold;
-  cursor:pointer;
-  box-shadow:0 5px 15px rgba(0,255,118,0.4);
-  transition:0.2s;
-}
-#loginBox button:hover{
-  transform:scale(1.07);
-  box-shadow:0 8px 25px rgba(0,255,118,0.6);
-}
+#loginBox button{width:180px;padding:16px;border-radius:35px;border:none;background:linear-gradient(135deg,#00ff80,#00e676);color:black;font-weight:bold;cursor:pointer;box-shadow:0 5px 25px rgba(0,255,118,0.5);transition:0.3s;}
+#loginBox button:hover{transform:scale(1.08);box-shadow:0 8px 30px rgba(0,255,118,0.7);}
+#loginBox .title{font-size:50px;font-weight:bold;color:#00ff80;text-shadow:0 0 30px #00ff80;transition:0.5s;}
 
 /* ==== Chat ==== */
-#chatBox{display:none; flex:1; flex-direction:row; transition:0.5s;}
-#onlineList{
-  width:220px;
-  padding:15px;
-  display:flex;
-  flex-direction:column;
-  border-radius:0 0 0 30px;
-  transition:0.5s;
-}
-body.light #onlineList{
-  background:rgba(240,240,240,0.9);
-  border-right:2px solid #00aaff;
-}
-body.dark #onlineList{
-  background:rgba(30,30,30,0.9);
-  border-right:2px solid #00ff80;
-}
-#onlineList h3{
-  text-align:center;
-  margin-bottom:10px;
-  text-shadow:0 0 8px currentColor;
-  color:inherit;
-}
-.user{
-  padding:10px;
-  margin:5px 0;
-  border-radius:25px;
-  cursor:pointer;
-  transition:0.3s;
-  box-shadow:0 2px 8px rgba(0,255,118,0.2);
-}
-.user:hover{
-  transform:scale(1.05);
-  box-shadow:0 5px 15px rgba(0,255,118,0.5);
-}
-body.light .user:hover{box-shadow:0 5px 15px rgba(0,170,255,0.5);}
+#chatBox{display:none;flex:1;flex-direction:row;transition:0.5s;}
 
-/* ==== Chat area ==== */
-#chatArea{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  margin-left:10px;
-  border-radius:0 30px 30px 0;
-  padding:10px;
-  transition:0.5s;
-}
-body.light #chatArea{background:rgba(255,255,255,0.85);}
-body.dark #chatArea{background:rgba(10,10,10,0.85);}
-#messages{
-  flex:1;
-  overflow-y:auto;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  padding:10px;
-}
-.msg{
-  padding:14px 20px;
-  border-radius:25px;
-  max-width:70%;
-  position:relative;
-  transition:0.3s;
-  cursor:pointer;
-  font-size:14px;
-  word-break:break-word;
-  box-shadow:0 2px 10px rgba(0,255,118,0.2);
-}
-.me{
-  background:linear-gradient(135deg,#00ff80,#00e676);
-  color:black;
-  align-self:flex-end;
-}
-.other{
-  background:linear-gradient(135deg,#333,#111);
-  color:white;
-}
-.msg small{
-  font-size:10px;
-  color:#ccc;
-  display:block;
-  margin-top:5px;
-}
+/* ==== Online list ==== */
+#onlineList{width:240px;padding:20px;display:flex;flex-direction:column;border-radius:0 0 0 30px;transition:0.5s;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#00e676 #111;}
+#onlineList::-webkit-scrollbar{width:8px;}
+#onlineList::-webkit-scrollbar-thumb{background:#00e676;border-radius:4px;}
+body.light #onlineList{background:rgba(240,240,240,0.95);border-right:2px solid #00aaff;}
+body.dark #onlineList{background:rgba(30,30,30,0.95);border-right:2px solid #00ff80;}
+#onlineList h3{text-align:center;margin-bottom:15px;text-shadow:0 0 12px currentColor;color:inherit;}
+.user{padding:12px;margin:6px 0;border-radius:25px;cursor:pointer;transition:0.3s;box-shadow:0 2px 15px rgba(0,255,118,0.2);}
+.user:hover{transform:scale(1.08);box-shadow:0 5px 20px rgba(0,255,118,0.5);}
+body.light .user:hover{box-shadow:0 5px 20px rgba(0,170,255,0.5);}
 
-/* ==== Footer ==== */
-.footer{
-  display:flex;
-  gap:10px;
-  padding:10px;
-  border-top:2px solid currentColor;
-  border-radius:0 0 30px 0;
-}
-.footer input{
-  flex:1;
-  padding:14px;
-  border-radius:25px;
-  border:none;
-  background:#222;
-  color:white;
-  outline:none;
-  transition:0.3s;
-}
-body.light .footer input{background:#eee; color:#111;}
+/* ==== Chat Area ==== */
+#chatArea{flex:1;display:flex;flex-direction:column;margin-left:15px;border-radius:0 30px 30px 0;padding:15px;transition:0.5s;position:relative;}
+body.light #chatArea{background:rgba(255,255,255,0.9);}
+body.dark #chatArea{background:rgba(10,10,10,0.9);}
+#messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:10px;scrollbar-width:thin;scrollbar-color:#00e676 #111;}
+#messages::-webkit-scrollbar{width:8px;}
+#messages::-webkit-scrollbar-thumb{background:#00e676;border-radius:4px;}
+.msg{padding:16px 22px;border-radius:30px;max-width:70%;position:relative;transition:0.3s;cursor:pointer;font-size:15px;word-break:break-word;box-shadow:0 3px 15px rgba(0,255,118,0.2);}
+.msg.me{background:linear-gradient(135deg,#00ff80,#00e676);color:black;align-self:flex-end;animation:slideInRight 0.5s;}
+.msg.other{background:linear-gradient(135deg,#333,#111);color:white;align-self:flex-start;animation:slideInLeft 0.5s;}
+.msg small{font-size:11px;color:#ccc;display:block;margin-top:5px;}
+@keyframes slideInRight{0%{opacity:0;transform:translateX(50px);}100%{opacity:1;transform:translateX(0);}}
+@keyframes slideInLeft{0%{opacity:0;transform:translateX(-50px);}100%{opacity:1;transform:translateX(0);}}
+
+img{max-width:240px;border-radius:20px;margin-top:5px;box-shadow:0 3px 15px rgba(0,255,118,0.3);}
+
+/* Footer */
+.footer{display:flex;gap:12px;padding:12px;border-top:2px solid currentColor;border-radius:0 0 30px 0;}
+.footer input{flex:1;padding:16px;border-radius:30px;border:none;background:#222;color:white;outline:none;transition:0.3s;box-shadow:0 2px 10px rgba(0,255,118,0.2);}
+body.light .footer input{background:#eee;color:#111;box-shadow:0 2px 10px rgba(0,170,255,0.2);}
 .footer input:focus{background:#333;}
 body.light .footer input:focus{background:#ccc;}
-.footer button{
-  padding:14px;
-  border-radius:50%;
-  border:none;
-  background:linear-gradient(135deg,#00ff80,#00e676);
-  color:black;
-  cursor:pointer;
-  font-size:18px;
-  transition:0.2s;
-}
-.footer button:hover{
-  transform:scale(1.2);
-  box-shadow:0 6px 20px rgba(0,255,118,0.6);
-}
+.footer button{padding:16px;border-radius:50%;border:none;background:linear-gradient(135deg,#00ff80,#00e676);color:black;cursor:pointer;font-size:20px;transition:0.2s;box-shadow:0 3px 15px rgba(0,255,118,0.3);}
+.footer button:hover{transform:scale(1.2);box-shadow:0 6px 25px rgba(0,255,118,0.6);}
 
-/* ==== Waveform ==== */
-.waveform-container{
-  width:100%;
-  height:50px;
-  border-radius:15px;
-  overflow:hidden;
-  margin-top:5px;
-  box-shadow:0 0 10px rgba(0,255,118,0.4);
-}
+/* Waveform */
+.waveform-container{width:100%;height:55px;border-radius:20px;overflow:hidden;margin-top:5px;box-shadow:0 0 20px rgba(0,255,118,0.6);}
 
-/* ==== Image ==== */
-img{
-  max-width:220px;
-  border-radius:15px;
-  margin-top:5px;
-}
+/* Typing animation */
+.typing{font-size:14px;font-weight:bold;color:#00ff80;margin-left:5px;font-style:italic;animation:blink 1s infinite;text-shadow:0 0 8px #00ff80;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
 
-/* ==== Typing animation ==== */
-.typing{
-  font-size:13px;
-  font-weight:bold;
-  color:#00ff80;
-  margin-left:5px;
-  font-style:italic;
-  animation:blink 1s infinite;
-}
-@keyframes blink{
-  0%,100%{opacity:1;}
-  50%{opacity:0.3;}
-}
-
-/* ==== Theme toggle button ==== */
-#themeToggle{
-  margin:10px;
-  padding:10px 15px;
-  border-radius:25px;
-  border:none;
-  font-weight:bold;
-  cursor:pointer;
-  background:linear-gradient(135deg,#00ff80,#00e676);
-  box-shadow:0 3px 12px rgba(0,255,118,0.3);
-  transition:0.3s;
-}
-#themeToggle:hover{
-  transform:scale(1.1);
-  box-shadow:0 6px 20px rgba(0,255,118,0.5);
-}
-
+/* Theme toggle */
+#themeToggle{margin:12px;padding:12px 18px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;background:linear-gradient(135deg,#00ff80,#00e676);box-shadow:0 3px 15px rgba(0,255,118,0.4);transition:0.3s;}
+#themeToggle:hover{transform:scale(1.12);box-shadow:0 6px 25px rgba(0,255,118,0.6);}
 </style>
 </head>
-<body class="dark">
 
+<body class="dark">
 <div class="app">
 
 <!-- Login -->
 <div id="loginBox">
-  <div style="font-size:38px;font-weight:bold;color:#00ff80;text-shadow:0 0 20px #00ff80;">ALLO 🚀</div>
+  <div class="title">ALLO 🚀</div>
   <input id="usernameInput" placeholder="نام کاربری">
   <input id="passwordInput" type="password" placeholder="رمز عبور">
   <button onclick="registerUser()">ثبت نام</button>
@@ -286,31 +107,20 @@ img{
       <input type="file" id="imgInput" style="display:none;" accept="image/*">
       <button onclick="document.getElementById('imgInput').click()">📸</button>
     </div>
-    <button onclick="logout()" style="margin:10px;background:#ff5252;border-radius:25px;padding:10px;font-weight:bold;cursor:pointer;">خروج</button>
+    <button onclick="logout()" style="margin:10px;background:#ff5252;border-radius:25px;padding:12px;font-weight:bold;cursor:pointer;">خروج</button>
   </div>
 </div>
 
 <script>
 // Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
-  authDomain: "alloo-web.firebaseapp.com",
-  projectId: "alloo-web",
-  storageBucket: "alloo-web.firebasestorage.app",
-  messagingSenderId: "132232824762",
-  appId: "1:132232824762:web:4e3c25557c072f0feabf83"
-};
+const firebaseConfig = {apiKey:"AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",authDomain:"alloo-web.firebaseapp.com",projectId:"alloo-web",storageBucket:"alloo-web.firebasestorage.app",messagingSenderId:"132232824762",appId:"1:132232824762:web:4e3c25557c072f0feabf83"};
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let me="", activeUser="", recorder=null;
-let typingTimeout;
+let me="", activeUser="", recorder=null, typingTimeout;
 
 // Theme toggle
-function toggleTheme(){
-  document.body.classList.toggle('light');
-  document.body.classList.toggle('dark');
-}
+function toggleTheme(){document.body.classList.toggle('light');document.body.classList.toggle('dark');}
 
 // Register & Login
 function registerUser(){
@@ -364,7 +174,7 @@ function loadMessages(){
     const msgDiv=document.getElementById("messages"); msgDiv.innerHTML="";
     snap.forEach(doc=>{
       let m=doc.data();
-      if(!(m.from===me&&m.to===activeUser)||(m.from===activeUser&&m.to===me)) return;
+      if(!((m.from===me&&m.to===activeUser)||(m.from===activeUser&&m.to===me))) return;
       let div=document.createElement("div");
       div.className="msg "+(m.from===me?"me":"other");
       if(m.text) div.innerText=m.text;
@@ -440,6 +250,5 @@ window.onload=()=>{
   if(saved){ me=saved; db.collection("users").doc(me).update({online:true}); startApp(); }
 };
 </script>
-
 </body>
 </html>
