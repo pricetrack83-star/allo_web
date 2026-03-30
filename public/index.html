@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>ALLO 🚀</title>
+<title>ALLO</title> <!-- تغییر عنوان تب -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/wavesurfer.js"></script>
@@ -290,6 +290,14 @@ img{
   font-weight:bold;
   color:#ff5252;
 }
+
+/* ==== Added User ID Display ==== */
+#userID{
+  font-size:12px;
+  color:#00ff80;
+  margin-bottom:5px;
+  text-align:center;
+}
 </style>
 </head>
 <body class="dark">
@@ -313,6 +321,7 @@ img{
     <div id="users"></div>
   </div>
   <div id="chatArea">
+    <div id="userID"></div> <!-- نمایش کد کاربر -->
     <div id="messages"></div>
     <div class="typing" id="typingInfo"></div>
     <div class="footer">
@@ -324,6 +333,7 @@ img{
         <button id="recordBtn" onclick="toggleRecording()">🎤 ضبط</button>
         <span id="recTimer">00:00</span>
       </div>
+      <button onclick="toggleTheme()">🌗 تغییر تم</button>
     </div>
     <button onclick="logout()" style="margin:10px;background:#ff5252;border-radius:25px;padding:10px;font-weight:bold;cursor:pointer;">خروج</button>
   </div>
@@ -359,7 +369,7 @@ function registerUser(){
   db.collection("users").doc(u).get().then(doc=>{
     if(doc.exists) return alert("این کاربر قبلاً ساخته شده است");
     db.collection("users").doc(u).set({password:p,online:true});
-    me=u; localStorage.setItem("allo_user",me); startApp();
+    me=u; localStorage.setItem("allo_user",me); document.getElementById("userID").innerText="کد شما: "+me; startApp();
   });
 }
 function loginUser(){
@@ -371,6 +381,7 @@ function loginUser(){
     if(doc.data().password!==p) return alert("رمز اشتباه است");
     me=u; localStorage.setItem("allo_user",me);
     db.collection("users").doc(me).update({online:true});
+    document.getElementById("userID").innerText="کد شما: "+me;
     startApp();
   });
 }
@@ -390,7 +401,7 @@ function loadUsers(){
       if(doc.id===me) return;
       let div=document.createElement("div");
       div.className="user";
-      div.innerHTML=`<span>${doc.id}</span><span>${doc.data().online?"✅":"❌"}</span>`;
+      div.innerHTML=`<span>${doc.id}</span><span>${doc.data().online?"✅ آنلاین":"❌ آفلاین"}</span>`;
       div.onclick=()=>{ activeUser=doc.id; loadMessages(); };
       usersDiv.appendChild(div);
     });
@@ -491,7 +502,7 @@ function logout(){
 // Auto-login
 window.onload=()=>{
   let saved=localStorage.getItem("allo_user");
-  if(saved){ me=saved; db.collection("users").doc(me).update({online:true}); startApp(); }
+  if(saved){ me=saved; db.collection("users").doc(me).update({online:true}); document.getElementById("userID").innerText="کد شما: "+me; startApp(); }
 };
 </script>
 
