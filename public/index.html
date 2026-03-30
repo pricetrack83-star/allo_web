@@ -10,7 +10,7 @@
 <script src="https://unpkg.com/wavesurfer.js"></script>
 
 <style>
-/* ==================== BODY ==================== */
+/* تمام استایل‌های شما بدون تغییر */
 body{
   margin:0;
   font-family:'Vazirmatn',sans-serif;
@@ -28,8 +28,6 @@ body.dark{
   background:linear-gradient(135deg,#0f0f0f,#1a1a1a);
   color:white;
 }
-
-/* ==================== APP ==================== */
 .app{
   width:980px;
   height:720px;
@@ -48,17 +46,13 @@ body.dark .app{
   background:rgba(20,20,20,0.95);
   box-shadow:0 0 60px rgba(0,255,118,0.4);
 }
-
-/* اصلاح استایل لوگوی بدون پس‌زمینه */
 .main-logo-img {
   width: 130px;
   height: auto;
   margin-bottom: 15px;
-  /* ایجاد درخشش ملایم دور لوگو */
   filter: drop-shadow(0 0 10px rgba(0,255,128,0.4));
   transition: 0.3s;
 }
-
 .sidebar-logo-img {
   width: 70px;
   height: auto;
@@ -66,13 +60,9 @@ body.dark .app{
   margin: 15px auto;
   filter: drop-shadow(0 0 5px rgba(0,255,128,0.2));
 }
-
-/* معکوس کردن رنگ لوگو در تم روشن (اگر لوگوی شما سفید است) */
 body.light .main-logo-img, body.light .sidebar-logo-img {
   filter: invert(0.8) drop-shadow(0 0 5px rgba(0,0,0,0.1));
 }
-
-/* ==================== LOGIN ==================== */
 #loginBox{
   flex:1;
   display:flex;
@@ -113,8 +103,6 @@ body.light #loginBox input:focus{background:#ccc; box-shadow:0 0 10px #00aaff;}
   transform:scale(1.1);
   box-shadow:0 8px 25px rgba(0,255,118,0.6);
 }
-
-/* ==================== CHAT ==================== */
 #chatBox{display:none; flex:1; flex-direction:row; transition:0.5s;}
 #onlineList{
   width:240px;
@@ -158,8 +146,6 @@ body.dark #onlineList{
   box-shadow:0 5px 18px rgba(0,255,118,0.5);
 }
 body.light .user:hover{background:linear-gradient(135deg,#00aaff,#00d4ff); color:white;}
-
-/* ==================== CHAT AREA ==================== */
 #chatArea{
   flex:1;
   display:flex;
@@ -207,8 +193,6 @@ body.light #chatArea{background:rgba(255,255,255,0.95);}
   background:linear-gradient(135deg,#333,#111);
   color:white;
 }
-
-/* ==================== FOOTER ==================== */
 .footer{
   display:flex;
   gap:10px;
@@ -229,7 +213,6 @@ body.light #chatArea{background:rgba(255,255,255,0.95);}
   transition:0.3s;
 }
 body.light .footer input{background:#eee; color:#111;}
-
 .footer button{
   padding:14px;
   border-radius:50%;
@@ -241,7 +224,6 @@ body.light .footer input{background:#eee; color:#111;}
   transition:0.3s;
 }
 .footer button:hover{ transform:scale(1.2); }
-
 #recordBtn{
   padding:10px 18px;
   border-radius:50px;
@@ -256,7 +238,6 @@ body.light .footer input{background:#eee; color:#111;}
   50%{box-shadow:0 0 20px #ff1744;}
   100%{box-shadow:0 0 5px #ff5252;}
 }
-
 #callBox{
   display:none;
   position:absolute;
@@ -336,9 +317,16 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let me="", activeUser="", recorder=null, recChunks=[], recInterval=null, recSeconds=0;
-let localStream=null, remoteStream=null, peerConnection=null;
-let incomingCall=null;
+let localStream=null, peerConnection=null;
 const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
+// --- پوسته و اجرا ---
+document.body.classList.add(localStorage.getItem("allo_theme")||"dark");
+if(localStorage.getItem("allo_user")){ 
+    me=localStorage.getItem("allo_user"); 
+    document.getElementById("userID").innerText="کد شما: "+me; 
+    startApp(); 
+}
 
 function toggleTheme(){
   document.body.classList.toggle('light');
@@ -346,6 +334,7 @@ function toggleTheme(){
   localStorage.setItem("allo_theme", document.body.classList.contains('dark')?"dark":"light");
 }
 
+// --- مدیریت کاربر ---
 function registerUser(){
   let u=document.getElementById("usernameInput").value.trim();
   let p=document.getElementById("passwordInput").value.trim();
@@ -355,7 +344,6 @@ function registerUser(){
     if(doc.exists) return alert("این شناسه یکتا قبلاً استفاده شده");
     db.collection("users").doc(id).set({username:u,password:p,online:true});
     me=id; localStorage.setItem("allo_user",me); 
-    document.getElementById("userID").innerText="کد شما: "+me;
     startApp();
   });
 }
@@ -363,13 +351,10 @@ function registerUser(){
 function loginUser(){
   let u=document.getElementById("userIDInput").value.trim();
   let p=document.getElementById("passwordInput").value.trim();
-  if(!u||!p) return alert("تمام فیلدها لازم است");
   db.collection("users").doc(u).get().then(doc=>{
-    if(!doc.exists) return alert("کاربر وجود ندارد");
-    if(doc.data().password!==p) return alert("رمز اشتباه است");
+    if(!doc.exists || doc.data().password!==p) return alert("خطا در ورود");
     me=u; localStorage.setItem("allo_user",me);
     db.collection("users").doc(me).update({online:true});
-    document.getElementById("userID").innerText="کد شما: "+me;
     startApp();
   });
 }
@@ -377,7 +362,9 @@ function loginUser(){
 function startApp(){
   document.getElementById("loginBox").style.display="none";
   document.getElementById("chatBox").style.display="flex";
-  loadUsers(); loadMessages();
+  document.getElementById("userID").innerText="کد شما: "+me;
+  loadUsers();
+  listenForCalls();
 }
 
 function loadUsers(){
@@ -406,10 +393,8 @@ function loadMessages(){
       div.className = "msg " + (m.from===me ? "me" : "other");
       if(m.text) div.innerText = m.text;
       if(m.audio){
-        let audioElem = document.createElement("audio");
-        audioElem.src = m.audio;
-        audioElem.controls=true;
-        div.appendChild(audioElem);
+        let aud = document.createElement("audio"); aud.src = m.audio; aud.controls=true;
+        div.appendChild(aud);
       }
       msgDiv.appendChild(div);
     });
@@ -419,23 +404,13 @@ function loadMessages(){
 
 function sendMessage(){
   let text = document.getElementById("msgInput").value.trim();
-  if(!text || !activeUser) return;
-  db.collection("messages").add({
-    from: me,
-    to: activeUser,
-    text: text,
-    time: firebase.firestore.FieldValue.serverTimestamp(),
-    seen: false
-  });
-  document.getElementById("msgInput").value="";
+  if(text && activeUser) {
+    db.collection("messages").add({ from: me, to: activeUser, text: text, time: firebase.firestore.FieldValue.serverTimestamp() });
+    document.getElementById("msgInput").value="";
+  }
 }
 
-function logout(){
-  if(me) db.collection("users").doc(me).update({online:false});
-  localStorage.removeItem("allo_user");
-  location.reload();
-}
-
+// --- ضبط صدا ---
 async function toggleRecording(){
   if(recorder && recorder.state=="recording"){
     recorder.stop(); clearInterval(recInterval); recSeconds=0;
@@ -443,60 +418,105 @@ async function toggleRecording(){
   }else{
     let stream = await navigator.mediaDevices.getUserMedia({audio:true});
     recorder = new MediaRecorder(stream);
-    recorder.start();
-    recChunks=[]; recSeconds=0;
+    recorder.start(); recChunks=[]; recSeconds=0;
     document.getElementById("recordBtn").classList.add("recording");
     recInterval=setInterval(()=>{ recSeconds++; let m=Math.floor(recSeconds/60); let s=recSeconds%60; document.getElementById("recTimer").innerText=`${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; },1000);
-    recorder.ondataavailable=e=>{ recChunks.push(e.data); }
-    recorder.onstop=()=>{ 
-      let blob=new Blob(recChunks,{type:'audio/webm'}); 
+    recorder.ondataavailable=e=>recChunks.push(e.data);
+    recorder.onstop=()=>{
       let reader = new FileReader();
-      reader.readAsDataURL(blob);
+      reader.readAsDataURL(new Blob(recChunks,{type:'audio/webm'}));
       reader.onloadend = () => {
-        if(activeUser) db.collection("messages").add({
-          from:me, to:activeUser, audio:reader.result, 
-          time:firebase.firestore.FieldValue.serverTimestamp()
-        });
+        if(activeUser) db.collection("messages").add({ from:me, to:activeUser, audio:reader.result, time:firebase.firestore.FieldValue.serverTimestamp() });
       };
     };
   }
 }
 
+// ==================== تماس صوتی هوشمند ====================
+
 async function startCall(){
   if(!activeUser) return alert("ابتدا یک کاربر را انتخاب کنید");
+  
   localStream = await navigator.mediaDevices.getUserMedia({audio:true});
   peerConnection = new RTCPeerConnection(config);
-  peerConnection.onicecandidate=e=>{ if(e.candidate) db.collection("calls").doc(activeUser).set({candidate:e.candidate,from:me, to:activeUser}); };
-  peerConnection.ontrack=e=>{ 
-    remoteStream=e.streams[0];
-    let audio=document.createElement("audio"); audio.srcObject=remoteStream; audio.autoplay=true; document.body.appendChild(audio);
+  localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+  peerConnection.onicecandidate = e => {
+    if(e.candidate) db.collection("calls").doc(activeUser).collection("candidates").add(e.candidate.toJSON());
   };
-  localStream.getTracks().forEach(track=>peerConnection.addTrack(track,localStream));
-  let offer = await peerConnection.createOffer(); await peerConnection.setLocalDescription(offer);
-  db.collection("calls").doc(activeUser).set({from:me, to:activeUser, offer:offer});
+
+  peerConnection.ontrack = e => {
+    let aud = document.createElement("audio"); aud.srcObject = e.streams[0]; aud.autoplay = true; document.body.appendChild(aud);
+  };
+
+  const offer = await peerConnection.createOffer();
+  await peerConnection.setLocalDescription(offer);
+
+  await db.collection("calls").doc(activeUser).set({ offer: {type: offer.type, sdp: offer.sdp}, from: me });
+
+  db.collection("calls").doc(activeUser).onSnapshot(doc => {
+    let data = doc.data();
+    if(data?.answer && !peerConnection.currentRemoteDescription) {
+      peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+    }
+  });
+  alert("در حال برقراری تماس...");
 }
 
-db.collection("calls").onSnapshot(snap=>{
-  snap.forEach(async doc=>{
+function listenForCalls(){
+  db.collection("calls").doc(me).onSnapshot(async doc => {
     let data = doc.data();
-    if(data.to===me && data.offer && !peerConnection){
-      incomingCall = doc.id;
+    if(data?.offer && !peerConnection){
+      window.incomingCallData = data;
       document.getElementById("callBox").style.display="block";
-      document.getElementById("callStatus").innerText="تماس ورودی از "+data.from;
+      document.getElementById("callStatus").innerText="تماس از طرف: " + data.from;
       document.getElementById("callActions").style.display="block";
       document.getElementById("ringTone").play();
     }
   });
-});
+}
 
-function acceptCall(){ 
+async function acceptCall(){
+  document.getElementById("ringTone").pause();
+  document.getElementById("callBox").style.display="none";
+  let data = window.incomingCallData;
+
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  peerConnection = new RTCPeerConnection(config);
+  localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+  peerConnection.onicecandidate = e => {
+    if(e.candidate) db.collection("calls").doc(data.from).collection("candidates").add(e.candidate.toJSON());
+  };
+
+  peerConnection.ontrack = e => {
+    let aud = document.createElement("audio"); aud.srcObject = e.streams[0]; aud.autoplay = true; document.body.appendChild(aud);
+  };
+
+  await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+  const answer = await peerConnection.createAnswer();
+  await peerConnection.setLocalDescription(answer);
+
+  await db.collection("calls").doc(me).update({ answer: {type: answer.type, sdp: answer.sdp} });
+
+  db.collection("calls").doc(me).collection("candidates").onSnapshot(snap => {
+    snap.docChanges().forEach(change => {
+      if(change.type === "added") peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+    });
+  });
+}
+
+function rejectCall(){ 
   document.getElementById("ringTone").pause(); 
   document.getElementById("callBox").style.display="none"; 
+  db.collection("calls").doc(me).delete();
 }
-function rejectCall(){ document.getElementById("ringTone").pause(); document.getElementById("callBox").style.display="none"; }
 
-document.body.classList.add(localStorage.getItem("allo_theme")||"dark");
-if(localStorage.getItem("allo_user")){ me=localStorage.getItem("allo_user"); document.getElementById("userID").innerText="کد شما: "+me; startApp(); }
+function logout(){
+  if(me) db.collection("users").doc(me).update({online:false});
+  localStorage.removeItem("allo_user");
+  location.reload();
+}
 </script>
 </body>
 </html>
