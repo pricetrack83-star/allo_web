@@ -7,7 +7,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/wavesurfer.js"></script>
 <style>
-/* همان CSS قبلی بدون تغییر */
 *{box-sizing:border-box;margin:0;padding:0;}
 body{margin:0;font-family:'Vazirmatn',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;transition:0.5s;background:linear-gradient(135deg,#0f0f0f,#1a1a1a);color:white;overflow:hidden;}
 body.light{background:linear-gradient(135deg,#f5f5f5,#ddd);color:#111;}
@@ -88,7 +87,6 @@ body.light #settingsModal{background:rgba(255,255,255,0.95);color:#111;box-shado
     <div id="users"></div>
   </div>
   <div id="chatArea">
-    <input id="targetUser" placeholder="نام کاربری گیرنده" style="margin-bottom:10px;padding:12px;border-radius:20px;width:100%;outline:none;">
     <div id="messages"></div>
     <div class="typing" id="typingInfo"></div>
     <div class="footer">
@@ -105,6 +103,7 @@ body.light #settingsModal{background:rgba(255,255,255,0.95);color:#111;box-shado
 
 <div id="settingsModal">
   <h3>تنظیمات کاربر</h3>
+  <div>کد کوتاه شما: <span id="userCode"></span></div>
   <div>شناسه شما: <span id="userID"></span></div>
   <button onclick="closeSettings()">بستن</button>
 </div>
@@ -122,9 +121,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let me="", meID="", activeUser="", typingTimeout;
+let me="", meCode="", meID="", activeUser="", typingTimeout;
 
-// Generate unique ID
+// Generate short code & unique ID
+function generateCode(){ return 'ALLO-'+Math.floor(1000+Math.random()*9000); }
 function generateID(){ return 'user-'+Date.now()+'-'+Math.floor(Math.random()*1000); }
 
 // Theme
@@ -137,8 +137,9 @@ function registerUser(){
   if(!u||!p) return alert("هر دو فیلد لازم است");
   db.collection("users").doc(u).get().then(doc=>{
     if(doc.exists) return alert("این کاربر قبلاً ساخته شده است");
+    meCode = generateCode();
     meID = generateID();
-    db.collection("users").doc(u).set({password:p, online:true, id:meID});
+    db.collection("users").doc(u).set({password:p, online:true, code:meCode, id:meID});
     me = u; localStorage.setItem("allo_user",me);
     startApp();
   });
@@ -151,7 +152,7 @@ function loginUser(){
   db.collection("users").doc(u).get().then(doc=>{
     if(!doc.exists) return alert("کاربر وجود ندارد");
     if(doc.data().password!==p) return alert("رمز اشتباه است");
-    me = u; meID = doc.data().id;
+    me = u; meCode = doc.data().code; meID = doc.data().id;
     localStorage.setItem("allo_user",me);
     db.collection("users").doc(me).update({online:true});
     startApp();
@@ -162,7 +163,7 @@ function loginUser(){
 window.onload = function(){
   let saved = localStorage.getItem("allo_user");
   if(saved){ me = saved; db.collection("users").doc(me).get().then(doc=>{
-    if(doc.exists){ meID=doc.data().id; startApp(); }
+    if(doc.exists){ meCode=doc.data().code; meID=doc.data().id; startApp(); }
   });}
 }
 
@@ -173,11 +174,12 @@ if(Notification.permission!=="granted"){ Notification.requestPermission();}
 function startApp(){
   document.getElementById("loginBox").style.display="none";
   document.getElementById("chatBox").style.display="flex";
+  document.getElementById("userCode").innerText = meCode;
   document.getElementById("userID").innerText = meID;
   loadUsers(); 
 }
 
-// Load Users (نمایش آنلاین‌ها)
+// Load Users (نمایش آنلاین‌ها و انتخاب مستقیم)
 function loadUsers(){
   db.collection("users").onSnapshot(snap=>{
     const usersDiv=document.getElementById("users"); usersDiv.innerHTML="";
@@ -186,6 +188,10 @@ function loadUsers(){
       let div=document.createElement("div");
       div.className="user";
       div.innerText=doc.id + (doc.data().online?" ✅":" ❌");
+      div.onclick = () => {
+        activeUser = doc.id;
+        loadMessages();
+      };
       usersDiv.appendChild(div);
     });
   });
@@ -193,9 +199,7 @@ function loadUsers(){
 
 // Messages
 function loadMessages(){
-  let targetInput = document.getElementById("targetUser").value.trim();
-  if(!targetInput) return;
-  activeUser = targetInput;
+  if(!activeUser) return;
   db.collection("messages")
     .where("users", "array-contains", me)
     .orderBy("timestamp")
@@ -223,10 +227,8 @@ function loadMessages(){
 // Send Text
 function sendMessage(){
   let input = document.getElementById("msgInput");
-  let targetInput = document.getElementById("targetUser").value.trim();
   if(!input.value.trim()) return;
-  if(!targetInput){ alert("ابتدا نام کاربری گیرنده را وارد کنید"); return; }
-  activeUser = targetInput;
+  if(!activeUser){ alert("ابتدا یک کاربر را از لیست انتخاب کنید"); return; }
   db.collection("messages").add({
     from: me, to: activeUser, msg: input.value, type:"text",
     users:[me, activeUser],
@@ -237,7 +239,7 @@ function sendMessage(){
 
 // Send Voice
 function sendVoice(){
-  alert("ویس هنوز آماده نشده"); 
+  alert("ویس هنوز آماده نشده"); // بعداً می‌توان WaveRecorder اضافه کرد
 }
 
 // Logout
@@ -249,6 +251,19 @@ function logout(){
 // Settings
 function openSettings(){ document.getElementById("settingsModal").style.display="flex"; }
 function closeSettings(){ document.getElementById("settingsModal").style.display="none"; }
+
+// Image Upload
+document.getElementById("imgInput").addEventListener("change", function(){
+  if(!this.files[0]) return;
+  let reader=new FileReader();
+  reader.onload=function(e){
+    if(!activeUser){ alert("ابتدا یک کاربر را از لیست انتخاب کنید"); return; }
+    db.collection("messages").add({
+      from:me,to:activeUser,msg:e.target.result,type:"image",users:[me,activeUser],timestamp:firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+  reader.readAsDataURL(this.files[0]);
+});
 </script>
 </body>
 </html>
