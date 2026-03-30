@@ -38,14 +38,14 @@ body{
   font-weight:bold;
 }
 
-#login,#chat{
+#loginBox,#chatBox{
   flex:1;
   display:flex;
   flex-direction:column;
   padding:10px;
 }
 
-#chat{display:none;}
+#chatBox{display:none;}
 
 input{
   padding:10px;
@@ -75,11 +75,6 @@ button{
   cursor:pointer;
 }
 
-.active{
-  background:#00e676;
-  color:black;
-}
-
 #messages{
   flex:1;
   overflow:auto;
@@ -103,9 +98,6 @@ img{max-width:100%;border-radius:10px;margin-top:5px;}
 }
 
 .footer input{flex:1;}
-
-.typing{font-size:12px;opacity:0.7;}
-.voice-btn{background:#ff5252;color:white;}
 </style>
 </head>
 
@@ -115,25 +107,19 @@ img{max-width:100%;border-radius:10px;margin-top:5px;}
 
 <div class="header">ALLO 🚀</div>
 
-<div id="login">
-<input id="name" placeholder="اسم">
-<button onclick="login()">ورود</button>
+<div id="loginBox">
+<input id="nameInput" placeholder="اسم">
+<button onclick="loginUser()">ورود</button>
 </div>
 
-<div id="chat">
+<div id="chatBox">
 
 <div id="users"></div>
-
 <div id="messages"></div>
 
-<div id="typing" class="typing"></div>
-
 <div class="footer">
-<input id="msg" placeholder="پیام..." oninput="sendTyping()">
-<button onclick="send()">➤</button>
-<input type="file" id="img" hidden>
-<button onclick="img.click()">📸</button>
-<button onclick="record()" class="voice-btn">🎤</button>
+<input id="msgInput" placeholder="پیام...">
+<button onclick="sendMessage()">ارسال</button>
 </div>
 
 <button onclick="logout()">خروج</button>
@@ -155,173 +141,92 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let me="",activeUser="",mediaRecorder,chunks=[];
-
-// 🔔 notification
-if(Notification.permission!=="granted"){
-  Notification.requestPermission();
-}
+let me = "";
+let activeUser = "";
 
 // login
-function login(){
-  me=name.value.trim();
+function loginUser(){
+  me = document.getElementById("nameInput").value.trim();
   if(!me) return alert("اسم بزن");
 
-  localStorage.setItem("allo_user",me);
-  db.collection("users").doc(me).set({online:true});
-  start();
+  localStorage.setItem("allo_user", me);
+
+  db.collection("users").doc(me).set({
+    online:true
+  });
+
+  startApp();
 }
 
-function start(){
-  login.style.display="none";
-  chat.style.display="flex";
+// start
+function startApp(){
+  document.getElementById("loginBox").style.display="none";
+  document.getElementById("chatBox").style.display="flex";
+
   loadUsers();
 }
 
 // users
 function loadUsers(){
-  db.collection("users").onSnapshot(s=>{
-    users.innerHTML="";
-    s.forEach(d=>{
-      if(d.id===me) return;
+  db.collection("users").onSnapshot(snap=>{
+    const usersDiv = document.getElementById("users");
+    usersDiv.innerHTML="";
 
-      let div=document.createElement("div");
-      div.className="user";
-      div.innerText=d.id;
+    snap.forEach(doc=>{
+      if(doc.id === me) return;
 
-      div.onclick=()=>{
-        activeUser=d.id;
+      let div = document.createElement("div");
+      div.className = "user";
+      div.innerText = doc.id;
+
+      div.onclick = ()=>{
+        activeUser = doc.id;
         loadMessages();
       };
 
-      users.appendChild(div);
+      usersDiv.appendChild(div);
     });
   });
 }
 
 // messages
 function loadMessages(){
-  db.collection("messages").orderBy("time")
-  .onSnapshot(s=>{
-    messages.innerHTML="";
+  db.collection("messages")
+  .orderBy("time")
+  .onSnapshot(snap=>{
+    const msgDiv = document.getElementById("messages");
+    msgDiv.innerHTML="";
 
-    s.forEach(doc=>{
-      let m=doc.data();
+    snap.forEach(doc=>{
+      let m = doc.data();
 
-      if(!(m.from===me&&m.to===activeUser) &&
-         !(m.from===activeUser&&m.to===me)) return;
+      if(!(m.from===me && m.to===activeUser) &&
+         !(m.from===activeUser && m.to===me)) return;
 
-      let div=document.createElement("div");
-      div.className="msg "+(m.from===me?"me":"other");
+      let div = document.createElement("div");
+      div.className = "msg " + (m.from===me ? "me" : "other");
+      div.innerText = m.text;
 
-      if(m.text) div.innerHTML=m.text;
-
-      if(m.img){
-        let im=document.createElement("img");
-        im.src=m.img;
-        div.appendChild(im);
-      }
-
-      if(m.audio){
-        let a=document.createElement("audio");
-        a.src=m.audio;
-        a.controls=true;
-        div.appendChild(a);
-      }
-
-      if(m.seen && m.from===me){
-        div.innerHTML+=" ✔✔";
-      }
-
-      messages.appendChild(div);
-
-      // seen
-      if(m.to===me && !m.seen){
-        db.collection("messages").doc(doc.id).update({seen:true});
-      }
-
-      // notification
-      if(m.from!==me && document.hidden){
-        new Notification(m.from+" : "+(m.text||"📩"));
-      }
+      msgDiv.appendChild(div);
     });
 
-    messages.scrollTop=99999;
+    msgDiv.scrollTop = 99999;
   });
 }
 
-// send text
-function send(){
-  if(!msg.value || !activeUser) return;
+// send
+function sendMessage(){
+  let text = document.getElementById("msgInput").value.trim();
+  if(!text || !activeUser) return;
 
   db.collection("messages").add({
-    from:me,
-    to:activeUser,
-    text:msg.value,
-    time:Date.now()
+    from: me,
+    to: activeUser,
+    text: text,
+    time: Date.now()
   });
 
-  msg.value="";
-}
-
-// 📸 image (Base64)
-img.onchange=()=>{
-  let file=img.files[0];
-  let r=new FileReader();
-
-  r.onload=()=>{
-    db.collection("messages").add({
-      from:me,
-      to:activeUser,
-      img:r.result,
-      time:Date.now()
-    });
-  };
-
-  r.readAsDataURL(file);
-};
-
-// 🎤 voice (Base64)
-async function record(){
-  if(!activeUser) return alert("یوزر انتخاب کن");
-
-  if(!mediaRecorder){
-    let stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    mediaRecorder=new MediaRecorder(stream);
-
-    mediaRecorder.ondataavailable=e=>chunks.push(e.data);
-
-    mediaRecorder.onstop=()=>{
-      let blob=new Blob(chunks);
-      chunks=[];
-      let r=new FileReader();
-
-      r.onload=()=>{
-        db.collection("messages").add({
-          from:me,
-          to:activeUser,
-          audio:r.result,
-          time:Date.now()
-        });
-      };
-
-      r.readAsDataURL(blob);
-    };
-
-    mediaRecorder.start();
-  }else{
-    mediaRecorder.stop();
-    mediaRecorder=null;
-  }
-}
-
-// typing
-function sendTyping(){
-  if(!activeUser) return;
-
-  db.collection("typing").doc(activeUser).set({
-    from:me
-  });
+  document.getElementById("msgInput").value="";
 }
 
 // logout
@@ -332,12 +237,12 @@ function logout(){
 }
 
 // auto login
-window.onload=()=>{
-  let u=localStorage.getItem("allo_user");
-  if(u){
-    me=u;
+window.onload = ()=>{
+  let saved = localStorage.getItem("allo_user");
+  if(saved){
+    me = saved;
     db.collection("users").doc(me).set({online:true});
-    start();
+    startApp();
   }
 };
 </script>
