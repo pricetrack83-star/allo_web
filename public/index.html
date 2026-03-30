@@ -286,7 +286,7 @@ body.light .footer input{background:#eee; color:#111;}
         <button id="recordBtn" onclick="toggleRecording()">🎤</button>
         <span id="recTimer">00:00</span>
       </div>
-      <button onclick="startCall()">📞 تماس</button>
+      <button id="callMainBtn" onclick="startCall()">📞 تماس</button>
       <button onclick="toggleTheme()">🌗</button>
     </div>
     <button onclick="logout()" style="margin:10px;background:#ff5252;border-radius:25px;padding:10px;font-weight:bold;cursor:pointer;border:none;color:white;">خروج</button>
@@ -299,6 +299,7 @@ body.light .footer input{background:#eee; color:#111;}
     <button onclick="acceptCall()" style="background:#4caf50;color:white;border:none;padding:10px;border-radius:10px;cursor:pointer;">✅ قبول</button>
     <button onclick="rejectCall()" style="background:#f44336;color:white;border:none;padding:10px;border-radius:10px;cursor:pointer;margin-right:5px;">❌ رد</button>
   </div>
+  <button id="hangupBtn" onclick="endCall()" style="display:none; background:#f44336; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; margin-top:10px;">📞 قطع تماس</button>
 </div>
 
 <audio id="ringTone" src="https://actions.google.com/sounds/v1/alarms/phone_alerts_and_ringtones.ogg" loop></audio>
@@ -317,7 +318,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let me="", activeUser="", recorder=null, recChunks=[], recInterval=null, recSeconds=0;
-let localStream=null, peerConnection=null;
+let localStream=null, peerConnection=null, currentCallDocId = null;
 const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
 // --- پوسته و اجرا ---
@@ -432,45 +433,63 @@ async function toggleRecording(){
   }
 }
 
-// ==================== تماس صوتی هوشمند ====================
+// ==================== تماس صوتی هوشمند (با قابلیت قطع تماس) ====================
 
 async function startCall(){
   if(!activeUser) return alert("ابتدا یک کاربر را انتخاب کنید");
   
+  currentCallDocId = activeUser; // سندی که برای طرف مقابل ساخته می‌شود
   localStream = await navigator.mediaDevices.getUserMedia({audio:true});
   peerConnection = new RTCPeerConnection(config);
   localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
   peerConnection.onicecandidate = e => {
-    if(e.candidate) db.collection("calls").doc(activeUser).collection("candidates").add(e.candidate.toJSON());
+    if(e.candidate) db.collection("calls").doc(currentCallDocId).collection("candidates").add(e.candidate.toJSON());
   };
 
   peerConnection.ontrack = e => {
-    let aud = document.createElement("audio"); aud.srcObject = e.streams[0]; aud.autoplay = true; document.body.appendChild(aud);
+    let aud = document.getElementById("remoteAudio") || document.createElement("audio");
+    aud.id = "remoteAudio"; aud.srcObject = e.streams[0]; aud.autoplay = true; document.body.appendChild(aud);
   };
 
   const offer = await peerConnection.createOffer();
   await peerConnection.setLocalDescription(offer);
 
-  await db.collection("calls").doc(activeUser).set({ offer: {type: offer.type, sdp: offer.sdp}, from: me });
+  await db.collection("calls").doc(currentCallDocId).set({ 
+    offer: {type: offer.type, sdp: offer.sdp}, 
+    from: me,
+    status: "calling" 
+  });
 
-  db.collection("calls").doc(activeUser).onSnapshot(doc => {
+  // نمایش پنل قطع تماس
+  document.getElementById("callBox").style.display = "block";
+  document.getElementById("callStatus").innerText = "در حال زنگ زدن...";
+  document.getElementById("hangupBtn").style.display = "inline-block";
+  document.getElementById("callActions").style.display = "none";
+
+  // گوش دادن به پاسخ یا قطع تماس
+  db.collection("calls").doc(currentCallDocId).onSnapshot(doc => {
     let data = doc.data();
-    if(data?.answer && !peerConnection.currentRemoteDescription) {
+    if(!data) { cleanupCall(); return; } // اگر سند حذف شد یعنی طرف مقابل قطع کرده
+    if(data.answer && !peerConnection.currentRemoteDescription) {
       peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+      document.getElementById("callStatus").innerText = "در حال مکالمه...";
     }
   });
-  alert("در حال برقراری تماس...");
 }
 
 function listenForCalls(){
   db.collection("calls").doc(me).onSnapshot(async doc => {
     let data = doc.data();
-    if(data?.offer && !peerConnection){
+    if(!data) { if(peerConnection) cleanupCall(); return; }
+    
+    if(data.offer && !peerConnection){
       window.incomingCallData = data;
+      currentCallDocId = me;
       document.getElementById("callBox").style.display="block";
       document.getElementById("callStatus").innerText="تماس از طرف: " + data.from;
       document.getElementById("callActions").style.display="block";
+      document.getElementById("hangupBtn").style.display = "none";
       document.getElementById("ringTone").play();
     }
   });
@@ -478,26 +497,32 @@ function listenForCalls(){
 
 async function acceptCall(){
   document.getElementById("ringTone").pause();
-  document.getElementById("callBox").style.display="none";
-  let data = window.incomingCallData;
+  document.getElementById("callActions").style.display="none";
+  document.getElementById("hangupBtn").style.display = "inline-block";
+  document.getElementById("callStatus").innerText = "در حال اتصال...";
 
+  let data = window.incomingCallData;
   localStream = await navigator.mediaDevices.getUserMedia({audio:true});
   peerConnection = new RTCPeerConnection(config);
   localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
   peerConnection.onicecandidate = e => {
-    if(e.candidate) db.collection("calls").doc(data.from).collection("candidates").add(e.candidate.toJSON());
+    if(e.candidate) db.collection("calls").doc(currentCallDocId).collection("candidates").add(e.candidate.toJSON());
   };
 
   peerConnection.ontrack = e => {
-    let aud = document.createElement("audio"); aud.srcObject = e.streams[0]; aud.autoplay = true; document.body.appendChild(aud);
+    let aud = document.getElementById("remoteAudio") || document.createElement("audio");
+    aud.id = "remoteAudio"; aud.srcObject = e.streams[0]; aud.autoplay = true; document.body.appendChild(aud);
   };
 
   await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
   const answer = await peerConnection.createAnswer();
   await peerConnection.setLocalDescription(answer);
 
-  await db.collection("calls").doc(me).update({ answer: {type: answer.type, sdp: answer.sdp} });
+  await db.collection("calls").doc(me).update({ 
+    answer: {type: answer.type, sdp: answer.sdp},
+    status: "connected"
+  });
 
   db.collection("calls").doc(me).collection("candidates").onSnapshot(snap => {
     snap.docChanges().forEach(change => {
@@ -506,10 +531,34 @@ async function acceptCall(){
   });
 }
 
+// تابع قطع تماس توسط کاربر
+async function endCall() {
+  if(currentCallDocId) {
+    await db.collection("calls").doc(currentCallDocId).delete();
+  }
+  cleanupCall();
+}
+
+// تابع پاکسازی رابط کاربری و حافظه
+function cleanupCall() {
+  if(localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
+  if(peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
+  }
+  let aud = document.getElementById("remoteAudio");
+  if(aud) aud.remove();
+  
+  document.getElementById("ringTone").pause();
+  document.getElementById("callBox").style.display = "none";
+  document.getElementById("hangupBtn").style.display = "none";
+}
+
 function rejectCall(){ 
-  document.getElementById("ringTone").pause(); 
-  document.getElementById("callBox").style.display="none"; 
-  db.collection("calls").doc(me).delete();
+  endCall();
 }
 
 function logout(){
