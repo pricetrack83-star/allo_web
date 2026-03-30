@@ -8,6 +8,7 @@
 <script src="https://unpkg.com/wavesurfer.js"></script>
 
 <style>
+/* ==================== BODY ==================== */
 body{
   margin:0;
   font-family:'Vazirmatn',sans-serif;
@@ -25,6 +26,8 @@ body.dark{
   background:linear-gradient(135deg,#0f0f0f,#1a1a1a);
   color:white;
 }
+
+/* ==================== APP ==================== */
 .app{
   width:980px;
   height:720px;
@@ -42,6 +45,8 @@ body.dark .app{
   background:rgba(20,20,20,0.9);
   box-shadow:0 0 60px rgba(0,255,118,0.4);
 }
+
+/* ==================== LOGIN ==================== */
 #loginBox{
   flex:1;
   display:flex;
@@ -79,6 +84,8 @@ body.light #loginBox input:focus{background:#ccc;}
   transform:scale(1.08);
   box-shadow:0 8px 25px rgba(0,255,118,0.6);
 }
+
+/* ==================== CHAT ==================== */
 #chatBox{display:none; flex:1; flex-direction:row; transition:0.5s;}
 #onlineList{
   width:220px;
@@ -316,7 +323,7 @@ img{
 </div>
 
 <script>
-// Firebase
+// ==================== Firebase ====================
 const firebaseConfig = {
   apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
   authDomain: "alloo-web.firebaseapp.com",
@@ -328,16 +335,18 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// ==================== Global ====================
 let me="", activeUser="", recorder=null, recChunks=[], recInterval=null, recSeconds=0;
 let typingTimeout;
 
-// Theme toggle
+// ==================== Theme ====================
 function toggleTheme(){
   document.body.classList.toggle('light');
   document.body.classList.toggle('dark');
+  localStorage.setItem("allo_theme", document.body.classList.contains('dark')?"dark":"light");
 }
 
-// Register & Login
+// ==================== Register & Login ====================
 function registerUser(){
   let u=document.getElementById("usernameInput").value.trim();
   let p=document.getElementById("passwordInput").value.trim();
@@ -362,14 +371,14 @@ function loginUser(){
   });
 }
 
-// Start App
+// ==================== Start App ====================
 function startApp(){
   document.getElementById("loginBox").style.display="none";
   document.getElementById("chatBox").style.display="flex";
   loadUsers(); loadMessages();
 }
 
-// Users
+// ==================== Users ====================
 function loadUsers(){
   db.collection("users").onSnapshot(snap=>{
     const usersDiv=document.getElementById("users"); usersDiv.innerHTML="";
@@ -384,7 +393,7 @@ function loadUsers(){
   });
 }
 
-// Messages
+// ==================== Messages ====================
 function loadMessages(){
   db.collection("messages").orderBy("time").onSnapshot(snap=>{
     const msgDiv = document.getElementById("messages");
@@ -406,6 +415,8 @@ function loadMessages(){
       if(m.audio){
         let container = document.createElement("div");
         container.className = 'waveform-container';
+        div.appendChild(container);
+
         let ws = WaveSurfer.create({
           container: container,
           waveColor: '#00e676',
@@ -417,13 +428,16 @@ function loadMessages(){
         });
 
         if(m.audio.startsWith("blob:")){
-          fetch(m.audio).then(r => r.blob()).then(blob => ws.loadBlob(blob));
+          fetch(m.audio)
+            .then(r => r.blob())
+            .then(blob => ws.loadBlob(blob))
+            .then(()=> ws.pause());
         } else {
           ws.load(m.audio);
+          ws.on('ready', ()=> ws.pause());
         }
 
-        container.onclick = ()=> ws.isPlaying() ? ws.pause() : ws.play();
-        div.appendChild(container);
+        container.addEventListener('click', ()=> ws.isPlaying() ? ws.pause() : ws.play());
       }
 
       if(m.seen && m.from===me) div.innerHTML += '<small>✔✔ Seen</small>';
@@ -433,7 +447,7 @@ function loadMessages(){
   });
 }
 
-// Send message
+// ==================== Send message ====================
 function sendMessage(){
   let text=document.getElementById("msgInput").value.trim();
   if(!text||!activeUser) return;
@@ -441,7 +455,7 @@ function sendMessage(){
   document.getElementById("msgInput").value="";
 }
 
-// Send image
+// ==================== Send image ====================
 document.getElementById("imgInput").addEventListener("change",function(e){
   const file=e.target.files[0];
   if(!file||!activeUser) return;
@@ -449,7 +463,7 @@ document.getElementById("imgInput").addEventListener("change",function(e){
   db.collection("messages").add({from:me,to:activeUser,image:url,time:Date.now()});
 });
 
-// Voice Recorder
+// ==================== Voice Recorder ====================
 async function toggleRecording(){
   const btn=document.getElementById("recordBtn");
   const timer=document.getElementById("recTimer");
@@ -486,33 +500,20 @@ async function toggleRecording(){
   },1000);
 }
 
-// Typing
-document.getElementById("msgInput").addEventListener("input",()=>{
-  if(!activeUser) return;
-  db.collection("typing").doc(activeUser).set({typing:true});
-  clearTimeout(typingTimeout);
-  typingTimeout=setTimeout(()=>db.collection("typing").doc(activeUser).set({typing:false}),1000);
-});
-db.collection("typing").onSnapshot(snap=>{
-  snap.forEach(doc=>{
-    if(doc.id===me) return;
-    document.getElementById("typingInfo").innerText=doc.data().typing?`${doc.id} در حال تایپ...`:"";
-  });
-});
-
-// Logout
+// ==================== Logout ====================
 function logout(){
-  db.collection("users").doc(me).update({online:false});
+  if(me) db.collection("users").doc(me).update({online:false});
   localStorage.removeItem("allo_user");
   location.reload();
 }
 
-// Auto-login
+// ==================== Auto login ====================
 window.onload=()=>{
-  let saved=localStorage.getItem("allo_user");
-  if(saved){ me=saved; db.collection("users").doc(me).update({online:true}); document.getElementById("userID").innerText="کد شما: "+me; startApp(); }
+  let t=localStorage.getItem("allo_theme");
+  if(t) document.body.className=t;
+  let u=localStorage.getItem("allo_user");
+  if(u){ me=u; document.getElementById("userID").innerText="کد شما: "+me; startApp(); }
 };
 </script>
-
 </body>
 </html>
