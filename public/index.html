@@ -216,6 +216,7 @@ body {
     <p id="cStatus" style="color:var(--primary); letter-spacing:5px; font-weight:100;">ESTABLISHING QUANTUM LINK...</p>
     <div style="display:flex; gap:40px; margin-top:60px;">
         <button id="acceptBtn" onclick="answerCall()" style="width:90px; height:90px; border-radius:30px; background:#2ecc71; border:none; font-size:35px; cursor:pointer; box-shadow: 0 0 30px rgba(46, 204, 113, 0.4);">✅</button>
+        <button id="muteBtn" onclick="toggleMute()" style="width:90px; height:90px; border-radius:30px; background:rgba(255,255,255,0.1); border:1px solid var(--border); font-size:35px; cursor:pointer; display:none;">🎙️</button>
         <button onclick="hangup()" style="width:90px; height:90px; border-radius:30px; background:var(--secondary); border:none; font-size:35px; cursor:pointer; box-shadow: 0 0 30px rgba(255, 0, 85, 0.4);">❌</button>
     </div>
 </div>
@@ -240,6 +241,7 @@ let activeTarget = "";
 let authMode = 'login';
 let pc; 
 let localStream;
+let isMuted = false;
 
 if(me) { document.getElementById("loginScreen").style.display = "none"; initApp(); }
 
@@ -324,7 +326,7 @@ function sendMsg() {
     i.value = "";
 }
 
-// --- اصلاح شده: سیستم تبادل سیگنال صوتی ---
+// --- سیستم تبادل سیگنال صوتی ---
 const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }] };
 
 async function startCall() {
@@ -332,17 +334,16 @@ async function startCall() {
     document.getElementById("callUI").style.display = "flex";
     document.getElementById("cName").innerText = activeTarget.toUpperCase();
     document.getElementById("acceptBtn").style.display = "none";
+    document.getElementById("muteBtn").style.display = "block";
     
     pc = new RTCPeerConnection(rtcConfig);
     
-    // کاندیدها را برای طرف مقابل بفرست
     pc.onicecandidate = e => {
         if(e.candidate) {
             db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON());
         }
     };
 
-    // دریافت صدا از طرف مقابل
     pc.ontrack = e => {
         document.getElementById("remoteAudio").srcObject = e.streams[0];
         document.getElementById("cStatus").innerText = "CONNECTED";
@@ -354,11 +355,9 @@ async function startCall() {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
-    // پاکسازی تماس قبلی و ایجاد تماس جدید
     await db.collection("calls").doc(activeTarget).delete(); 
     await db.collection("calls").doc(activeTarget).set({ offer, from: me });
 
-    // گوش دادن به جواب طرف مقابل
     db.collection("calls").doc(activeTarget).onSnapshot(async snap => {
         const d = snap.data();
         if(d?.answer && !pc.currentRemoteDescription) {
@@ -366,7 +365,6 @@ async function startCall() {
         }
     });
 
-    // گوش دادن به کاندیدهای طرف مقابل
     db.collection("calls").doc(activeTarget).collection("receiverCandidates").onSnapshot(s => {
         s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
     });
@@ -380,6 +378,7 @@ function listenForCalls() {
             document.getElementById("callUI").style.display = "flex";
             document.getElementById("cName").innerText = d.from.toUpperCase();
             document.getElementById("acceptBtn").style.display = "block";
+            document.getElementById("muteBtn").style.display = "none";
             document.getElementById("ring").play();
         } else if(!d && pc) hangup();
     });
@@ -388,6 +387,7 @@ function listenForCalls() {
 async function answerCall() {
     document.getElementById("ring").pause();
     document.getElementById("acceptBtn").style.display = "none";
+    document.getElementById("muteBtn").style.display = "block";
     document.getElementById("cStatus").innerText = "ESTABLISHING...";
 
     pc = new RTCPeerConnection(rtcConfig);
@@ -412,10 +412,18 @@ async function answerCall() {
     
     await db.collection("calls").doc(me).update({ answer });
 
-    // گوش دادن به کاندیدهای تماس‌گیرنده
     db.collection("calls").doc(me).collection("callerCandidates").onSnapshot(s => {
         s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
     });
+}
+
+function toggleMute() {
+    if (!localStream) return;
+    isMuted = !isMuted;
+    localStream.getAudioTracks()[0].enabled = !isMuted;
+    const btn = document.getElementById("muteBtn");
+    btn.innerText = isMuted ? "🚫" : "🎙️";
+    btn.style.background = isMuted ? "var(--secondary)" : "rgba(255,255,255,0.1)";
 }
 
 function hangup() {
@@ -426,6 +434,9 @@ function hangup() {
     document.getElementById("callUI").style.display = "none";
     document.getElementById("ring").pause();
     document.getElementById("cStatus").innerText = "ESTABLISHING QUANTUM LINK...";
+    isMuted = false;
+    document.getElementById("muteBtn").innerText = "🎙️";
+    document.getElementById("muteBtn").style.background = "rgba(255,255,255,0.1)";
 }
 
 let rec; let chunks = [];
