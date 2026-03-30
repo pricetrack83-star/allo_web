@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ALLO - Advanced Terminal</title> 
+<title>ALLO</title> 
 
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;300;500;800;900&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -22,7 +22,6 @@
     --text-main: #ffffff;
 }
 
-/* Light Mode Theme */
 body.light-mode {
     --dark-bg: #eef2f3;
     --glass: rgba(0, 0, 0, 0.05);
@@ -143,7 +142,6 @@ body {
 .bubble.me { align-self: flex-end; background: var(--primary); color: #000; font-weight: 700; border-bottom-right-radius: 4px; }
 .bubble.other { align-self: flex-start; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text-main); }
 
-/* --- اصلاحات بخش CALL UI --- */
 #callUI {
     position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 20000;
     display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -176,7 +174,6 @@ body {
     margin-bottom: 40px; box-shadow: 0 0 60px var(--primary-glow);
 }
 
-/* --- دکمه‌های جدید --- */
 .theme-toggle-btn {
     width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border);
     background: var(--glass); color: var(--primary); font-family: 'Orbitron';
@@ -199,6 +196,32 @@ body {
     width: 65px; height: 65px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
     cursor: pointer; font-size: 24px; border: none;
 }
+
+/* --- استایل جدید و نئونی نشانگر ضبط صدا --- */
+#recIndicator {
+    display: none; align-items: center; gap: 10px;
+    color: var(--secondary); font-weight: 800; font-size: 11px;
+    letter-spacing: 2px; text-shadow: 0 0 10px var(--secondary-glow);
+    font-family: 'Orbitron'; margin-bottom: 5px;
+}
+
+.rec-dot {
+    width: 10px; height: 10px; background: var(--secondary);
+    border-radius: 50%; box-shadow: 0 0 15px var(--secondary);
+    animation: recPulse 1.2s infinite;
+}
+
+@keyframes recPulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.4; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.is-recording {
+    background: var(--secondary) !important; color: #fff !important;
+    box-shadow: 0 0 25px var(--secondary-glow) !important;
+}
+
 </style>
 </head>
 <body>
@@ -246,7 +269,10 @@ body {
         <div id="messages"></div>
 
         <div style="padding:25px 40px; display:flex; flex-direction:column; gap:10px; background:rgba(0,0,0,0.2);">
-            <div id="recIndicator" style="display:none; color:var(--secondary); font-size:10px;">🔴 RECORDING...</div>
+            <div id="recIndicator">
+                <div class="rec-dot"></div>
+                <span>SECURE RECORDING...</span>
+            </div>
             <div style="display:flex; gap:15px; width:100%;">
                 <input id="msgInput" placeholder="Secure transmission..." onkeypress="if(event.key=='Enter') sendMsg()">
                 <button id="vBtn" onclick="toggleVoice()" class="icon-btn" style="border:1px solid var(--secondary); color:var(--secondary); background:none;">🎤</button>
@@ -272,7 +298,6 @@ body {
 <audio id="remoteAudio" autoplay></audio>
 
 <script>
-// --- پیکربندی همان قبلی ---
 const firebaseConfig = {
     apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
     authDomain: "alloo-web.firebaseapp.com",
@@ -290,7 +315,6 @@ let authMode = 'login';
 let pc; let localStream; let isMuted = false;
 let unreadCounts = {}; 
 
-// --- لود تم ذخیره شده ---
 if(localStorage.getItem("allo_theme") === "light") document.body.classList.add("light-mode");
 
 function toggleTheme() {
@@ -399,7 +423,6 @@ function sendMsg() {
     i.value = "";
 }
 
-// --- WebRTC Logic ---
 const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }] };
 
 async function startCall() {
@@ -518,7 +541,9 @@ async function toggleVoice() {
             v.classList.remove("is-recording");
             indicator.style.display = "none";
         };
-        rec.start(); v.classList.add("is-recording"); indicator.style.display = "block";
+        rec.start(); 
+        v.classList.add("is-recording"); 
+        indicator.style.display = "flex"; // نمایش زیبا و فلکس
     } else { rec.stop(); }
 }
 
