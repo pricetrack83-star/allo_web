@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>ALLO</title>
+<title>ALLO 🚀</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -20,69 +20,76 @@ body{
 }
 
 .app{
-  width:400px;
-  height:680px;
+  width:850px;
+  height:700px;
   border-radius:25px;
-  background:rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.05);
   backdrop-filter:blur(20px);
   display:flex;
-  flex-direction:column;
+  flex-direction:row;
   overflow:hidden;
 }
 
-.header{
-  padding:15px;
-  text-align:center;
-  background:#00e676;
-  color:black;
-  font-weight:bold;
-}
-
-#loginBox,#chatBox{
+#loginBox{
   flex:1;
   display:flex;
   flex-direction:column;
-  padding:10px;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
 }
 
-#chatBox{display:none;}
-
-input{
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  margin-top:10px;
+#chatBox{
+  flex:2;
+  display:none;
+  flex-direction:row;
 }
 
-button{
+#onlineList{
+  width:200px;
+  background:rgba(0,0,0,0.4);
   padding:10px;
-  border:none;
-  border-radius:10px;
-  margin-top:5px;
-  cursor:pointer;
-}
-
-#users{
   display:flex;
-  gap:5px;
-  overflow-x:auto;
+  flex-direction:column;
+  overflow-y:auto;
+}
+
+#onlineList h3{
+  text-align:center;
+  margin-bottom:10px;
+  color:#00e676;
+  text-shadow:0 0 10px #00e676;
 }
 
 .user{
-  padding:5px 10px;
-  background:#333;
+  padding:10px;
+  margin:5px 0;
+  background:#222;
   border-radius:15px;
   cursor:pointer;
+  transition:0.3s;
+}
+
+.user:hover{background:#00e676;color:black;}
+
+#chatArea{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  margin-left:10px;
 }
 
 #messages{
   flex:1;
   overflow:auto;
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
 }
 
 .msg{
   padding:10px;
-  margin:5px;
   border-radius:15px;
   max-width:70%;
 }
@@ -90,14 +97,22 @@ button{
 .me{background:#00e676;color:black;align-self:flex-end;}
 .other{background:#333;}
 
-img{max-width:100%;border-radius:10px;margin-top:5px;}
-
 .footer{
   display:flex;
   gap:5px;
+  padding:5px;
 }
 
-.footer input{flex:1;}
+.footer input{flex:1;padding:10px;border-radius:10px;border:none;}
+.footer button{padding:10px;border-radius:10px;border:none;background:#00e676;color:black;cursor:pointer;transition:0.3s;}
+.footer button:hover{background:#00ff80;}
+
+input{padding:10px;border-radius:10px;border:none;margin-top:5px;width:80%;}
+
+button{padding:10px;border-radius:10px;border:none;margin-top:5px;cursor:pointer;background:#00e676;color:black;transition:0.3s;}
+button:hover{background:#00ff80;}
+
+.header{text-align:center;font-size:24px;font-weight:bold;margin-bottom:20px;color:#00e676;text-shadow:0 0 10px #00e676;}
 </style>
 </head>
 
@@ -105,27 +120,32 @@ img{max-width:100%;border-radius:10px;margin-top:5px;}
 
 <div class="app">
 
-<div class="header">ALLO 🚀</div>
-
 <!-- Login -->
 <div id="loginBox">
+<div class="header">ALLO 🚀</div>
 <input id="usernameInput" placeholder="نام کاربری">
 <input id="passwordInput" type="password" placeholder="رمز عبور">
-<button onclick="loginUser()">ورود</button>
 <button onclick="registerUser()">ثبت نام</button>
+<button onclick="loginUser()">ورود</button>
 </div>
 
 <!-- Chat -->
 <div id="chatBox">
-<div id="users"></div>
-<div id="messages"></div>
 
+<div id="onlineList">
+<h3>آنلاین‌ها</h3>
+<div id="users"></div>
+</div>
+
+<div id="chatArea">
+<div id="messages"></div>
 <div class="footer">
 <input id="msgInput" placeholder="پیام...">
 <button onclick="sendMessage()">ارسال</button>
 </div>
-
 <button onclick="logout()">خروج</button>
+</div>
+
 </div>
 
 </div>
@@ -152,14 +172,13 @@ function registerUser(){
   let p = document.getElementById("passwordInput").value.trim();
   if(!u || !p) return alert("هر دو فیلد لازم است");
 
-  // چک می‌کنیم کاربر وجود نداشته باشد
   db.collection("users").doc(u).get().then(doc=>{
     if(doc.exists){
-      alert("این کاربر قبلاً ثبت شده");
+      alert("این کاربر قبلاً ساخته شده است");
     }else{
       db.collection("users").doc(u).set({
         password: p,
-        online: true
+        online:true
       });
       me = u;
       localStorage.setItem("allo_user", me);
@@ -192,7 +211,7 @@ function startApp(){
   loadUsers();
 }
 
-// کاربران
+// کاربران آنلاین
 function loadUsers(){
   db.collection("users").onSnapshot(snap=>{
     const usersDiv = document.getElementById("users");
@@ -201,7 +220,7 @@ function loadUsers(){
       if(doc.id===me) return;
       let div=document.createElement("div");
       div.className="user";
-      div.innerText=doc.id;
+      div.innerText=doc.id + (doc.data().online ? " ✅" : " ❌");
       div.onclick=()=>{
         activeUser=doc.id;
         loadMessages();
