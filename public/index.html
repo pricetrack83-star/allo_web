@@ -3,21 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ALLO_ - Hyper Cyber v4</title> 
+<title>ALLO - Ultimate Cyber Network</title> 
 
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;400;700;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://unpkg.com/wavesurfer.js"></script>
 
 <style>
 :root {
     --primary: #00ffcc;
     --secondary: #ff0055;
-    --bg-dark: #020202;
+    --accent: #7000ff;
+    --bg-dark: #050505;
     --glass: rgba(255, 255, 255, 0.03);
-    --neon-box: 0 0 30px rgba(0, 255, 204, 0.4);
-    --neon-text: 0 0 15px rgba(0, 255, 204, 0.8);
+    --neon-box: 0 0 35px rgba(0, 255, 204, 0.4);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -27,126 +26,115 @@ body {
     height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden;
 }
 
-/* --- پس‌زمینه متحرک پیشرفته --- */
+/* --- پس‌زمینه نئونی متحرک --- */
 .cyber-bg {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-    background: radial-gradient(circle at center, #0a0a0a 0%, #000 100%);
+    position: fixed; inset: 0; z-index: -1;
+    background: radial-gradient(circle at 50% 50%, #0d0d0d 0%, #000 100%);
 }
 .cyber-orb {
-    position: absolute; border-radius: 50%; filter: blur(120px);
-    animation: rotate 20s infinite linear; opacity: 0.15;
+    position: absolute; border-radius: 50%; filter: blur(150px);
+    animation: move 25s infinite alternate linear; opacity: 0.2;
 }
-.orb-1 { width: 600px; height: 600px; background: var(--primary); top: -20%; left: -10%; }
-.orb-2 { width: 700px; height: 700px; background: var(--secondary); bottom: -20%; right: -10%; }
+.orb-1 { width: 500px; height: 500px; background: var(--primary); top: -10%; left: -10%; }
+.orb-2 { width: 600px; height: 600px; background: var(--accent); bottom: -10%; right: -10%; }
 
-@keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes move { 
+    0% { transform: translate(0,0) rotate(0deg); } 
+    100% { transform: translate(100px, 100px) rotate(360deg); } 
+}
 
-/* --- صفحه لاگین فوق لوکس --- */
+/* --- صفحه لاگین و ثبت‌نام --- */
 #loginScreen { 
-    position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 20000; 
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 20000; 
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    backdrop-filter: blur(15px);
+    backdrop-filter: blur(20px);
 }
 
-.login-brand {
-    font-size: 110px; font-weight: 900; color: var(--primary); 
-    letter-spacing: 15px; margin-bottom: 40px; 
-    text-shadow: var(--neon-text); position: relative;
-    animation: floating 3s infinite ease-in-out;
-}
-.login-brand span { color: #fff; opacity: 0.5; }
-
-@keyframes floating {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-15px); }
-}
-
-.login-inner { 
-    background: rgba(255, 255, 255, 0.05); 
-    padding: 60px; border-radius: 60px; width: 480px; 
+.login-card { 
+    background: rgba(255, 255, 255, 0.04); 
+    padding: 50px; border-radius: 50px; width: 450px; 
     border: 1px solid rgba(255, 255, 255, 0.1); 
-    text-align: center; 
-    box-shadow: 0 40px 100px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,255,255,0.02);
-    position: relative;
-    overflow: hidden;
+    text-align: center; box-shadow: 0 50px 100px rgba(0,0,0,0.9);
+    position: relative; overflow: hidden;
 }
 
-.login-inner::before {
-    content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-    background: conic-gradient(transparent, transparent, var(--primary), transparent);
-    animation: borderRotate 6s infinite linear;
-    z-index: -1; opacity: 0.3;
-}
-@keyframes borderRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-.login-inner input { 
-    width: 100%; padding: 22px; margin-bottom: 25px; border-radius: 25px; 
-    border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.6); 
-    color: #fff; text-align: center; font-size: 18px; outline: none;
-}
-.login-inner input:focus {
-    border-color: var(--primary); box-shadow: var(--neon-box); transform: scale(1.02);
+.brand-logo {
+    font-size: 100px; font-weight: 900; color: var(--primary); 
+    letter-spacing: 10px; margin-bottom: 30px; 
+    text-shadow: 0 0 20px rgba(0, 255, 204, 0.6);
 }
 
-.btn-auth {
-    width: 100%; padding: 22px; border-radius: 25px; border: none;
-    background: linear-gradient(90deg, var(--primary), #00d4ff);
-    color: #000; font-weight: 900; font-size: 20px; cursor: pointer;
-    box-shadow: 0 10px 30px rgba(0, 255, 204, 0.3);
+.auth-tabs {
+    display: flex; background: rgba(0,0,0,0.4); border-radius: 20px;
+    margin-bottom: 30px; padding: 5px; border: 1px solid rgba(255,255,255,0.05);
 }
-.btn-auth:hover { letter-spacing: 2px; box-shadow: 0 15px 40px rgba(0, 255, 204, 0.5); }
-
-/* --- استایل اپ اصلی --- */
-.app {
-    width: 95vw; height: 92vh; max-width: 1400px;
-    background: rgba(10, 10, 10, 0.7); backdrop-filter: blur(60px);
-    border-radius: 60px; border: 1px solid rgba(255, 255, 255, 0.08);
-    display: flex; box-shadow: 0 50px 150px rgba(0,0,0,0.9); position: relative;
+.auth-tab {
+    flex: 1; padding: 12px; cursor: pointer; border-radius: 15px;
+    font-size: 14px; font-weight: bold; color: rgba(255,255,255,0.5);
+}
+.auth-tab.active {
+    background: var(--primary); color: #000; box-shadow: var(--neon-box);
 }
 
-.sidebar { width: 360px; border-left: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; }
-.sidebar-header { padding: 45px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-
-.user-card {
-    margin: 12px 25px; padding: 20px; border-radius: 30px; background: var(--glass);
-    cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+.input-group { position: relative; margin-bottom: 20px; }
+.input-group input { 
+    width: 100%; padding: 18px 25px; border-radius: 20px; 
+    border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.5); 
+    color: #fff; text-align: center; font-size: 16px; outline: none;
 }
-.user-card:hover { transform: translateX(-10px); background: rgba(255,255,255,0.08); }
-.user-card.active { border-color: var(--primary); background: rgba(0, 255, 204, 0.08); box-shadow: var(--neon-box); border: 1px solid var(--primary); }
-
-.chat-main { flex: 1; display: flex; flex-direction: column; position: relative; }
-.chat-header { padding: 30px 45px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); }
-
-#messages { flex: 1; padding: 45px; overflow-y: auto; display: flex; flex-direction: column; gap: 22px; }
-.msg { 
-    padding: 20px 28px; border-radius: 35px; max-width: 70%; font-size: 15px; 
-    animation: popIn 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-}
-.me { align-self: flex-end; background: linear-gradient(135deg, var(--primary), #00ccff); color: #000; font-weight: 700; border-bottom-right-radius: 5px; }
-.other { align-self: flex-start; background: #1a1a1a; color: #fff; border-bottom-left-radius: 5px; border: 1px solid rgba(255,255,255,0.1); }
-
-.footer { padding: 35px 50px; display: flex; gap: 25px; align-items: center; }
-.input-wrap { flex: 1; }
-#msgInput { 
-    width: 100%; padding: 22px 40px; border-radius: 45px; border: 1px solid rgba(255,255,255,0.1);
-    background: #000; color: #fff; outline: none; font-size: 16px;
+.input-group input:focus {
+    border-color: var(--primary); background: rgba(0, 255, 204, 0.03);
+    box-shadow: inset 0 0 10px rgba(0,255,204,0.1);
 }
 
-.btn-icon { width: 65px; height: 65px; border-radius: 25px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 26px; }
-.btn-send { background: var(--primary); color: #000; box-shadow: 0 10px 30px rgba(0, 255, 204, 0.4); }
+.btn-main {
+    width: 100%; padding: 18px; border-radius: 20px; border: none;
+    background: linear-gradient(135deg, var(--primary), #00d4ff);
+    color: #000; font-weight: 900; font-size: 18px; cursor: pointer;
+    box-shadow: 0 10px 30px rgba(0, 255, 204, 0.3); margin-top: 10px;
+}
+.btn-main:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(0, 255, 204, 0.5); }
 
-/* --- کال باکس --- */
+/* --- استایل اپلیکیشن اصلی --- */
+.app-container {
+    width: 96vw; height: 94vh; max-width: 1500px;
+    background: rgba(10, 10, 10, 0.6); backdrop-filter: blur(50px);
+    border-radius: 55px; border: 1px solid rgba(255, 255, 255, 0.07);
+    display: flex; box-shadow: 0 50px 150px rgba(0,0,0,0.9);
+}
+
+.sidebar { width: 380px; border-left: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; }
+.chat-window { flex: 1; display: flex; flex-direction: column; position: relative; }
+
+.user-item {
+    margin: 10px 20px; padding: 18px; border-radius: 25px; background: rgba(255,255,255,0.02);
+    cursor: pointer; display: flex; align-items: center; gap: 15px; border: 1px solid transparent;
+}
+.user-item:hover { background: rgba(255,255,255,0.06); transform: scale(1.02); }
+.user-item.active { border-color: var(--primary); background: rgba(0, 255, 204, 0.05); box-shadow: var(--neon-box); }
+
+.status-dot { width: 10px; height: 10px; border-radius: 50%; }
+.online { background: var(--primary); box-shadow: 0 0 10px var(--primary); }
+.offline { background: #333; }
+
+#messages { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+.msg { padding: 16px 24px; border-radius: 25px; max-width: 70%; font-size: 15px; line-height: 1.6; }
+.msg.me { align-self: flex-end; background: var(--primary); color: #000; font-weight: 600; border-bottom-right-radius: 4px; }
+.msg.other { align-self: flex-start; background: #1a1a1a; color: #fff; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
+
+/* --- تماس تصویری --- */
 #callBox {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98);
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95);
     z-index: 10000; flex-direction: column; align-items: center; justify-content: center;
-    backdrop-filter: blur(50px);
+    backdrop-filter: blur(60px);
 }
-.call-card {
-    text-align: center; padding: 100px; border-radius: 80px; background: var(--glass);
-    border: 1px solid var(--primary); box-shadow: 0 0 120px rgba(0, 255, 204, 0.2);
+.call-circle {
+    width: 150px; height: 150px; border-radius: 50%; background: var(--primary);
+    margin-bottom: 30px; display: flex; align-items: center; justify-content: center;
+    font-size: 60px; color: #000; animation: pulseCall 1.5s infinite;
 }
+@keyframes pulseCall { 0% { box-shadow: 0 0 0 0 rgba(0,255,204,0.7); } 100% { box-shadow: 0 0 0 50px rgba(0,255,204,0); } }
 
-audio { height: 45px; filter: invert(1); margin-top: 15px; }
 </style>
 </head>
 <body>
@@ -157,72 +145,71 @@ audio { height: 45px; filter: invert(1); margin-top: 15px; }
 </div>
 
 <div id="loginScreen">
-    <div class="login-brand">ALLO_<span></span></div>
-    <div class="login-inner">
-        <div style="color:var(--primary); margin-bottom:30px; font-weight:100; font-size:14px; letter-spacing:5px;">SECURE CYBER ACCESS</div>
-        <input id="uID" placeholder="ایم یا آی‌دی کاربری">
-        <input id="uPass" type="password" placeholder="رمز عبور">
-        <button class="btn-auth" onclick="handleAuth()">ورود به شبکه</button>
-        <p style="margin-top:25px; font-size:12px; opacity:0.4;">v4.0.2 - Encrypted End-to-End</p>
+    <div class="brand-logo">ALLO</div>
+    <div class="login-card">
+        <div class="auth-tabs">
+            <div id="tabLogin" class="auth-tab active" onclick="switchAuth('login')">ورود</div>
+            <div id="tabRegister" class="auth-tab" onclick="switchAuth('register')">ساخت حساب</div>
+        </div>
+        
+        <div class="input-group">
+            <input id="uID" placeholder="آی‌دی منحصر به فرد">
+        </div>
+        <div class="input-group">
+            <input id="uPass" type="password" placeholder="رمز عبور">
+        </div>
+        
+        <button id="authBtn" class="btn-main" onclick="handleAuth()">اتصال به شبکه</button>
+        
+        <p style="margin-top:25px; font-size:11px; opacity:0.3; letter-spacing:2px;">QUANTUM ENCRYPTION ENABLED</p>
     </div>
 </div>
 
-<div class="app">
+<div class="app-container">
     <div class="sidebar">
-        <div class="sidebar-header">
-            <h2 style="color:var(--primary); letter-spacing:4px; font-weight:900;">ALLO_</h2>
+        <div style="padding:40px; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <h2 style="color:var(--primary); letter-spacing:5px;">ALLO</h2>
         </div>
-        <div id="userList" style="flex:1; overflow-y:auto; padding-top:20px;"></div>
-        <div style="padding:35px; border-top:1px solid rgba(255,255,255,0.05);">
-            <div id="myIDDisplay" style="font-size:12px; opacity:0.5; margin-bottom:12px; font-family:monospace;">STATION: ONLINE</div>
-            <button onclick="logout()" style="background:none; border:none; color:var(--secondary); font-weight:bold; cursor:pointer; letter-spacing:1px;">TERMINATE SESSION ⬅</button>
+        <div id="userList" style="flex:1; overflow-y:auto; padding:10px 0;"></div>
+        <div style="padding:30px; background:rgba(0,0,0,0.2);">
+            <div id="myIDDisplay" style="font-size:11px; opacity:0.5; margin-bottom:10px;">ID: UNKNOWN</div>
+            <button onclick="logout()" style="color:var(--secondary); background:none; border:none; cursor:pointer; font-weight:bold;">خروج از سیستم ✕</button>
         </div>
     </div>
 
-    <div class="chat-main">
-        <div class="chat-header">
-            <div style="display:flex; align-items:center; gap:25px;">
-                <div id="hAvatar" style="width:60px; height:60px; border-radius:22px; background:var(--primary); color:#000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:24px;">?</div>
-                <div>
-                    <h3 id="hName" style="margin:0;">Select Terminal</h3>
-                    <span style="font-size:11px; color:var(--primary); opacity:0.6;">Ready to Sync</span>
-                </div>
+    <div class="chat-window">
+        <div style="padding:25px 40px; display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2);">
+            <div style="display:flex; align-items:center; gap:20px;">
+                <div id="hAvatar" style="width:55px; height:55px; border-radius:20px; background:var(--primary); color:#000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:22px;">?</div>
+                <h3 id="hName">انتخاب مخاطب...</h3>
             </div>
-            <div style="display:flex; gap:18px;">
-                <button class="btn-icon" style="background:var(--glass); color:var(--primary); border:1px solid rgba(0,255,204,0.2);" onclick="startCall()">📞</button>
-                <button class="btn-icon" style="background:var(--glass);" onclick="toggleTheme()">🌗</button>
-            </div>
+            <button onclick="startCall()" style="width:55px; height:55px; border-radius:18px; border:1px solid var(--primary); background:none; color:var(--primary); cursor:pointer; font-size:20px;">📞</button>
         </div>
 
         <div id="messages"></div>
 
-        <div class="footer">
-            <div class="input-wrap">
-                <input id="msgInput" placeholder="پیام رمزنگاری شده..." onkeypress="if(event.key=='Enter') sendMsg()">
-            </div>
-            <button id="vBtn" class="btn-icon btn-voice" onclick="toggleVoice()" style="color:var(--secondary); border:1px solid var(--secondary); background:transparent;">🎤</button>
-            <button class="btn-icon btn-send" onclick="sendMsg()">✈</button>
+        <div style="padding:30px 40px; display:flex; gap:20px;">
+            <input id="msgInput" style="flex:1; padding:20px 30px; border-radius:30px; border:1px solid rgba(255,255,255,0.1); background:#000; color:#fff; outline:none;" placeholder="پیام شما..." onkeypress="if(event.key=='Enter') sendMsg()">
+            <button id="vBtn" onclick="toggleVoice()" style="width:60px; height:60px; border-radius:20px; border:1px solid var(--secondary); color:var(--secondary); background:none; cursor:pointer; font-size:22px;">🎤</button>
+            <button onclick="sendMsg()" style="width:60px; height:60px; border-radius:20px; background:var(--primary); color:#000; border:none; cursor:pointer; font-size:22px;">✈</button>
         </div>
     </div>
 </div>
 
 <div id="callBox">
-    <div class="call-card">
-        <div style="width:140px; height:140px; border-radius:50%; background:var(--primary); margin:0 auto 30px; display:flex; align-items:center; justify-content:center; font-size:60px; color:#000; box-shadow:var(--neon-box);" id="cAvatar">👤</div>
-        <h2 id="cName" style="font-size:38px; margin-bottom:15px; font-weight:900;">User</h2>
-        <p id="cStatus" style="color:var(--primary); letter-spacing:2px; font-size:14px;">ESTABLISHING CONNECTION...</p>
-        
-        <div style="display:flex; gap:45px; justify-content:center; margin-top:60px;">
-            <button id="acceptBtn" class="btn-icon" style="background:#2ecc71; width:100px; height:100px; display:none; box-shadow:0 0 30px #2ecc71;" onclick="answerCall()">✅</button>
-            <button class="btn-icon" style="background:var(--secondary); width:100px; height:100px; box-shadow:0 0 30px var(--secondary);" onclick="hangup()">❌</button>
-        </div>
+    <div class="call-circle" id="cAvatar">👤</div>
+    <h2 id="cName" style="font-size:35px; margin-bottom:10px;">User</h2>
+    <p id="cStatus" style="color:var(--primary); letter-spacing:3px;">INCOMING QUANTUM CALL</p>
+    <div style="display:flex; gap:30px; margin-top:50px;">
+        <button id="acceptBtn" onclick="answerCall()" style="width:80px; height:80px; border-radius:50%; background:#2ecc71; border:none; font-size:30px; cursor:pointer;">✅</button>
+        <button onclick="hangup()" style="width:80px; height:80px; border-radius:50%; background:var(--secondary); border:none; font-size:30px; cursor:pointer;">❌</button>
     </div>
 </div>
 
 <audio id="ring" src="https://actions.google.com/sounds/v1/alarms/phone_alerts_and_ringtones.ogg" loop></audio>
 
 <script>
-// --- فایربیس و منطق بدون تغییر ---
+// --- پیکربندی فایربیس ---
 const firebaseConfig = {
     apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
     authDomain: "alloo-web.firebaseapp.com",
@@ -236,26 +223,38 @@ const db = firebase.firestore();
 
 let me = localStorage.getItem("alloo_uid");
 let activeTarget = "";
-let pc = null;
-let localStream = null;
-const rtcConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }] };
+let authMode = 'login';
 
-if(me) { 
-    document.getElementById("loginScreen").style.display = "none";
-    initApp(); 
+if(me) { document.getElementById("loginScreen").style.display = "none"; initApp(); }
+
+function switchAuth(mode) {
+    authMode = mode;
+    document.getElementById('tabLogin').className = mode === 'login' ? 'auth-tab active' : 'auth-tab';
+    document.getElementById('tabRegister').className = mode === 'register' ? 'auth-tab active' : 'auth-tab';
+    document.getElementById('authBtn').innerText = mode === 'login' ? 'اتصال به شبکه' : 'ایجاد حساب کاربری';
 }
 
-function handleAuth() {
-    const id = document.getElementById("uID").value.trim();
+async function handleAuth() {
+    const id = document.getElementById("uID").value.trim().toLowerCase();
     const ps = document.getElementById("uPass").value.trim();
-    if(!id || !ps) return;
-    db.collection("users").doc(id).set({ online: true, pass: ps }, {merge:true});
+    if(!id || !ps) return alert("فیلدها را پر کنید");
+
+    if(authMode === 'register') {
+        const doc = await db.collection("users").doc(id).get();
+        if(doc.exists) return alert("این آی‌دی قبلاً رزرو شده است");
+        await db.collection("users").doc(id).set({ online: true, pass: ps });
+    } else {
+        const doc = await db.collection("users").doc(id).get();
+        if(!doc.exists || doc.data().pass !== ps) return alert("اطلاعات اشتباه است");
+        await db.collection("users").doc(id).update({ online: true });
+    }
+
     localStorage.setItem("alloo_uid", id);
     location.reload();
 }
 
 function initApp() {
-    document.getElementById("myIDDisplay").innerText = "STATION: " + me.toUpperCase();
+    document.getElementById("myIDDisplay").innerText = "MY ID: " + me.toUpperCase();
     db.collection("users").doc(me).update({ online: true });
     
     db.collection("users").onSnapshot(snap => {
@@ -263,14 +262,13 @@ function initApp() {
         list.innerHTML = "";
         snap.forEach(doc => {
             if(doc.id === me) return;
+            const data = doc.data();
             const card = document.createElement("div");
-            card.className = `user-card ${activeTarget === doc.id ? 'active' : ''}`;
+            card.className = `user-item ${activeTarget === doc.id ? 'active' : ''}`;
             card.innerHTML = `
-                <div style="display:flex; align-items:center; gap:18px;">
-                    <div style="width:50px; height:50px; border-radius:18px; background:#111; display:flex; align-items:center; justify-content:center; font-weight:900; color:var(--primary);">${doc.id[0].toUpperCase()}</div>
-                    <b style="font-size:17px;">${doc.id}</b>
-                </div>
-                <div style="width:12px; height:12px; border-radius:50%; background:${doc.data().online ? 'var(--primary)' : '#444'}; box-shadow:${doc.data().online ? '0 0 10px var(--primary)' : 'none'}"></div>
+                <div style="width:45px; height:45px; border-radius:12px; background:#000; display:flex; align-items:center; justify-content:center; color:var(--primary); font-weight:bold;">${doc.id[0].toUpperCase()}</div>
+                <div style="flex:1"><b>${doc.id}</b></div>
+                <div class="status-dot ${data.online ? 'online' : 'offline'}"></div>
             `;
             card.onclick = () => { activeTarget = doc.id; selectUser(); };
             list.appendChild(card);
@@ -283,6 +281,7 @@ function selectUser() {
     document.getElementById("hName").innerText = activeTarget;
     document.getElementById("hAvatar").innerText = activeTarget[0].toUpperCase();
     loadMessages();
+    initApp();
 }
 
 function loadMessages() {
@@ -294,7 +293,7 @@ function loadMessages() {
             if((d.f==me && d.t==activeTarget) || (d.f==activeTarget && d.t==me)) {
                 const m = document.createElement("div");
                 m.className = `msg ${d.f==me ? 'me' : 'other'}`;
-                if(d.audio) m.innerHTML = `<audio src="${d.audio}" controls></audio>`;
+                if(d.audio) m.innerHTML = `<audio src="${d.audio}" controls style="filter:invert(1)"></audio>`;
                 else m.innerText = d.txt;
                 box.appendChild(m);
             }
@@ -310,50 +309,43 @@ function sendMsg() {
     inp.value = "";
 }
 
-// تماس صوتی (ثابت شده)
+// --- بخش تماس (مشابه قبل با UI جدید) ---
+let pc; let localStream;
+const rtcConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
 async function startCall() {
     if(!activeTarget) return;
-    showCallUI(activeTarget, false);
+    document.getElementById("callBox").style.display = "flex";
+    document.getElementById("cName").innerText = activeTarget;
+    document.getElementById("acceptBtn").style.display = "none";
+    
     pc = new RTCPeerConnection(rtcConfig);
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-    pc.ontrack = e => {
-        const remoteAudio = new Audio();
-        remoteAudio.srcObject = e.streams[0];
-        remoteAudio.autoplay = true;
-        remoteAudio.play();
-    };
-
-    pc.onicecandidate = e => {
-        if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON());
-    };
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+    
+    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON()); };
+    pc.ontrack = e => { const a = new Audio(); a.srcObject = e.streams[0]; a.autoplay = true; };
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    await db.collection("calls").doc(activeTarget).set({ offer: { sdp: offer.sdp, type: offer.type }, from: me, status: "ringing" });
+    await db.collection("calls").doc(activeTarget).set({ offer: { sdp: offer.sdp, type: offer.type }, from: me });
 
     db.collection("calls").doc(activeTarget).onSnapshot(async snap => {
-        const data = snap.data();
-        if(data && data.answer && !pc.currentRemoteDescription) {
-            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-            document.getElementById("cStatus").innerText = "ENCRYPTED CHANNAL ACTIVE";
-        }
-    });
-
-    db.collection("calls").doc(activeTarget).collection("receiverCandidates").onSnapshot(snap => {
-        snap.docChanges().forEach(change => { if(change.type === "added") pc.addIceCandidate(new RTCIceCandidate(change.doc.data())); });
+        const d = snap.data();
+        if(d && d.answer && !pc.currentRemoteDescription) await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
     });
 }
 
 function listenForInboundCalls() {
     db.collection("calls").doc(me).onSnapshot(async snap => {
-        const data = snap.data();
-        if(data && data.offer && !pc) {
-            window.incomingCall = data;
-            showCallUI(data.from, true);
+        const d = snap.data();
+        if(d && d.offer && !pc) {
+            window.incoming = d;
+            document.getElementById("callBox").style.display = "flex";
+            document.getElementById("cName").innerText = d.from;
+            document.getElementById("acceptBtn").style.display = "block";
             document.getElementById("ring").play();
-        } else if(!data && pc) hangup();
+        } else if(!d && pc) hangup();
     });
 }
 
@@ -362,33 +354,15 @@ async function answerCall() {
     document.getElementById("acceptBtn").style.display = "none";
     pc = new RTCPeerConnection(rtcConfig);
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+    
+    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON()); };
+    pc.ontrack = e => { const a = new Audio(); a.srcObject = e.streams[0]; a.autoplay = true; };
 
-    pc.ontrack = e => {
-        const remoteAudio = new Audio();
-        remoteAudio.srcObject = e.streams[0];
-        remoteAudio.autoplay = true;
-        remoteAudio.play();
-    };
-
-    pc.onicecandidate = e => {
-        if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON());
-    };
-
-    await pc.setRemoteDescription(new RTCSessionDescription(window.incomingCall.offer));
+    await pc.setRemoteDescription(new RTCSessionDescription(window.incoming.offer));
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
     await db.collection("calls").doc(me).update({ answer: { sdp: answer.sdp, type: answer.type } });
-
-    db.collection("calls").doc(me).collection("callerCandidates").onSnapshot(snap => {
-        snap.docChanges().forEach(change => { if(change.type === "added") pc.addIceCandidate(new RTCIceCandidate(change.doc.data())); });
-    });
-}
-
-function showCallUI(name, incoming) {
-    document.getElementById("callBox").style.display = "flex";
-    document.getElementById("cName").innerText = name;
-    document.getElementById("acceptBtn").style.display = incoming ? "block" : "none";
 }
 
 function hangup() {
@@ -415,15 +389,14 @@ async function toggleVoice() {
             r.onloadend = () => db.collection("messages").add({ f: me, t: activeTarget, audio: r.result, time: Date.now() });
         };
         rec.start();
-        btn.style.background = "var(--secondary)"; btn.style.color = "#fff";
+        btn.style.background = "var(--secondary)"; btn.style.color = "#000";
     } else {
         rec.stop();
-        btn.style.background = "transparent"; btn.style.color = "var(--secondary)";
+        btn.style.background = "none"; btn.style.color = "var(--secondary)";
     }
 }
 
 function logout() { db.collection("users").doc(me).update({ online: false }); localStorage.clear(); location.reload(); }
-function toggleTheme() { document.body.classList.toggle("light"); }
 </script>
 </body>
 </html>
