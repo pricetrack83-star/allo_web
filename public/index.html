@@ -90,7 +90,7 @@ body.light #settingsModal{background:rgba(255,255,255,0.95);color:#111;box-shado
 #settingsModal button{padding:10px;border-radius:20px;border:none;background:#00ff80;color:black;cursor:pointer;}
 </style>
 </head>
-<body class="dark">
+<body class="light">
 <div class="app">
 
 <!-- Login -->
@@ -214,7 +214,7 @@ function searchUserByCode(){
 }
 
 // Settings modal
-function openSettings(){document.getElementById("settingsModal").style.display="flex"; document.getElementById("userCode").innerText=meCode;}
+function openSettings(){document.getElementById("settingsModal").style.display="flex";}
 function closeSettings(){document.getElementById("settingsModal").style.display="none";}
 
 // Messages
@@ -223,4 +223,81 @@ function loadMessages(){
     const msgDiv=document.getElementById("messages"); msgDiv.innerHTML="";
     snap.forEach(doc=>{
       let m=doc.data();
-      if(!((m.from===me&&m.to===activeUser)||(m.from===activeUser&&m
+      if(!((m.from===me&&m.to===activeUser)||(m.from===activeUser&&m.to===me))) return;
+      let div=document.createElement("div");
+      div.className="msg "+(m.from===me?"me":"other");
+      if(m.text) div.innerText=m.text;
+      if(m.image){let img=document.createElement("img"); img.src=m.image; div.appendChild(img);}
+      if(m.audio){
+        let container=document.createElement("div"); container.className='waveform-container';
+        let ws=WaveSurfer.create({container:container,waveColor:'#00e676',progressColor:'#fff',cursorColor:'#fff',barWidth:2,height:50,responsive:true});
+        ws.load(m.audio);
+        container.onclick=()=>ws.isPlaying()?ws.pause():ws.play();
+        div.appendChild(container);
+      }
+      if(m.seen && m.from===me) div.innerHTML+='<small>✔✔ Seen</small>';
+      msgDiv.appendChild(div);
+      if(m.from!==me) new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3').play();
+    });
+    msgDiv.scrollTop=99999;
+  });
+}
+
+// Send message
+function sendMessage(){
+  let text=document.getElementById("msgInput").value.trim();
+  if(!text||!activeUser) return;
+  db.collection("messages").add({from:me,to:activeUser,text,time:Date.now(),seen:false});
+  document.getElementById("msgInput").value="";
+  new Audio('https://www.soundjay.com/buttons/sounds/button-3.mp3').play();
+}
+
+// Send image
+document.getElementById("imgInput").addEventListener("change",function(e){
+  const file=e.target.files[0];
+  if(!file||!activeUser) return;
+  const url=URL.createObjectURL(file);
+  db.collection("messages").add({from:me,to:activeUser,image:url,time:Date.now(),seen:false});
+});
+
+// Send voice
+async function sendVoice(){
+  if(recorder && recorder.state==="recording"){ recorder.stop(); return; }
+  const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+  recorder=new MediaRecorder(stream); let chunks=[];
+  recorder.ondataavailable=e=>chunks.push(e.data);
+  recorder.onstop=()=>{const blob=new Blob(chunks,{type:'audio/webm'}); const url=URL.createObjectURL(blob);
+    db.collection("messages").add({from:me,to:activeUser,audio:url,time:Date.now(),seen:false}); chunks=[];};
+  recorder.start();
+}
+
+// Typing
+document.getElementById("msgInput").addEventListener("input",()=>{
+  if(!activeUser) return;
+  db.collection("typing").doc(activeUser).set({typing:true});
+  clearTimeout(typingTimeout);
+  typingTimeout=setTimeout(()=>db.collection("typing").doc(activeUser).set({typing:false}),1500);
+});
+db.collection("typing").onSnapshot(snap=>{
+  snap.forEach(doc=>{
+    if(doc.id!==me) document.getElementById("typingInfo").innerText=doc.data().typing?"در حال تایپ...":"";
+  });
+});
+
+// Logout
+function logout(){
+  if(!me) return;
+  db.collection("users").doc(me).update({online:false});
+  localStorage.removeItem("allo_user");
+  location.reload();
+}
+
+// Auto login
+window.onload=function(){
+  const u=localStorage.getItem("allo_user");
+  if(u){me=u; db.collection("users").doc(me).get().then(doc=>{meCode=doc.data().code; db.collection("users").doc(me).update({online:true}); startApp();});}
+}
+</script>
+</div>
+</body>
+</html>
