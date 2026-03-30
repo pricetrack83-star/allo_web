@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>ALLOO PRO</title>
+<title>ALLO</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -10,12 +10,12 @@
 <style>
 body{
   margin:0;
-  font-family:'Segoe UI',sans-serif;
-  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-  height:100vh;
+  font-family:sans-serif;
+  background:linear-gradient(135deg,#1d2671,#c33764);
   display:flex;
   justify-content:center;
   align-items:center;
+  height:100vh;
   color:white;
 }
 
@@ -23,61 +23,55 @@ body{
   width:400px;
   height:680px;
   border-radius:25px;
-  overflow:hidden;
-  background:rgba(255,255,255,0.05);
+  background:rgba(255,255,255,0.08);
   backdrop-filter:blur(20px);
-  box-shadow:0 20px 70px rgba(0,0,0,0.7);
   display:flex;
   flex-direction:column;
+  overflow:hidden;
 }
 
 .header{
   padding:15px;
   text-align:center;
-  font-weight:bold;
-  background:linear-gradient(90deg,#00e676,#00c853);
+  background:#00e676;
   color:black;
+  font-weight:bold;
 }
 
 #login,#chat{
   flex:1;
   display:flex;
   flex-direction:column;
-  padding:15px;
+  padding:10px;
 }
 
 #chat{display:none;}
 
 input{
-  padding:12px;
-  border-radius:15px;
+  padding:10px;
   border:none;
-  background:rgba(255,255,255,0.1);
-  color:white;
+  border-radius:10px;
   margin-top:10px;
 }
 
 button{
   padding:10px;
   border:none;
-  border-radius:15px;
-  margin-top:10px;
-  background:#00e676;
+  border-radius:10px;
+  margin-top:5px;
   cursor:pointer;
-  font-weight:bold;
 }
 
 #users{
   display:flex;
-  gap:8px;
+  gap:5px;
   overflow-x:auto;
-  margin-bottom:10px;
 }
 
 .user{
-  padding:6px 12px;
-  border-radius:20px;
-  background:rgba(255,255,255,0.1);
+  padding:5px 10px;
+  background:#333;
+  border-radius:15px;
   cursor:pointer;
 }
 
@@ -93,20 +87,15 @@ button{
 
 .msg{
   padding:10px;
+  margin:5px;
   border-radius:15px;
-  margin:6px 0;
   max-width:70%;
 }
 
-.me{
-  background:#00e676;
-  color:black;
-  align-self:flex-end;
-}
+.me{background:#00e676;color:black;align-self:flex-end;}
+.other{background:#333;}
 
-.other{
-  background:#333;
-}
+img{max-width:100%;border-radius:10px;margin-top:5px;}
 
 .footer{
   display:flex;
@@ -114,6 +103,9 @@ button{
 }
 
 .footer input{flex:1;}
+
+.typing{font-size:12px;opacity:0.7;}
+.voice-btn{background:#ff5252;color:white;}
 </style>
 </head>
 
@@ -121,7 +113,7 @@ button{
 
 <div class="app">
 
-<div class="header">ALLOO 💬</div>
+<div class="header">ALLO 🚀</div>
 
 <div id="login">
 <input id="name" placeholder="اسم">
@@ -134,9 +126,14 @@ button{
 
 <div id="messages"></div>
 
+<div id="typing" class="typing"></div>
+
 <div class="footer">
-<input id="msg" placeholder="پیام...">
-<button onclick="send()">ارسال</button>
+<input id="msg" placeholder="پیام..." oninput="sendTyping()">
+<button onclick="send()">➤</button>
+<input type="file" id="img" hidden>
+<button onclick="img.click()">📸</button>
+<button onclick="record()" class="voice-btn">🎤</button>
 </div>
 
 <button onclick="logout()">خروج</button>
@@ -158,45 +155,42 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let me = "";
-let activeUser = "";
+let me="",activeUser="",mediaRecorder,chunks=[];
+
+// 🔔 notification
+if(Notification.permission!=="granted"){
+  Notification.requestPermission();
+}
 
 // login
 function login(){
-  me = document.getElementById("name").value.trim();
-  if(!me) return alert("اسم وارد کن");
+  me=name.value.trim();
+  if(!me) return alert("اسم بزن");
 
-  localStorage.setItem("allo_user", me);
-
-  db.collection("users").doc(me).set({
-    online:true
-  });
-
+  localStorage.setItem("allo_user",me);
+  db.collection("users").doc(me).set({online:true});
   start();
 }
 
-// start app
 function start(){
-  document.getElementById("login").style.display="none";
-  document.getElementById("chat").style.display="flex";
-
+  login.style.display="none";
+  chat.style.display="flex";
   loadUsers();
 }
 
 // users
 function loadUsers(){
-  db.collection("users").onSnapshot(snap=>{
+  db.collection("users").onSnapshot(s=>{
     users.innerHTML="";
+    s.forEach(d=>{
+      if(d.id===me) return;
 
-    snap.forEach(doc=>{
-      if(doc.id === me) return;
+      let div=document.createElement("div");
+      div.className="user";
+      div.innerText=d.id;
 
-      let div = document.createElement("div");
-      div.className = "user";
-      div.innerText = doc.id;
-
-      div.onclick = ()=>{
-        activeUser = doc.id;
+      div.onclick=()=>{
+        activeUser=d.id;
         loadMessages();
       };
 
@@ -207,41 +201,127 @@ function loadUsers(){
 
 // messages
 function loadMessages(){
-  db.collection("messages")
-  .orderBy("time")
-  .onSnapshot(snap=>{
+  db.collection("messages").orderBy("time")
+  .onSnapshot(s=>{
     messages.innerHTML="";
 
-    snap.forEach(doc=>{
-      let m = doc.data();
+    s.forEach(doc=>{
+      let m=doc.data();
 
-      if(!(m.from===me && m.to===activeUser) &&
-         !(m.from===activeUser && m.to===me)) return;
+      if(!(m.from===me&&m.to===activeUser) &&
+         !(m.from===activeUser&&m.to===me)) return;
 
-      let div = document.createElement("div");
-      div.className = "msg " + (m.from===me ? "me" : "other");
-      div.innerText = m.text;
+      let div=document.createElement("div");
+      div.className="msg "+(m.from===me?"me":"other");
+
+      if(m.text) div.innerHTML=m.text;
+
+      if(m.img){
+        let im=document.createElement("img");
+        im.src=m.img;
+        div.appendChild(im);
+      }
+
+      if(m.audio){
+        let a=document.createElement("audio");
+        a.src=m.audio;
+        a.controls=true;
+        div.appendChild(a);
+      }
+
+      if(m.seen && m.from===me){
+        div.innerHTML+=" ✔✔";
+      }
 
       messages.appendChild(div);
+
+      // seen
+      if(m.to===me && !m.seen){
+        db.collection("messages").doc(doc.id).update({seen:true});
+      }
+
+      // notification
+      if(m.from!==me && document.hidden){
+        new Notification(m.from+" : "+(m.text||"📩"));
+      }
     });
 
-    messages.scrollTop = 99999;
+    messages.scrollTop=99999;
   });
 }
 
-// send
+// send text
 function send(){
-  let text = document.getElementById("msg").value.trim();
-  if(!text || !activeUser) return;
+  if(!msg.value || !activeUser) return;
 
   db.collection("messages").add({
-    from: me,
-    to: activeUser,
-    text: text,
-    time: Date.now()
+    from:me,
+    to:activeUser,
+    text:msg.value,
+    time:Date.now()
   });
 
-  document.getElementById("msg").value="";
+  msg.value="";
+}
+
+// 📸 image (Base64)
+img.onchange=()=>{
+  let file=img.files[0];
+  let r=new FileReader();
+
+  r.onload=()=>{
+    db.collection("messages").add({
+      from:me,
+      to:activeUser,
+      img:r.result,
+      time:Date.now()
+    });
+  };
+
+  r.readAsDataURL(file);
+};
+
+// 🎤 voice (Base64)
+async function record(){
+  if(!activeUser) return alert("یوزر انتخاب کن");
+
+  if(!mediaRecorder){
+    let stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    mediaRecorder=new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable=e=>chunks.push(e.data);
+
+    mediaRecorder.onstop=()=>{
+      let blob=new Blob(chunks);
+      chunks=[];
+      let r=new FileReader();
+
+      r.onload=()=>{
+        db.collection("messages").add({
+          from:me,
+          to:activeUser,
+          audio:r.result,
+          time:Date.now()
+        });
+      };
+
+      r.readAsDataURL(blob);
+    };
+
+    mediaRecorder.start();
+  }else{
+    mediaRecorder.stop();
+    mediaRecorder=null;
+  }
+}
+
+// typing
+function sendTyping(){
+  if(!activeUser) return;
+
+  db.collection("typing").doc(activeUser).set({
+    from:me
+  });
 }
 
 // logout
@@ -252,10 +332,10 @@ function logout(){
 }
 
 // auto login
-window.onload = ()=>{
-  let saved = localStorage.getItem("allo_user");
-  if(saved){
-    me = saved;
+window.onload=()=>{
+  let u=localStorage.getItem("allo_user");
+  if(u){
+    me=u;
     db.collection("users").doc(me).set({online:true});
     start();
   }
