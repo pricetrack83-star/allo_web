@@ -409,7 +409,6 @@ function registerUser(){
   let p=document.getElementById("passwordInput").value.trim();
   let id=document.getElementById("userIDInput").value.trim();
   if(!u||!p||!id) return alert("تمام فیلدها لازم است");
-
   db.collection("users").doc(id).get().then(doc=>{
     if(doc.exists) return alert("این شناسه یکتا قبلاً استفاده شده");
     db.collection("users").doc(id).set({username:u,password:p,online:true});
@@ -424,7 +423,6 @@ function loginUser(){
   let u=document.getElementById("userIDInput").value.trim();
   let p=document.getElementById("passwordInput").value.trim();
   if(!u||!p) return alert("تمام فیلدها لازم است");
-
   db.collection("users").doc(u).get().then(doc=>{
     if(!doc.exists) return alert("کاربر وجود ندارد");
     if(doc.data().password!==p) return alert("رمز اشتباه است");
@@ -466,46 +464,15 @@ function loadMessages(){
     snap.forEach(doc=>{
       let m = doc.data();
       if(!((m.from===me && m.to===activeUser) || (m.from===activeUser && m.to===me))) return;
-
       let div = document.createElement("div");
       div.className = "msg " + (m.from===me ? "me" : "other");
-
       if(m.text) div.innerText = m.text;
-      if(m.image){
-        let img = document.createElement("img");
-        img.src = m.image;
-        div.appendChild(img);
-      }
-
       if(m.audio){
-        let container = document.createElement("div");
-        container.className = 'waveform-container';
-        div.appendChild(container);
-
-        let ws = WaveSurfer.create({
-          container: container,
-          waveColor: '#00e676',
-          progressColor: '#fff',
-          cursorColor: '#fff',
-          barWidth: 2,
-          height: 50,
-          responsive: true
-        });
-
-        if(m.audio.startsWith("blob:")){
-          fetch(m.audio)
-            .then(r => r.blob())
-            .then(blob => ws.loadBlob(blob))
-            .then(()=> ws.pause());
-        } else {
-          ws.load(m.audio);
-          ws.on('ready', ()=> ws.pause());
-        }
-
-        container.addEventListener('click', ()=> ws.isPlaying() ? ws.pause() : ws.play());
+        let audioElem = document.createElement("audio");
+        audioElem.src = m.audio;
+        audioElem.controls=true;
+        div.appendChild(audioElem);
       }
-
-      if(m.seen && m.from===me) div.innerHTML += '<small>✔</small>';
       msgDiv.appendChild(div);
     });
     msgDiv.scrollTop = msgDiv.scrollHeight;
@@ -531,6 +498,60 @@ function logout(){
   db.collection("users").doc(me).update({online:false});
   localStorage.removeItem("allo_user");
   location.reload();
+}
+
+// ==================== Recording ====================
+async function toggleRecording(){
+  if(recorder && recorder.state=="recording"){
+    recorder.stop(); clearInterval(recInterval); recInterval=null; recSeconds=0; 
+    document.getElementById("recordBtn").classList.remove("recording");
+    document.getElementById("recTimer").innerText="00:00";
+    return;
+  }
+  const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+  recorder = new MediaRecorder(stream);
+  recChunks = [];
+  recorder.ondataavailable = e=>recChunks.push(e.data);
+  recorder.onstop = async ()=>{
+    const blob = new Blob(recChunks,{type:'audio/webm'});
+    const audioURL = URL.createObjectURL(blob);
+    db.collection("messages").add({from:me,to:activeUser,audio:audioURL,time:firebase.firestore.FieldValue.serverTimestamp()});
+  };
+  recorder.start();
+  document.getElementById("recordBtn").classList.add("recording");
+  recInterval = setInterval(()=>{ recSeconds++; document.getElementById("recTimer").innerText = `${String(Math.floor(recSeconds/60)).padStart(2,'0')}:${String(recSeconds%60).padStart(2,'0')}`;},1000);
+}
+
+// ==================== Call ====================
+async function startCall(){
+  if(!activeUser) return alert("ابتدا کاربر را انتخاب کنید");
+  document.getElementById("callBox").style.display="block";
+  const callStatus = document.getElementById("callStatus");
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  remoteStream = new MediaStream();
+  const audioEl = document.createElement("audio"); audioEl.autoplay=true; audioEl.srcObject=remoteStream; document.body.appendChild(audioEl);
+
+  peerConnection = new RTCPeerConnection(config);
+  localStream.getTracks().forEach(track=>peerConnection.addTrack(track,localStream));
+  peerConnection.ontrack = e=>{ e.streams[0].getTracks().forEach(t=>remoteStream.addTrack(t)); };
+  peerConnection.onicecandidate = e=>{ if(e.candidate) db.collection("calls").doc(activeUser).set({from:me,candidate:e.candidate}); };
+
+  const offer = await peerConnection.createOffer();
+  await peerConnection.setLocalDescription(offer);
+  db.collection("calls").doc(activeUser).set({from:me,offer:offer});
+
+  db.collection("calls").doc(me).onSnapshot(async snap=>{
+    if(!snap.exists) return;
+    const data = snap.data();
+    if(data.answer){ await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer)); }
+    if(data.candidate){ try{ await peerConnection.addIceCandidate(data.candidate); }catch(e){console.log(e);} }
+  });
+}
+
+async function endCall(){
+  if(peerConnection) peerConnection.close(); peerConnection=null;
+  if(localStream) localStream.getTracks().forEach(t=>t.stop()); localStream=null;
+  document.getElementById("callBox").style.display="none";
 }
 </script>
 </body>
