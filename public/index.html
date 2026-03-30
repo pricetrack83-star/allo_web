@@ -14,39 +14,19 @@ body.light{background:linear-gradient(135deg,#f5f5f5,#ddd);color:#111;}
 body.dark{background:linear-gradient(135deg,#0f0f0f,#1a1a1a);color:white;}
 
 /* ==== App container ==== */
-.app{width:1000px;height:720px;border-radius:30px;backdrop-filter:blur(20px);display:flex;overflow:hidden;transition:0.5s;box-shadow:0 0 80px rgba(0,255,118,0.5);}
-body.light .app{
-  box-shadow:0 0 100px rgba(0,170,255,0.4);
-  backdrop-filter:blur(25px);
-  border:2px solid rgba(0,170,255,0.2);
-}
+.app{width:1000px;height:720px;border-radius:30px;backdrop-filter:blur(25px);display:flex;overflow:hidden;transition:0.5s;box-shadow:0 0 100px rgba(0,255,118,0.5);}
+body.light .app{box-shadow:0 0 120px rgba(0,170,255,0.5);backdrop-filter:blur(30px);border:2px solid rgba(0,170,255,0.3);}
 
 /* ==== Login ==== */
 #loginBox{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;transition:0.5s;}
 #loginBox input{width:280px;padding:16px;border-radius:35px;border:none;background:#222;color:white;outline:none;transition:0.3s;box-shadow:0 3px 15px rgba(0,255,118,0.2);}
-body.light #loginBox input{
-  background:linear-gradient(145deg,#fff,#e0f7ff);
-  color:#111;
-  box-shadow:0 5px 25px rgba(0,170,255,0.3);
-  border:1px solid rgba(0,170,255,0.2);
-}
+body.light #loginBox input{background:linear-gradient(145deg,#fff,#e0f7ff);color:#111;box-shadow:0 5px 25px rgba(0,170,255,0.3);border:1px solid rgba(0,170,255,0.2);}
 #loginBox input:focus{background:#333;}
-body.light #loginBox input:focus{
-  background:#f0faff;
-  box-shadow:0 5px 25px rgba(0,170,255,0.6);
-}
+body.light #loginBox input:focus{background:#f0faff;box-shadow:0 5px 25px rgba(0,170,255,0.6);}
 #loginBox button{width:180px;padding:16px;border-radius:35px;border:none;background:linear-gradient(135deg,#00ff80,#00e676);color:black;font-weight:bold;cursor:pointer;box-shadow:0 5px 25px rgba(0,255,118,0.5);transition:0.3s;}
-body.light #loginBox button{
-  background:linear-gradient(135deg,#00cfff,#00aaff);
-  color:white;
-  box-shadow:0 8px 35px rgba(0,170,255,0.6);
-  text-shadow:0 0 8px rgba(0,255,255,0.5);
-}
+body.light #loginBox button{background:linear-gradient(135deg,#00cfff,#00aaff);color:white;box-shadow:0 8px 35px rgba(0,170,255,0.6);text-shadow:0 0 8px rgba(0,255,255,0.5);}
 #loginBox button:hover{transform:scale(1.08);box-shadow:0 8px 30px rgba(0,255,118,0.7);}
-body.light #loginBox button:hover{
-  transform:scale(1.1);
-  box-shadow:0 10px 40px rgba(0,170,255,0.8);
-}
+body.light #loginBox button:hover{transform:scale(1.1);box-shadow:0 10px 40px rgba(0,170,255,0.8);}
 #loginBox .title{font-size:50px;font-weight:bold;color:#00ff80;text-shadow:0 0 30px #00ff80;transition:0.5s;}
 
 /* ==== Chat ==== */
@@ -56,28 +36,16 @@ body.light #loginBox button:hover{
 #onlineList{width:240px;padding:20px;display:flex;flex-direction:column;border-radius:0 0 0 30px;transition:0.5s;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#00e676 #111;}
 #onlineList::-webkit-scrollbar{width:8px;}
 #onlineList::-webkit-scrollbar-thumb{background:#00e676;border-radius:4px;}
-body.light #onlineList{
-  background:rgba(240,250,255,0.95);
-  border-right:2px solid rgba(0,170,255,0.5);
-  box-shadow:0 0 20px rgba(0,170,255,0.2);
-}
+body.light #onlineList{background:rgba(240,250,255,0.95);border-right:2px solid rgba(0,170,255,0.5);box-shadow:0 0 20px rgba(0,170,255,0.2);}
 #onlineList h3{text-align:center;margin-bottom:15px;text-shadow:0 0 12px currentColor;color:inherit;}
 .user{padding:12px;margin:6px 0;border-radius:25px;cursor:pointer;transition:0.3s;box-shadow:0 2px 15px rgba(0,255,118,0.2);}
-body.light .user{
-  background:linear-gradient(135deg,#ccf7ff,#a0e5ff);
-  color:#111;
-  box-shadow:0 3px 15px rgba(0,170,255,0.3);
-}
+body.light .user{background:linear-gradient(135deg,#ccf7ff,#a0e5ff);color:#111;box-shadow:0 3px 15px rgba(0,170,255,0.3);}
 .user:hover{transform:scale(1.08);box-shadow:0 5px 20px rgba(0,255,118,0.5);}
 body.light .user:hover{transform:scale(1.1);box-shadow:0 8px 25px rgba(0,170,255,0.6);}
 
 /* ==== Chat Area ==== */
 #chatArea{flex:1;display:flex;flex-direction:column;margin-left:15px;border-radius:0 30px 30px 0;padding:15px;transition:0.5s;position:relative;}
-body.light #chatArea{
-  background:rgba(255,255,255,0.95);
-  box-shadow:0 0 50px rgba(0,170,255,0.3);
-  border:2px solid rgba(0,170,255,0.2);
-}
+body.light #chatArea{background:rgba(255,255,255,0.95);box-shadow:0 0 50px rgba(0,170,255,0.3);border:2px solid rgba(0,170,255,0.2);}
 #messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:10px;scrollbar-width:thin;scrollbar-color:#00e676 #111;}
 #messages::-webkit-scrollbar{width:8px;}
 #messages::-webkit-scrollbar-thumb{background:#00e676;border-radius:4px;}
@@ -95,24 +63,11 @@ img{max-width:240px;border-radius:20px;margin-top:5px;box-shadow:0 3px 15px rgba
 /* Footer */
 .footer{display:flex;gap:12px;padding:12px;border-top:2px solid currentColor;border-radius:0 0 30px 0;}
 .footer input{flex:1;padding:16px;border-radius:30px;border:none;background:#222;color:white;outline:none;transition:0.3s;box-shadow:0 2px 10px rgba(0,255,118,0.2);}
-body.light .footer input{
-  background:linear-gradient(145deg,#fff,#e0f7ff);
-  color:#111;
-  box-shadow:0 4px 15px rgba(0,170,255,0.3);
-  border:1px solid rgba(0,170,255,0.2);
-}
+body.light .footer input{background:linear-gradient(145deg,#fff,#e0f7ff);color:#111;box-shadow:0 4px 15px rgba(0,170,255,0.3);border:1px solid rgba(0,170,255,0.2);}
 .footer input:focus{background:#333;}
-body.light .footer input:focus{
-  background:#f0faff;
-  box-shadow:0 5px 25px rgba(0,170,255,0.5);
-}
+body.light .footer input:focus{background:#f0faff;box-shadow:0 5px 25px rgba(0,170,255,0.5);}
 .footer button{padding:16px;border-radius:50%;border:none;background:linear-gradient(135deg,#00ff80,#00e676);color:black;cursor:pointer;font-size:20px;transition:0.2s;box-shadow:0 3px 15px rgba(0,255,118,0.3);}
-body.light .footer button{
-  background:linear-gradient(135deg,#00cfff,#00aaff);
-  color:white;
-  box-shadow:0 6px 25px rgba(0,170,255,0.5);
-  text-shadow:0 0 5px rgba(0,255,255,0.5);
-}
+body.light .footer button{background:linear-gradient(135deg,#00cfff,#00aaff);color:white;box-shadow:0 6px 25px rgba(0,170,255,0.5);text-shadow:0 0 5px rgba(0,255,255,0.5);}
 .footer button:hover{transform:scale(1.2);box-shadow:0 6px 25px rgba(0,255,118,0.6);}
 body.light .footer button:hover{transform:scale(1.2);box-shadow:0 8px 35px rgba(0,170,255,0.7);}
 
@@ -127,6 +82,12 @@ body.light .waveform-container{box-shadow:0 0 25px rgba(0,170,255,0.4);border:1p
 /* Theme toggle */
 #themeToggle{margin:12px;padding:12px 18px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;background:linear-gradient(135deg,#00ff80,#00e676);box-shadow:0 3px 15px rgba(0,255,118,0.4);transition:0.3s;}
 #themeToggle:hover{transform:scale(1.12);box-shadow:0 6px 25px rgba(0,255,118,0.6);}
+
+/* Settings Modal */
+#settingsModal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);color:white;padding:20px;border-radius:25px;display:none;flex-direction:column;gap:15px;z-index:999;box-shadow:0 0 50px #00ff80;}
+body.light #settingsModal{background:rgba(255,255,255,0.95);color:#111;box-shadow:0 0 50px #00aaff;}
+#settingsModal input{padding:10px;border-radius:20px;border:none;outline:none;}
+#settingsModal button{padding:10px;border-radius:20px;border:none;background:#00ff80;color:black;cursor:pointer;}
 </style>
 </head>
 <body class="light">
@@ -146,6 +107,7 @@ body.light .waveform-container{box-shadow:0 0 25px rgba(0,170,255,0.4);border:1p
 <div id="chatBox">
   <div id="onlineList">
     <h3>آنلاین‌ها</h3>
+    <input id="searchUser" placeholder="جستجو با کد کوتاه" oninput="searchUserByCode()">
     <div id="users"></div>
   </div>
   <div id="chatArea">
@@ -157,9 +119,17 @@ body.light .waveform-container{box-shadow:0 0 25px rgba(0,170,255,0.4);border:1p
       <button onclick="sendVoice()">🎤</button>
       <input type="file" id="imgInput" style="display:none;" accept="image/*">
       <button onclick="document.getElementById('imgInput').click()">📸</button>
+      <button onclick="openSettings()">⚙️</button>
     </div>
     <button onclick="logout()" style="margin:10px;background:#ff5252;border-radius:25px;padding:12px;font-weight:bold;cursor:pointer;">خروج</button>
   </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal">
+  <h3>تنظیمات کاربر</h3>
+  <div>کد کوتاه شما: <span id="userCode"></span></div>
+  <button onclick="closeSettings()">بستن</button>
 </div>
 
 <script>
@@ -168,7 +138,10 @@ const firebaseConfig = {apiKey:"AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",authDom
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let me="", activeUser="", recorder=null, typingTimeout;
+let me="", meCode="", activeUser="", recorder=null, typingTimeout;
+
+// Generate short code
+function generateCode(){ return 'ALLO-'+Math.floor(1000+Math.random()*9000); }
 
 // Theme toggle
 function toggleTheme(){document.body.classList.toggle('light');document.body.classList.toggle('dark');}
@@ -180,7 +153,8 @@ function registerUser(){
   if(!u||!p) return alert("هر دو فیلد لازم است");
   db.collection("users").doc(u).get().then(doc=>{
     if(doc.exists) return alert("این کاربر قبلاً ساخته شده است");
-    db.collection("users").doc(u).set({password:p,online:true});
+    meCode=generateCode();
+    db.collection("users").doc(u).set({password:p,online:true,code:meCode});
     me=u; localStorage.setItem("allo_user",me); startApp();
   });
 }
@@ -191,7 +165,7 @@ function loginUser(){
   db.collection("users").doc(u).get().then(doc=>{
     if(!doc.exists) return alert("کاربر وجود ندارد");
     if(doc.data().password!==p) return alert("رمز اشتباه است");
-    me=u; localStorage.setItem("allo_user",me);
+    me=u; meCode=doc.data().code; localStorage.setItem("allo_user",me);
     db.collection("users").doc(me).update({online:true});
     startApp();
   });
@@ -205,6 +179,7 @@ if(Notification.permission!=="granted"){Notification.requestPermission();}
 function startApp(){
   document.getElementById("loginBox").style.display="none";
   document.getElementById("chatBox").style.display="flex";
+  document.getElementById("userCode").innerText=meCode;
   loadUsers(); loadMessages();
 }
 
@@ -216,12 +191,31 @@ function loadUsers(){
       if(doc.id===me) return;
       let div=document.createElement("div");
       div.className="user";
-      div.innerText=doc.id+(doc.data().online?" ✅":" ❌");
+      div.innerText=doc.id+" ("+doc.data().code+")"+(doc.data().online?" ✅":" ❌");
       div.onclick=()=>{ activeUser=doc.id; loadMessages(); };
       usersDiv.appendChild(div);
     });
   });
 }
+
+// Search user by code
+function searchUserByCode(){
+  let code=document.getElementById("searchUser").value.trim();
+  db.collection("users").where("code","==",code).get().then(snap=>{
+    const usersDiv=document.getElementById("users"); usersDiv.innerHTML="";
+    snap.forEach(doc=>{
+      let div=document.createElement("div");
+      div.className="user";
+      div.innerText=doc.id+" ("+doc.data().code+")"+(doc.data().online?" ✅":" ❌");
+      div.onclick=()=>{ activeUser=doc.id; loadMessages(); };
+      usersDiv.appendChild(div);
+    });
+  });
+}
+
+// Settings modal
+function openSettings(){document.getElementById("settingsModal").style.display="flex";}
+function closeSettings(){document.getElementById("settingsModal").style.display="none";}
 
 // Messages
 function loadMessages(){
@@ -243,7 +237,6 @@ function loadMessages(){
       }
       if(m.seen && m.from===me) div.innerHTML+='<small>✔✔ Seen</small>';
       msgDiv.appendChild(div);
-      // Sound notification
       if(m.from!==me) new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3').play();
     });
     msgDiv.scrollTop=99999;
@@ -273,12 +266,8 @@ async function sendVoice(){
   const stream=await navigator.mediaDevices.getUserMedia({audio:true});
   recorder=new MediaRecorder(stream); let chunks=[];
   recorder.ondataavailable=e=>chunks.push(e.data);
-  recorder.onstop=()=>{
-    const blob=new Blob(chunks,{type:'audio/webm'});
-    const url=URL.createObjectURL(blob);
-    db.collection("messages").add({from:me,to:activeUser,audio:url,time:Date.now(),seen:false});
-    chunks=[];
-  };
+  recorder.onstop=()=>{const blob=new Blob(chunks,{type:'audio/webm'}); const url=URL.createObjectURL(blob);
+    db.collection("messages").add({from:me,to:activeUser,audio:url,time:Date.now(),seen:false}); chunks=[];};
   recorder.start();
 }
 
@@ -306,7 +295,7 @@ function logout(){
 // Auto login
 window.onload=function(){
   const u=localStorage.getItem("allo_user");
-  if(u){me=u; db.collection("users").doc(me).update({online:true}); startApp();}
+  if(u){me=u; db.collection("users").doc(me).get().then(doc=>{meCode=doc.data().code; db.collection("users").doc(me).update({online:true}); startApp();});}
 }
 </script>
 </div>
