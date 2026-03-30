@@ -90,7 +90,7 @@ body.light #settingsModal{background:rgba(255,255,255,0.95);color:#111;box-shado
 #settingsModal button{padding:10px;border-radius:20px;border:none;background:#00ff80;color:black;cursor:pointer;}
 </style>
 </head>
-<body class="light">
+<body class="dark">
 <div class="app">
 
 <!-- Login -->
@@ -129,19 +129,28 @@ body.light #settingsModal{background:rgba(255,255,255,0.95);color:#111;box-shado
 <div id="settingsModal">
   <h3>تنظیمات کاربر</h3>
   <div>کد کوتاه شما: <span id="userCode"></span></div>
+  <div>شناسه شما: <span id="userID"></span></div>
   <button onclick="closeSettings()">بستن</button>
 </div>
 
 <script>
 // Firebase
-const firebaseConfig = {apiKey:"AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",authDomain:"alloo-web.firebaseapp.com",projectId:"alloo-web",storageBucket:"alloo-web.firebasestorage.app",messagingSenderId:"132232824762",appId:"1:132232824762:web:4e3c25557c072f0feabf83"};
+const firebaseConfig = {
+  apiKey:"AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
+  authDomain:"alloo-web.firebaseapp.com",
+  projectId:"alloo-web",
+  storageBucket:"alloo-web.firebasestorage.app",
+  messagingSenderId:"132232824762",
+  appId:"1:132232824762:web:4e3c25557c072f0feabf83"
+};
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let me="", meCode="", activeUser="", recorder=null, typingTimeout;
+let me="", meCode="", meID="", activeUser="", recorder=null, typingTimeout;
 
-// Generate short code
+// Generate short code & unique ID
 function generateCode(){ return 'ALLO-'+Math.floor(1000+Math.random()*9000); }
+function generateID(){ return 'user-'+Date.now()+'-'+Math.floor(Math.random()*1000); }
 
 // Theme toggle
 function toggleTheme(){document.body.classList.toggle('light');document.body.classList.toggle('dark');}
@@ -153,9 +162,10 @@ function registerUser(){
   if(!u||!p) return alert("هر دو فیلد لازم است");
   db.collection("users").doc(u).get().then(doc=>{
     if(doc.exists) return alert("این کاربر قبلاً ساخته شده است");
-    meCode=generateCode();
-    db.collection("users").doc(u).set({password:p,online:true,code:meCode});
-    me=u; localStorage.setItem("allo_user",me); startApp();
+    meCode = generateCode();
+    meID = generateID();
+    db.collection("users").doc(u).set({password:p, online:true, code:meCode, id:meID});
+    me = u; localStorage.setItem("allo_user",me); startApp();
   });
 }
 function loginUser(){
@@ -165,7 +175,8 @@ function loginUser(){
   db.collection("users").doc(u).get().then(doc=>{
     if(!doc.exists) return alert("کاربر وجود ندارد");
     if(doc.data().password!==p) return alert("رمز اشتباه است");
-    me=u; meCode=doc.data().code; localStorage.setItem("allo_user",me);
+    me = u; meCode = doc.data().code; meID = doc.data().id;
+    localStorage.setItem("allo_user",me);
     db.collection("users").doc(me).update({online:true});
     startApp();
   });
@@ -179,7 +190,8 @@ if(Notification.permission!=="granted"){Notification.requestPermission();}
 function startApp(){
   document.getElementById("loginBox").style.display="none";
   document.getElementById("chatBox").style.display="flex";
-  document.getElementById("userCode").innerText=meCode;
+  document.getElementById("userCode").innerText = meCode;
+  document.getElementById("userID").innerText = meID;
   loadUsers(); loadMessages();
 }
 
@@ -217,73 +229,6 @@ function searchUserByCode(){
 function openSettings(){document.getElementById("settingsModal").style.display="flex";}
 function closeSettings(){document.getElementById("settingsModal").style.display="none";}
 
-// Messages
-function loadMessages(){
-  db.collection("messages").orderBy("time").onSnapshot(snap=>{
-    const msgDiv=document.getElementById("messages"); msgDiv.innerHTML="";
-    snap.forEach(doc=>{
-      let m=doc.data();
-      if(!((m.from===me&&m.to===activeUser)||(m.from===activeUser&&m.to===me))) return;
-      let div=document.createElement("div");
-      div.className="msg "+(m.from===me?"me":"other");
-      if(m.text) div.innerText=m.text;
-      if(m.image){let img=document.createElement("img"); img.src=m.image; div.appendChild(img);}
-      if(m.audio){
-        let container=document.createElement("div"); container.className='waveform-container';
-        let ws=WaveSurfer.create({container:container,waveColor:'#00e676',progressColor:'#fff',cursorColor:'#fff',barWidth:2,height:50,responsive:true});
-        ws.load(m.audio);
-        container.onclick=()=>ws.isPlaying()?ws.pause():ws.play();
-        div.appendChild(container);
-      }
-      if(m.seen && m.from===me) div.innerHTML+='<small>✔✔ Seen</small>';
-      msgDiv.appendChild(div);
-      if(m.from!==me) new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3').play();
-    });
-    msgDiv.scrollTop=99999;
-  });
-}
-
-// Send message
-function sendMessage(){
-  let text=document.getElementById("msgInput").value.trim();
-  if(!text||!activeUser) return;
-  db.collection("messages").add({from:me,to:activeUser,text,time:Date.now(),seen:false});
-  document.getElementById("msgInput").value="";
-  new Audio('https://www.soundjay.com/buttons/sounds/button-3.mp3').play();
-}
-
-// Send image
-document.getElementById("imgInput").addEventListener("change",function(e){
-  const file=e.target.files[0];
-  if(!file||!activeUser) return;
-  const url=URL.createObjectURL(file);
-  db.collection("messages").add({from:me,to:activeUser,image:url,time:Date.now(),seen:false});
-});
-
-// Send voice
-async function sendVoice(){
-  if(recorder && recorder.state==="recording"){ recorder.stop(); return; }
-  const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-  recorder=new MediaRecorder(stream); let chunks=[];
-  recorder.ondataavailable=e=>chunks.push(e.data);
-  recorder.onstop=()=>{const blob=new Blob(chunks,{type:'audio/webm'}); const url=URL.createObjectURL(blob);
-    db.collection("messages").add({from:me,to:activeUser,audio:url,time:Date.now(),seen:false}); chunks=[];};
-  recorder.start();
-}
-
-// Typing
-document.getElementById("msgInput").addEventListener("input",()=>{
-  if(!activeUser) return;
-  db.collection("typing").doc(activeUser).set({typing:true});
-  clearTimeout(typingTimeout);
-  typingTimeout=setTimeout(()=>db.collection("typing").doc(activeUser).set({typing:false}),1500);
-});
-db.collection("typing").onSnapshot(snap=>{
-  snap.forEach(doc=>{
-    if(doc.id!==me) document.getElementById("typingInfo").innerText=doc.data().typing?"در حال تایپ...":"";
-  });
-});
-
 // Logout
 function logout(){
   if(!me) return;
@@ -292,12 +237,49 @@ function logout(){
   location.reload();
 }
 
-// Auto login
-window.onload=function(){
-  const u=localStorage.getItem("allo_user");
-  if(u){me=u; db.collection("users").doc(me).get().then(doc=>{meCode=doc.data().code; db.collection("users").doc(me).update({online:true}); startApp();});}
+// Messages
+function loadMessages(){
+  if(!activeUser) return;
+  const msgDiv=document.getElementById("messages"); msgDiv.innerHTML="";
+  db.collection("messages").where("users","array-contains",me).orderBy("timestamp","asc").onSnapshot(snap=>{
+    msgDiv.innerHTML="";
+    snap.forEach(doc=>{
+      let data=doc.data();
+      if(!data.users.includes(activeUser)) return;
+      let div=document.createElement("div"); div.className="msg "+(data.from===me?"me":"other");
+      if(data.type==="text") div.innerText=data.msg;
+      if(data.type==="image"){ let img=document.createElement("img"); img.src=data.msg; div.appendChild(img);}
+      if(data.type==="voice"){let wf=document.createElement("div");wf.className="waveform-container";div.appendChild(wf);
+        let wavesurfer = WaveSurfer.create({container:wf, waveColor:'#00ff80', progressColor:'#00e676', height:50});
+        wavesurfer.load(data.msg);
+      }
+      msgDiv.appendChild(div); msgDiv.scrollTop=msgDiv.scrollHeight;
+    });
+  });
 }
+
+// Send message
+function sendMessage(){
+  const input=document.getElementById("msgInput");
+  if(!input.value.trim()||!activeUser) return;
+  db.collection("messages").add({from:me,to:activeUser,msg:input.value,type:"text",users:[me,activeUser],timestamp:firebase.firestore.FieldValue.serverTimestamp()});
+  input.value="";
+}
+
+// Voice recording placeholder
+function sendVoice(){ alert("ویژگی ضبط و ارسال صدا اینجا فعال می‌شود."); }
+
+// Image upload
+document.getElementById("imgInput").addEventListener("change", function(e){
+  if(!activeUser) return alert("ابتدا کاربر انتخاب شود");
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    db.collection("messages").add({from:me,to:activeUser,msg:ev.target.result,type:"image",users:[me,activeUser],timestamp:firebase.firestore.FieldValue.serverTimestamp()});
+  }
+  reader.readAsDataURL(file);
+});
 </script>
-</div>
 </body>
 </html>
