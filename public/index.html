@@ -211,7 +211,7 @@ function loadMessages(){
         if(data.users.includes(activeUser)){
           let div=document.createElement("div"); div.className="msg "+(data.from===me?"me":"other");
           if(data.type==="text") div.innerHTML=data.msg;
-          else if(data.type==="image") div.innerHTML=`<img src="${data.msg}">`;
+          else if(data.type==="image") div.innerHTML=`<img src="${data.msg}" style="max-width:250px;border-radius:15px;">`;
           else if(data.type==="voice"){
             let wf=document.createElement("div"); wf.className="waveform-container"; div.appendChild(wf);
             let wavesurfer = WaveSurfer.create({container:wf, waveColor:'#00ff80', progressColor:'#00e676', height:50});
@@ -239,31 +239,31 @@ function sendMessage(){
 
 // Send Voice
 function sendVoice(){
-  alert("ویس هنوز آماده نشده"); // بعداً می‌توان WaveRecorder اضافه کرد
+  alert("ویس هنوز آماده نشده!"); // می‌توانیم ضبط و ارسال واقعی اضافه کنیم
 }
-
-// Logout
-function logout(){
-  if(me) db.collection("users").doc(me).update({online:false});
-  localStorage.removeItem("allo_user"); location.reload();
-}
-
-// Settings
-function openSettings(){ document.getElementById("settingsModal").style.display="flex"; }
-function closeSettings(){ document.getElementById("settingsModal").style.display="none"; }
 
 // Image Upload
 document.getElementById("imgInput").addEventListener("change", function(){
   if(!this.files[0]) return;
   let reader=new FileReader();
   reader.onload=function(e){
-    if(!activeUser){ alert("ابتدا یک کاربر را از لیست انتخاب کنید"); return; }
+    if(!activeUser){ alert("ابتدا یک کاربر را انتخاب کنید"); return; }
     db.collection("messages").add({
       from:me,to:activeUser,msg:e.target.result,type:"image",users:[me,activeUser],timestamp:firebase.firestore.FieldValue.serverTimestamp()
     });
   }
   reader.readAsDataURL(this.files[0]);
 });
+
+// Settings
+function openSettings(){ document.getElementById("settingsModal").style.display="flex"; }
+function closeSettings(){ document.getElementById("settingsModal").style.display="none"; }
+
+// Logout
+function logout(){
+  db.collection("users").doc(me).update({online:false});
+  localStorage.removeItem("allo_user"); location.reload();
+}
 </script>
 </body>
 </html>
