@@ -37,205 +37,115 @@ body {
     height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: center;
 }
 
-/* --- اصلاح ریسپانسیو و نیونی کردن لیست --- */
+/* --- [بخش جدید: اصلاح سایز و ریسپانسیو دکمه‌ها] --- */
 @media (max-width: 768px) {
     .app-frame { width: 100vw !important; height: 100vh !important; border-radius: 0 !important; border: none !important; }
     
-    /* سایدبار نیونی غیر شیشه‌ای */
     .sidebar { 
         width: 100% !important; 
         position: absolute; 
         inset: 0; 
-        z-index: 10; 
-        background: #080808 !important; /* کاملا تیره و صلب */
+        z-index: 1000; 
+        background: #080808 !important; /* غیر شیشه‌ای برای خوانایی */
         border-left: 2px solid var(--primary) !important;
-        box-shadow: inset -10px 0 30px rgba(0, 255, 204, 0.05);
         transition: transform 0.5s ease; 
     }
-    
     .sidebar.active-chat { transform: translateX(100%); }
-    
-    /* اصلاح دکمه‌های پایین صفحه در موبایل */
+
+    /* جلوگیری از بیرون زدن دکمه‌ها و ورودی */
     .input-area-wrapper { 
-        padding: 15px !important; 
+        padding: 10px 15px !important; 
         gap: 8px !important; 
+        background: rgba(0,0,0,0.4) !important;
     }
+    #msgInput { padding: 12px 15px !important; font-size: 13px !important; border-radius: 15px !important; }
+    .icon-btn { width: 48px !important; height: 48px !important; font-size: 20px !important; border-radius: 12px !important; }
     
-    #msgInput { padding: 12px 15px !important; font-size: 13px !important; }
-    
-    .icon-btn { 
-        width: 48px !important; 
-        height: 48px !important; 
-        font-size: 20px !important; 
-        border-radius: 15px !important; 
-    }
-
     .chat-header { padding: 15px !important; }
-    #targetName { font-size: 15px !important; }
+    .bubble { max-width: 85% !important; font-size: 13px !important; }
+    
+    /* اصلاح سایز پلیر ویس در موبایل */
+    .bubble audio { width: 100% !important; max-width: 180px !important; height: 32px !important; }
 }
 
-.bg-canvas {
-    position: fixed; inset: 0; z-index: -1;
-    background: radial-gradient(circle at center, var(--dark-bg) 0%, #000 100%);
+/* --- [بخش جدید: استایل نیونی پیام‌های خوانده نشده] --- */
+.unread-count {
+    background: var(--secondary) !important;
+    color: #fff !important;
+    font-weight: 900 !important;
+    padding: 2px 10px !important;
+    border-radius: 50px !important;
+    font-size: 10px !important;
+    font-family: 'Orbitron';
+    box-shadow: 0 0 15px var(--secondary-glow), 0 0 5px #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    animation: unreadPulse 1s infinite alternate;
 }
+@keyframes unreadPulse { from { box-shadow: 0 0 5px var(--secondary-glow); } to { box-shadow: 0 0 20px var(--secondary-glow); } }
 
-.particle {
-    position: absolute; border-radius: 50%; background: var(--primary);
-    filter: blur(100px); opacity: 0.15; animation: float 25s infinite alternate ease-in-out;
+/* --- [بخش جدید: موج نئونی برای ویس] --- */
+.bubble.has-audio {
+    background: linear-gradient(270deg, #121212, #1a1a1a, #121212);
+    background-size: 200% 200%;
+    border: 1px solid var(--primary);
+    position: relative;
+    overflow: hidden;
 }
+.bubble.has-audio::before {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, var(--primary-glow), transparent);
+    width: 50%; animation: voiceWave 2s infinite linear;
+    opacity: 0.2;
+}
+@keyframes voiceWave { 0% { transform: translateX(-150%); } 100% { transform: translateX(250%); } }
 
-@keyframes float {
-    0% { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(150px, -100px) scale(1.4); }
-}
+.bubble audio { filter: invert(1) hue-rotate(180deg) brightness(1.5); height: 35px; outline: none; }
 
-#loginScreen {
-    position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.85);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    backdrop-filter: blur(30px);
-}
+/* --- استایل‌های پایه و انیمیشن‌ها (دست نخورده) --- */
+.bg-canvas { position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at center, var(--dark-bg) 0%, #000 100%); }
+.particle { position: absolute; border-radius: 50%; background: var(--primary); filter: blur(100px); opacity: 0.15; animation: float 25s infinite alternate ease-in-out; }
+@keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(150px, -100px) scale(1.4); } }
 
-.login-card {
-    width: 440px; padding: 50px; border-radius: 40px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%);
-    border: 1px solid var(--border); box-shadow: 0 40px 100px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05);
-    text-align: center; position: relative;
-}
+#loginScreen { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(30px); }
+.login-card { width: 440px; padding: 50px; border-radius: 40px; background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%); border: 1px solid var(--border); box-shadow: 0 40px 100px rgba(0,0,0,0.9); text-align: center; }
+.brand-title { font-family: 'Orbitron', sans-serif; font-size: 80px; font-weight: 900; color: var(--primary); letter-spacing: 15px; margin-bottom: 30px; text-shadow: 0 0 40px var(--primary-glow); }
 
-.brand-title {
-    font-family: 'Orbitron', sans-serif; font-size: 80px; font-weight: 900;
-    color: var(--primary); letter-spacing: 15px; margin-bottom: 30px;
-    text-shadow: 0 0 40px var(--primary-glow); animation: neonPulse 2s infinite alternate;
-}
-
-@keyframes neonPulse { from { opacity: 0.8; text-shadow: 0 0 20px var(--primary-glow); } to { opacity: 1; text-shadow: 0 0 50px var(--primary-glow); } }
-
-.auth-mode-switch {
-    display: flex; background: rgba(0,0,0,0.6); border-radius: 20px;
-    margin-bottom: 35px; padding: 5px; border: 1px solid var(--border);
-}
-.mode-btn {
-    flex: 1; padding: 14px; border-radius: 15px; cursor: pointer;
-    font-weight: 900; font-size: 14px; color: #888; border: none; background: none;
-}
+.auth-mode-switch { display: flex; background: rgba(0,0,0,0.6); border-radius: 20px; margin-bottom: 35px; padding: 5px; border: 1px solid var(--border); }
+.mode-btn { flex: 1; padding: 14px; border-radius: 15px; cursor: pointer; font-weight: 900; font-size: 14px; color: #888; border: none; background: none; }
 .mode-btn.active { background: var(--primary); color: #000; box-shadow: 0 0 25px var(--primary-glow); }
 
-.input-container { margin-bottom: 20px; position: relative; }
-.input-container input {
-    width: 100%; padding: 22px; border-radius: 18px;
-    background: rgba(0,0,0,0.7); border: 1px solid var(--border);
-    color: #fff; font-size: 15px; outline: none; text-align: center; letter-spacing: 1px;
-}
+.input-container { margin-bottom: 20px; }
+.input-container input { width: 100%; padding: 22px; border-radius: 18px; background: rgba(0,0,0,0.7); border: 1px solid var(--border); color: #fff; text-align: center; outline: none; }
+.action-btn { width: 100%; padding: 22px; border-radius: 18px; border: none; background: linear-gradient(90deg, var(--primary), #00d2ff); color: #000; font-weight: 900; cursor: pointer; }
 
-.action-btn {
-    width: 100%; padding: 22px; border-radius: 18px; border: none;
-    background: linear-gradient(90deg, var(--primary), #00d2ff);
-    color: #000; font-weight: 900; font-size: 16px; cursor: pointer;
-}
-
-.app-frame {
-    width: 96vw; height: 92vh; display: flex;
-    background: var(--glass); border: 1px solid var(--border);
-    border-radius: 50px; backdrop-filter: blur(50px); overflow: hidden;
-}
-
+.app-frame { width: 96vw; height: 92vh; display: flex; background: var(--glass); border: 1px solid var(--border); border-radius: 50px; backdrop-filter: blur(50px); overflow: hidden; }
 .sidebar { width: 360px; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: rgba(0,0,0,0.2); }
-
-.user-item {
-    padding: 20px 25px; margin: 10px 15px; border-radius: 22px;
-    display: flex; align-items: center; gap: 15px; cursor: pointer;
-    border: 1px solid transparent;
-}
-.user-item:hover { background: rgba(255,255,255,0.03); border-color: var(--border); }
+.user-item { padding: 20px 25px; margin: 10px 15px; border-radius: 22px; display: flex; align-items: center; gap: 15px; cursor: pointer; border: 1px solid transparent; }
 .user-item.active { background: linear-gradient(90deg, rgba(0, 255, 204, 0.12), transparent); border-color: rgba(0, 255, 204, 0.2); }
 
-.avatar-hex {
-    width: 52px; height: 52px; background: #0a0a0a; border-radius: 16px;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Orbitron'; font-weight: 900; color: var(--primary);
-    border: 1px solid var(--border); position: relative;
-}
-
-.online-glow {
-    position: absolute; top: -3px; right: -3px; width: 14px; height: 14px;
-    background: var(--primary); border-radius: 50%; border: 3px solid #080808;
-    display: none; box-shadow: 0 0 15px var(--primary);
-}
+.avatar-hex { width: 52px; height: 52px; background: #0a0a0a; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron'; font-weight: 900; color: var(--primary); border: 1px solid var(--border); position: relative; }
+.online-glow { position: absolute; top: -3px; right: -3px; width: 14px; height: 14px; background: var(--primary); border-radius: 50%; border: 3px solid #080808; display: none; box-shadow: 0 0 15px var(--primary); }
 .is-online .online-glow { display: block; animation: pulse 2s infinite; }
-
-@keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.6; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
 
 .chat-window { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
 .chat-header { padding: 25px 40px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-
 #messages { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
-#messages::-webkit-scrollbar { width: 5px; }
-#messages::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
 .bubble { padding: 16px 24px; border-radius: 25px; max-width: 65%; font-size: 14px; line-height: 1.6; }
 .bubble.me { align-self: flex-end; background: var(--primary); color: #000; font-weight: 700; border-bottom-right-radius: 4px; }
 .bubble.other { align-self: flex-start; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text-main); }
 
-#callUI {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 20000;
-    display: none; flex-direction: column; align-items: center; justify-content: center;
-    backdrop-filter: blur(100px);
-}
+#callUI { position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(100px); }
+#callUI.minimized { width: 380px; height: 100px; inset: auto 30px 30px auto; border-radius: 30px; flex-direction: row; padding: 0 25px; border: 2px solid var(--primary); background: #000; justify-content: space-between; }
+.theme-toggle-btn { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: var(--primary); font-family: 'Orbitron'; cursor: pointer; margin-bottom: 10px; }
+.logout-btn { color: var(--secondary); background: rgba(255,0,85,0.1); border: 1px solid rgba(255,0,85,0.2); padding: 10px 20px; border-radius: 12px; cursor: pointer; width: 100%; font-weight: 800; }
 
-#callUI.minimized {
-    width: 380px; height: 100px; inset: auto 30px 30px auto; 
-    border-radius: 30px; flex-direction: row; padding: 0 25px; 
-    border: 2px solid var(--primary); background: #000;
-    justify-content: space-between;
-}
-
-#callUI.minimized .call-avatar-large, #callUI.minimized #cStatus, #callUI.minimized #minBtn { display: none; }
-#callUI.minimized #cName { font-size: 18px; margin: 0; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#callUI.minimized .call-controls-wrapper { margin-top: 0; gap: 12px; }
-#callUI.minimized button { width: 55px !important; height: 55px !important; font-size: 20px !important; border-radius: 18px !important; }
-
-.call-avatar-large {
-    width: 200px; height: 200px; border-radius: 70px; background: var(--primary);
-    display: flex; align-items: center; justify-content: center; font-size: 90px; color: #000;
-    margin-bottom: 40px; box-shadow: 0 0 60px var(--primary-glow);
-}
-
-.theme-toggle-btn {
-    width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border);
-    background: var(--glass); color: var(--primary); font-family: 'Orbitron';
-    font-size: 10px; cursor: pointer; margin-bottom: 10px; letter-spacing: 1px;
-}
-
-.logout-btn {
-    color: var(--secondary); background: rgba(255,0,85,0.1); border: 1px solid rgba(255,0,85,0.2);
-    padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 800; font-size: 11px;
-    width: 100%; text-transform: uppercase; letter-spacing: 1px;
-}
-
-#msgInput {
-    flex: 1; padding: 22px 30px; border-radius: 22px; border: 1px solid var(--border); 
-    background: rgba(0,0,0,0.6); color: #fff; outline: none; font-size: 14px; min-width: 0;
-}
-
-.icon-btn {
-    width: 65px; height: 65px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 24px; border: none; flex-shrink: 0;
-}
-
-#recIndicator {
-    display: none; align-items: center; gap: 10px;
-    color: var(--secondary); font-weight: 800; font-size: 11px;
-    letter-spacing: 2px; text-shadow: 0 0 10px var(--secondary-glow);
-    font-family: 'Orbitron'; margin-bottom: 5px;
-}
-
-.rec-dot {
-    width: 10px; height: 10px; background: var(--secondary);
-    border-radius: 50%; box-shadow: 0 0 15px var(--secondary);
-    animation: recPulse 1.2s infinite;
-}
-
-@keyframes recPulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.4; } 100% { transform: scale(1); opacity: 1; } }
+#msgInput { flex: 1; padding: 22px 30px; border-radius: 22px; border: 1px solid var(--border); background: rgba(0,0,0,0.6); color: #fff; outline: none; }
+.icon-btn { width: 65px; height: 65px; border-radius: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; flex-shrink: 0; }
+#recIndicator { display: none; align-items: center; gap: 10px; color: var(--secondary); font-family: 'Orbitron'; font-size: 11px; }
+.rec-dot { width: 10px; height: 10px; background: var(--secondary); border-radius: 50%; animation: recPulse 1.2s infinite; }
+@keyframes recPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.4; } }
 .is-recording { background: var(--secondary) !important; color: #fff !important; box-shadow: 0 0 25px var(--secondary-glow) !important; }
 
 </style>
@@ -328,7 +238,6 @@ const db = firebase.firestore();
 
 let me = localStorage.getItem("alloo_uid");
 let activeTarget = "";
-let authMode = 'login';
 let pc; let localStream; let isMuted = false;
 let unreadCounts = {}; 
 
@@ -342,9 +251,9 @@ function toggleTheme() {
 if(me) { document.getElementById("loginScreen").style.display = "none"; initApp(); }
 
 function setAuthMode(m) {
-    authMode = m;
     document.getElementById('btnL').className = `mode-btn ${m==='login'?'active':''}`;
     document.getElementById('btnR').className = `mode-btn ${m==='register'?'active':''}`;
+    window.authMode = m;
 }
 
 async function handleAuth() {
@@ -353,7 +262,7 @@ async function handleAuth() {
     if(!id || !ps) return;
     const userRef = db.collection("users").doc(id);
     const doc = await userRef.get();
-    if(authMode === 'register') {
+    if(window.authMode === 'register') {
         if(doc.exists) return alert("آی‌دی رزرو شده است.");
         await userRef.set({ pass: ps, online: true, lastSeen: Date.now() });
     } else {
@@ -371,10 +280,7 @@ function initApp() {
 
     db.collection("messages").where("t", "==", me).where("read", "==", false).onSnapshot(snap => {
         unreadCounts = {}; 
-        snap.forEach(doc => {
-            const m = doc.data();
-            unreadCounts[m.f] = (unreadCounts[m.f] || 0) + 1;
-        });
+        snap.forEach(doc => { const m = doc.data(); unreadCounts[m.f] = (unreadCounts[m.f] || 0) + 1; });
         updateUserListUI();
     });
 
@@ -399,7 +305,7 @@ function updateUserListUI() {
                     <div style="font-weight:900; font-size:15px; color:var(--text-main); letter-spacing:1px;">${doc.id}</div>
                     <div style="font-size:9px; color:var(--primary); opacity:0.8; font-weight:800;">${isOnline ? 'ONLINE' : 'OFFLINE'}</div>
                 </div>
-                ${unread > 0 ? `<div class="unread-count" style="background:var(--secondary); padding:2px 8px; border-radius:10px; font-size:10px;">${unread}</div>` : ''}`;
+                ${unread > 0 ? `<div class="unread-count">${unread}</div>` : ''}`;
             item.onclick = () => { activeTarget = doc.id; selectUser(); };
             list.appendChild(item);
         });
@@ -409,12 +315,10 @@ function updateUserListUI() {
 function selectUser() {
     document.getElementById("targetName").innerText = activeTarget.toUpperCase();
     document.getElementById("hAvatar").innerText = activeTarget[0].toUpperCase();
-    
     if(window.innerWidth <= 768) {
         document.getElementById("mainSidebar").classList.add("active-chat");
         document.getElementById("backToListBtn").style.display = "block";
     }
-    
     loadMessages();
 }
 
@@ -430,12 +334,10 @@ function loadMessages() {
         snap.forEach(doc => {
             const d = doc.data();
             if((d.f==me && d.t==activeTarget) || (d.f==activeTarget && d.t==me)) {
-                if (d.f === activeTarget && d.read === false) {
-                    db.collection("messages").doc(doc.id).update({ read: true });
-                }
+                if (d.f === activeTarget && d.read === false) db.collection("messages").doc(doc.id).update({ read: true });
                 const m = document.createElement("div");
-                m.className = `bubble ${d.f==me ? 'me' : 'other'}`;
-                if(d.audio) m.innerHTML = `<audio src="${d.audio}" controls style="filter:invert(1) opacity:0.8; height:35px;"></audio>`;
+                m.className = `bubble ${d.f==me ? 'me' : 'other'} ${d.audio ? 'has-audio' : ''}`;
+                if(d.audio) m.innerHTML = `<audio src="${d.audio}" controls></audio>`;
                 else m.innerText = d.txt;
                 box.appendChild(m);
             }
@@ -451,7 +353,7 @@ function sendMsg() {
     i.value = "";
 }
 
-const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }] };
+const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
 
 async function startCall() {
     if(!activeTarget) return;
@@ -459,34 +361,17 @@ async function startCall() {
     document.getElementById("cName").innerText = activeTarget.toUpperCase();
     document.getElementById("acceptBtn").style.display = "none";
     document.getElementById("muteBtn").style.display = "block";
-    document.getElementById("cStatus").innerText = "CALLING...";
-
     pc = new RTCPeerConnection(rtcConfig);
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-
-    pc.onicecandidate = e => {
-        if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON());
-    };
-
-    pc.ontrack = e => {
-        document.getElementById("remoteAudio").srcObject = e.streams[0];
-        document.getElementById("cStatus").innerText = "CONNECTED";
-    };
-
+    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON()); };
+    pc.ontrack = e => { document.getElementById("remoteAudio").srcObject = e.streams[0]; document.getElementById("cStatus").innerText = "CONNECTED"; };
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     await db.collection("calls").doc(activeTarget).set({ offer, from: me });
-
     db.collection("calls").doc(activeTarget).onSnapshot(async snap => {
         const d = snap.data();
-        if(d?.answer && !pc.currentRemoteDescription) {
-            await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
-        }
-    });
-
-    db.collection("calls").doc(activeTarget).collection("receiverCandidates").onSnapshot(s => {
-        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
+        if(d?.answer && !pc.currentRemoteDescription) await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
     });
 }
 
@@ -498,8 +383,6 @@ function listenForCalls() {
             document.getElementById("callUI").style.display = "flex";
             document.getElementById("cName").innerText = d.from.toUpperCase();
             document.getElementById("acceptBtn").style.display = "block";
-            document.getElementById("muteBtn").style.display = "none";
-            document.getElementById("cStatus").innerText = "INCOMING CALL";
             document.getElementById("ring").play();
         } else if(!d && pc) hangup();
     });
@@ -509,35 +392,15 @@ async function answerCall() {
     document.getElementById("ring").pause();
     document.getElementById("acceptBtn").style.display = "none";
     document.getElementById("muteBtn").style.display = "block";
-    document.getElementById("cStatus").innerText = "CONNECTING...";
-
     pc = new RTCPeerConnection(rtcConfig);
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-
-    pc.onicecandidate = e => {
-        if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON());
-    };
-
-    pc.ontrack = e => {
-        document.getElementById("remoteAudio").srcObject = e.streams[0];
-        document.getElementById("cStatus").innerText = "CONNECTED";
-    };
-
+    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON()); };
+    pc.ontrack = e => { document.getElementById("remoteAudio").srcObject = e.streams[0]; document.getElementById("cStatus").innerText = "CONNECTED"; };
     await pc.setRemoteDescription(new RTCSessionDescription(window.incoming.offer));
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
     await db.collection("calls").doc(me).update({ answer });
-
-    db.collection("calls").doc(me).collection("callerCandidates").onSnapshot(s => {
-        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
-    });
-}
-
-function toggleMute() {
-    isMuted = !isMuted;
-    localStream.getAudioTracks()[0].enabled = !isMuted;
-    document.getElementById("muteBtn").innerText = isMuted ? "🚫" : "🎙️";
 }
 
 function hangup() {
@@ -546,13 +409,10 @@ function hangup() {
     db.collection("calls").doc(me).delete();
     if(activeTarget) db.collection("calls").doc(activeTarget).delete();
     document.getElementById("callUI").style.display = "none";
-    document.getElementById("callUI").classList.remove("minimized");
     document.getElementById("ring").pause();
 }
 
-function toggleCallView() {
-    document.getElementById("callUI").classList.toggle("minimized");
-}
+function toggleCallView() { document.getElementById("callUI").classList.toggle("minimized"); }
 
 let rec; let chunks = [];
 async function toggleVoice() {
@@ -569,9 +429,7 @@ async function toggleVoice() {
             v.classList.remove("is-recording");
             indicator.style.display = "none";
         };
-        rec.start(); 
-        v.classList.add("is-recording"); 
-        indicator.style.display = "flex"; 
+        rec.start(); v.classList.add("is-recording"); indicator.style.display = "flex"; 
     } else { rec.stop(); }
 }
 
