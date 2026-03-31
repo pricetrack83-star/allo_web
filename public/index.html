@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ALLO</title> 
+<title>ALLO - Ultimate Edition</title> 
 
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;300;500;800;900&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -77,6 +77,10 @@ body {
     
     .bubble.has-audio { min-width: 150px !important; max-width: 85% !important; }
     .bubble audio { width: 100% !important; height: 32px !important; }
+
+    /* ویدئو در موبایل */
+    #remoteVideo { width: 100% !important; height: 100% !important; object-fit: cover; }
+    #localVideo { width: 80px !important; height: 120px !important; bottom: 20px !important; left: 20px !important; }
 }
 
 .unread-count {
@@ -120,6 +124,19 @@ body {
 }
 @keyframes voiceWaveMove { 0% { transform: translateX(-150%); } 100% { transform: translateX(200%); } }
 
+/* استایل عکس در چت */
+.bubble.has-image {
+    padding: 5px !important;
+    background: var(--glass) !important;
+    border: 1px solid var(--border) !important;
+}
+.bubble img {
+    max-width: 100%;
+    border-radius: 18px;
+    display: block;
+    cursor: zoom-in;
+}
+
 .bg-canvas { position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at center, var(--dark-bg) 0%, #000 100%); }
 .particle { position: absolute; border-radius: 50%; background: var(--primary); filter: blur(100px); opacity: 0.15; animation: float 25s infinite alternate ease-in-out; }
 @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(150px, -100px) scale(1.4); } }
@@ -156,6 +173,10 @@ body {
 #callUI { position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(100px); }
 #callUI.minimized { width: 380px; height: 100px; inset: auto 30px 30px auto; border-radius: 30px; flex-direction: row; padding: 0 25px; border: 2px solid var(--primary); background: #000; justify-content: space-between; }
 
+/* استایل ویدئوهای تماس */
+#remoteVideo { width: 100%; height: 100%; position: absolute; inset: 0; object-fit: cover; z-index: -1; display: none; background: #000; }
+#localVideo { width: 150px; height: 220px; position: absolute; bottom: 40px; left: 40px; border-radius: 25px; border: 2px solid var(--primary); object-fit: cover; z-index: 10; display: none; background: #111; transform: scaleX(-1); }
+
 .theme-toggle-btn { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: var(--primary); font-family: 'Orbitron'; font-size: 10px; cursor: pointer; margin-bottom: 10px; }
 .logout-btn { color: var(--secondary); background: rgba(255,0,85,0.1); border: 1px solid rgba(255,0,85,0.2); padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 800; font-size: 11px; width: 100%; }
 
@@ -163,6 +184,12 @@ body {
 .icon-btn { width: 65px; height: 65px; border-radius: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; border: none; flex-shrink: 0; }
 #recIndicator { display: none; align-items: center; gap: 10px; color: var(--secondary); font-weight: 800; font-size: 11px; font-family: 'Orbitron'; margin-bottom: 5px; }
 .rec-dot { width: 10px; height: 10px; background: var(--secondary); border-radius: 50%; animation: recPulse 1.2s infinite; }
+
+/* دکمه‌های جدید چت */
+.chat-action-bar { display: flex; gap: 10px; margin-right: 15px; }
+.call-type-btn { padding: 8px 15px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: var(--text-main); font-family: 'Orbitron'; font-size: 10px; cursor: pointer; }
+.call-type-btn.video-btn { border-color: var(--accent); color: var(--accent); }
+
 </style>
 </head>
 <body>
@@ -205,7 +232,10 @@ body {
                 <div id="hAvatar" style="width:55px; height:55px; background:var(--glass); border:1px solid var(--border); border-radius:18px; display:flex; align-items:center; justify-content:center; font-family:'Orbitron'; font-weight:900; color:var(--primary);">?</div>
                 <h3 id="targetName" style="font-weight:300; letter-spacing:2px; font-size:18px;">Terminal Ready</h3>
             </div>
-            <button onclick="startCall()" style="background:var(--primary); color:#000; border:none; padding:12px 30px; border-radius:15px; font-weight:900; cursor:pointer; font-family:'Orbitron'; font-size:12px;">CALL</button>
+            <div class="chat-action-bar">
+                <button class="call-type-btn video-btn" onclick="startCall(true)">VIDEO</button>
+                <button class="call-type-btn" onclick="startCall(false)" style="background:var(--primary); color:#000; border:none; font-weight:900;">CALL</button>
+            </div>
         </div>
 
         <div id="messages"></div>
@@ -218,6 +248,8 @@ body {
             </div>
             <div class="input-row-mobile" style="display:flex; gap:15px; width:100%; align-items:center;">
                 <input id="msgInput" placeholder="Secure transmission..." onkeypress="if(event.key=='Enter') sendMsg()">
+                <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="sendImage(this)">
+                <button onclick="document.getElementById('imgInput').click()" class="icon-btn" style="border:1px solid var(--accent); color:var(--accent); background:none; font-size: 20px;">🖼️</button>
                 <button id="vBtn" onclick="toggleVoice()" class="icon-btn" style="border:1px solid var(--secondary); color:var(--secondary); background:none;">🎤</button>
                 <button onclick="sendMsg()" class="icon-btn" style="background:var(--primary); color:#000;">✈</button>
             </div>
@@ -226,11 +258,18 @@ body {
 </div>
 
 <div id="callUI">
-    <button id="minBtn" onclick="toggleCallView()" style="position:absolute; top:30px; left:30px; background:none; border:1px solid #fff; color:#fff; padding:8px 15px; border-radius:10px; cursor:pointer; font-family:'Orbitron'; font-size:10px;">MINIMIZE</button>
-    <div class="call-avatar-large" id="cAvatar">👤</div>
-    <h2 id="cName" style="font-family:'Orbitron'; font-size:45px; margin-bottom:10px; letter-spacing:5px;">USER</h2>
-    <p id="cStatus" style="color:var(--primary); letter-spacing:8px; font-weight:100; font-size:12px;">CONNECTING...</p>
-    <div class="call-controls-wrapper" style="display:flex; gap:35px; margin-top:50px;">
+    <video id="remoteVideo" autoplay playsinline></video>
+    <video id="localVideo" autoplay playsinline muted></video>
+
+    <button id="minBtn" onclick="toggleCallView()" style="position:absolute; top:30px; left:30px; background:none; border:1px solid #fff; color:#fff; padding:8px 15px; border-radius:10px; cursor:pointer; font-family:'Orbitron'; font-size:10px; z-index:100;">MINIMIZE</button>
+    
+    <div id="callInfo">
+        <div class="call-avatar-large" id="cAvatar" style="font-size: 60px; text-align: center;">👤</div>
+        <h2 id="cName" style="font-family:'Orbitron'; font-size:45px; margin-bottom:10px; letter-spacing:5px; text-align: center;">USER</h2>
+        <p id="cStatus" style="color:var(--primary); letter-spacing:8px; font-weight:100; font-size:12px; text-align: center;">CONNECTING...</p>
+    </div>
+
+    <div class="call-controls-wrapper" style="display:flex; gap:35px; margin-top:50px; z-index:100;">
         <button id="acceptBtn" onclick="answerCall()" style="width:90px; height:90px; border-radius:35px; background:#2ecc71; border:none; font-size:35px; cursor:pointer;">✅</button>
         <button id="muteBtn" onclick="toggleMute()" style="width:90px; height:90px; border-radius:35px; background:rgba(255,255,255,0.1); border:1px solid var(--border); font-size:35px; cursor:pointer; display:none;">🎙️</button>
         <button onclick="hangup()" style="width:90px; height:90px; border-radius:35px; background:var(--secondary); border:none; font-size:35px; cursor:pointer;">❌</button>
@@ -238,7 +277,7 @@ body {
 </div>
 
 <audio id="ring" src="https://actions.google.com/sounds/v1/alarms/phone_alerts_and_ringtones.ogg" loop></audio>
-<audio id="remoteAudio" autoplay playsinline webkit-playsinline></audio>
+<audio id="remoteAudio" autoplay playsinline style="display:none;"></audio>
 
 <script>
 const firebaseConfig = {
@@ -255,7 +294,10 @@ const db = firebase.firestore();
 let me = localStorage.getItem("alloo_uid");
 let activeTarget = "";
 let authMode = 'login';
-let pc; let localStream; let isMuted = false;
+let pc; 
+let localStream; 
+let isMuted = false;
+let isVideoCall = false;
 let unreadCounts = {}; 
 
 if(localStorage.getItem("allo_theme") === "light") document.body.classList.add("light-mode");
@@ -358,11 +400,17 @@ function loadMessages() {
                     db.collection("messages").doc(doc.id).update({ read: true });
                 }
                 const m = document.createElement("div");
-                m.className = `bubble ${d.f==me ? 'me' : 'other'} ${d.audio ? 'has-audio' : ''}`;
+                m.className = `bubble ${d.f==me ? 'me' : 'other'}`;
+                
                 if(d.audio) {
+                    m.classList.add('has-audio');
                     m.innerHTML = `<audio src="${d.audio}" controls playsinline webkit-playsinline style="filter:invert(1) opacity:0.8; height:35px; width:220px; max-width:100%;"></audio>`;
+                } else if(d.image) {
+                    m.classList.add('has-image');
+                    m.innerHTML = `<img src="${d.image}" onclick="window.open(this.src)" alt="image">`;
+                } else {
+                    m.innerText = d.txt;
                 }
-                else m.innerText = d.txt;
                 box.appendChild(m);
             }
         });
@@ -377,32 +425,81 @@ function sendMsg() {
     i.value = "";
 }
 
+// ارسال عکس
+async function sendImage(input) {
+    if (!input.files || !input.files[0] || !activeTarget) return;
+    const file = input.files[0];
+    if (file.size > 1.5 * 1024 * 1024) return alert("سایز عکس نباید بیشتر از 1.5 مگابایت باشد.");
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        db.collection("messages").add({
+            f: me,
+            t: activeTarget,
+            image: e.target.result,
+            time: Date.now(),
+            read: false
+        });
+    };
+    reader.readAsDataURL(file);
+    input.value = ""; 
+}
+
 const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }] };
 
-async function startCall() {
+// شروع تماس (صوتی یا تصویری)
+async function startCall(video = false) {
     if(!activeTarget) return;
-    document.getElementById("callUI").style.display = "flex";
+    isVideoCall = video;
+    
+    const ui = document.getElementById("callUI");
+    ui.style.display = "flex";
     document.getElementById("cName").innerText = activeTarget.toUpperCase();
     document.getElementById("acceptBtn").style.display = "none";
     document.getElementById("muteBtn").style.display = "block";
-    document.getElementById("cStatus").innerText = "CALLING...";
+    document.getElementById("cStatus").innerText = isVideoCall ? "VIDEO CALLING..." : "CALLING...";
+    
+    // تنظیمات ویدئو
+    document.getElementById("localVideo").style.display = isVideoCall ? "block" : "none";
+    document.getElementById("remoteVideo").style.display = isVideoCall ? "block" : "none";
+    document.getElementById("callInfo").style.display = isVideoCall ? "none" : "block";
 
     pc = new RTCPeerConnection(rtcConfig);
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+    
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: true, 
+            video: isVideoCall 
+        });
+        
+        if(isVideoCall) {
+            document.getElementById("localVideo").srcObject = localStream;
+        }
+
+        localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+    } catch(err) {
+        console.error(err);
+        return hangup();
+    }
 
     pc.onicecandidate = e => {
         if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON());
     };
 
     pc.ontrack = e => {
-        document.getElementById("remoteAudio").srcObject = e.streams[0];
-        document.getElementById("cStatus").innerText = "CONNECTED";
+        const stream = e.streams[0];
+        if(isVideoCall) {
+            document.getElementById("remoteVideo").srcObject = stream;
+            document.getElementById("cStatus").innerText = "LIVE VIDEO";
+        } else {
+            document.getElementById("remoteAudio").srcObject = stream;
+            document.getElementById("cStatus").innerText = "CONNECTED";
+        }
     };
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    await db.collection("calls").doc(activeTarget).set({ offer, from: me });
+    await db.collection("calls").doc(activeTarget).set({ offer, from: me, video: isVideoCall });
 
     db.collection("calls").doc(activeTarget).onSnapshot(async snap => {
         const d = snap.data();
@@ -421,11 +518,18 @@ function listenForCalls() {
         const d = snap.data();
         if(d?.offer && !pc) {
             window.incoming = d;
+            isVideoCall = d.video || false;
+            
             document.getElementById("callUI").style.display = "flex";
             document.getElementById("cName").innerText = d.from.toUpperCase();
             document.getElementById("acceptBtn").style.display = "block";
             document.getElementById("muteBtn").style.display = "none";
-            document.getElementById("cStatus").innerText = "INCOMING CALL";
+            document.getElementById("cStatus").innerText = isVideoCall ? "INCOMING VIDEO CALL" : "INCOMING CALL";
+            
+            document.getElementById("localVideo").style.display = "none";
+            document.getElementById("remoteVideo").style.display = "none";
+            document.getElementById("callInfo").style.display = "block";
+            
             document.getElementById("ring").play();
         } else if(!d && pc) hangup();
     });
@@ -437,16 +541,41 @@ async function answerCall() {
     document.getElementById("muteBtn").style.display = "block";
     document.getElementById("cStatus").innerText = "CONNECTING...";
 
+    if(isVideoCall) {
+        document.getElementById("localVideo").style.display = "block";
+        document.getElementById("remoteVideo").style.display = "block";
+        document.getElementById("callInfo").style.display = "none";
+    }
+
     pc = new RTCPeerConnection(rtcConfig);
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+    
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: true, 
+            video: isVideoCall 
+        });
+        
+        if(isVideoCall) {
+            document.getElementById("localVideo").srcObject = localStream;
+        }
+        
+        localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+    } catch(err) {
+        console.error(err);
+        return hangup();
+    }
 
     pc.onicecandidate = e => {
         if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON());
     };
 
     pc.ontrack = e => {
-        document.getElementById("remoteAudio").srcObject = e.streams[0];
+        const stream = e.streams[0];
+        if(isVideoCall) {
+            document.getElementById("remoteVideo").srcObject = stream;
+        } else {
+            document.getElementById("remoteAudio").srcObject = stream;
+        }
         document.getElementById("cStatus").innerText = "CONNECTED";
     };
 
@@ -468,12 +597,25 @@ function toggleMute() {
 
 function hangup() {
     if(localStream) localStream.getTracks().forEach(t => t.stop());
-    if(pc) pc.close(); pc = null;
-    db.collection("calls").doc(me).delete();
-    if(activeTarget) db.collection("calls").doc(activeTarget).delete();
+    if(pc) {
+        pc.ontrack = null;
+        pc.onicecandidate = null;
+        pc.close(); 
+        pc = null; 
+    }
+    
+    db.collection("calls").doc(me).delete().catch(()=>{});
+    if(activeTarget) db.collection("calls").doc(activeTarget).delete().catch(()=>{});
+    
     document.getElementById("callUI").style.display = "none";
     document.getElementById("callUI").classList.remove("minimized");
     document.getElementById("ring").pause();
+    
+    document.getElementById("localVideo").srcObject = null;
+    document.getElementById("remoteVideo").srcObject = null;
+    document.getElementById("remoteAudio").srcObject = null;
+    
+    isVideoCall = false;
 }
 
 function toggleCallView() {
@@ -516,14 +658,13 @@ async function toggleVoice() {
         }
         draw();
 
-        // حل مشکل ضبط در آیفون با استفاده از فرمت mp4
         const options = { mimeType: MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 'audio/webm' };
         rec = new MediaRecorder(s, options); 
         chunks = [];
         rec.ondataavailable = e => chunks.push(e.data);
         rec.onstop = () => {
             cancelAnimationFrame(animId);
-            audioCtx.close();
+            if(audioCtx) audioCtx.close();
             const b = new Blob(chunks, { type: options.mimeType });
             const r = new FileReader(); r.readAsDataURL(b);
             r.onloadend = () => db.collection("messages").add({ f: me, t: activeTarget, audio: r.result, time: Date.now(), read: false });
@@ -537,7 +678,11 @@ async function toggleVoice() {
     } else { rec.stop(); }
 }
 
-function logout() { db.collection("users").doc(me).update({ online: false }); localStorage.clear(); location.reload(); }
+function logout() { 
+    db.collection("users").doc(me).update({ online: false }); 
+    localStorage.clear(); 
+    location.reload(); 
+}
 </script>
 </body>
 </html>
