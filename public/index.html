@@ -37,13 +37,20 @@ body {
     height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: center;
 }
 
-/* --- تغییر برای ریسپانسیو شدن ابعاد بدون دست زدن به ظاهر --- */
+/* --- بخش اصلاح سایز خودکار برای موبایل (بدون تغییر در UI اصلی) --- */
 @media (max-width: 768px) {
-    .app-frame { width: 100vw !important; height: 100vh !important; border-radius: 0 !important; }
-    .sidebar { width: 100% !important; position: absolute; inset: 0; z-index: 10; transition: 0.5s; }
+    .app-frame { width: 100vw !important; height: 100vh !important; border-radius: 0 !important; border: none !important; }
+    .sidebar { width: 100% !important; position: absolute; inset: 0; z-index: 10; transition: transform 0.5s ease; }
     .sidebar.active-chat { transform: translateX(100%); }
-    .login-card { width: 90% !important; padding: 30px !important; }
-    .brand-title { font-size: 50px !important; }
+    .login-card { width: 90% !important; padding: 30px !important; border-radius: 30px !important; }
+    .brand-title { font-size: 50px !important; letter-spacing: 5px !important; }
+    .action-btn, .input-container input { padding: 15px !important; font-size: 13px !important; }
+    .icon-btn { width: 50px !important; height: 50px !important; font-size: 18px !important; }
+    #msgInput { padding: 15px 20px !important; }
+    .chat-header { padding: 15px 20px !important; }
+    #messages { padding: 20px !important; }
+    .bubble { max-width: 85% !important; }
+    #callUI.minimized { width: 90% !important; right: 5% !important; bottom: 20px !important; }
 }
 
 .bg-canvas {
@@ -268,7 +275,7 @@ body {
     <div class="chat-window">
         <div class="chat-header">
             <div style="display:flex; align-items:center; gap:18px;">
-                <button id="backToListBtn" onclick="backToList()" style="display:none; background:none; border:1px solid var(--primary); color:var(--primary); padding:5px 10px; border-radius:10px; cursor:pointer;">بازگشت</button>
+                <button id="backToListBtn" onclick="backToList()" style="display:none; background:none; border:1px solid var(--primary); color:var(--primary); padding:8px 12px; border-radius:10px; cursor:pointer; font-size:10px; font-family:'Orbitron';">BACK</button>
                 <div id="hAvatar" style="width:55px; height:55px; background:var(--glass); border:1px solid var(--border); border-radius:18px; display:flex; align-items:center; justify-content:center; font-family:'Orbitron'; font-weight:900; color:var(--primary);">?</div>
                 <h3 id="targetName" style="font-weight:300; letter-spacing:2px; font-size:18px;">Terminal Ready</h3>
             </div>
@@ -402,7 +409,6 @@ function selectUser() {
     document.getElementById("targetName").innerText = activeTarget.toUpperCase();
     document.getElementById("hAvatar").innerText = activeTarget[0].toUpperCase();
     
-    // اضافه شده برای گوشی
     if(window.innerWidth <= 768) {
         document.getElementById("mainSidebar").classList.add("active-chat");
         document.getElementById("backToListBtn").style.display = "block";
