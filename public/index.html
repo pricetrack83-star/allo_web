@@ -2,8 +2,8 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ALLO</title> 
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ALLO - Terminal</title> 
 
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;300;500;800;900&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -34,7 +34,7 @@ body.light-mode {
 
 body { 
     font-family: 'Vazirmatn', sans-serif; background: var(--dark-bg); color: var(--text-main);
-    height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: center;
+    height: 100vh; height: -webkit-fill-available; overflow: hidden; display: flex; justify-content: center; align-items: center;
 }
 
 .bg-canvas {
@@ -55,92 +55,98 @@ body {
 #loginScreen {
     position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.85);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    backdrop-filter: blur(30px);
+    backdrop-filter: blur(30px); padding: 20px;
 }
 
 .login-card {
-    width: 440px; padding: 50px; border-radius: 40px;
+    width: 100%; max-width: 440px; padding: 40px; border-radius: 40px;
     background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%);
-    border: 1px solid var(--border); box-shadow: 0 40px 100px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05);
-    text-align: center; position: relative;
+    border: 1px solid var(--border); box-shadow: 0 40px 100px rgba(0,0,0,0.9);
+    text-align: center;
 }
 
 .brand-title {
-    font-family: 'Orbitron', sans-serif; font-size: 80px; font-weight: 900;
+    font-family: 'Orbitron', sans-serif; font-size: clamp(45px, 12vw, 80px); font-weight: 900;
     color: var(--primary); letter-spacing: 15px; margin-bottom: 30px;
-    text-shadow: 0 0 40px var(--primary-glow); animation: neonPulse 2s infinite alternate;
-}
-
-@keyframes neonPulse { from { opacity: 0.8; text-shadow: 0 0 20px var(--primary-glow); } to { opacity: 1; text-shadow: 0 0 50px var(--primary-glow); } }
-
-.auth-mode-switch {
-    display: flex; background: rgba(0,0,0,0.6); border-radius: 20px;
-    margin-bottom: 35px; padding: 5px; border: 1px solid var(--border);
-}
-.mode-btn {
-    flex: 1; padding: 14px; border-radius: 15px; cursor: pointer;
-    font-weight: 900; font-size: 14px; color: #888; border: none; background: none;
-}
-.mode-btn.active { background: var(--primary); color: #000; box-shadow: 0 0 25px var(--primary-glow); }
-
-.input-container { margin-bottom: 20px; position: relative; }
-.input-container input {
-    width: 100%; padding: 22px; border-radius: 18px;
-    background: rgba(0,0,0,0.7); border: 1px solid var(--border);
-    color: #fff; font-size: 15px; outline: none; text-align: center; letter-spacing: 1px;
-}
-
-.action-btn {
-    width: 100%; padding: 22px; border-radius: 18px; border: none;
-    background: linear-gradient(90deg, var(--primary), #00d2ff);
-    color: #000; font-weight: 900; font-size: 16px; cursor: pointer;
+    text-shadow: 0 0 40px var(--primary-glow);
 }
 
 .app-frame {
     width: 96vw; height: 92vh; display: flex;
     background: var(--glass); border: 1px solid var(--border);
     border-radius: 50px; backdrop-filter: blur(50px); overflow: hidden;
+    position: relative;
 }
 
-.sidebar { width: 360px; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: rgba(0,0,0,0.2); }
+.sidebar { 
+    width: 360px; border-left: 1px solid var(--border); 
+    display: flex; flex-direction: column; background: rgba(0,0,0,0.2); 
+    z-index: 5; flex-shrink: 0;
+}
+
+.chat-window { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 800px) {
+    .app-frame { width: 100vw; height: 100vh; border-radius: 0; border: none; }
+    .sidebar { 
+        width: 100%; position: absolute; inset: 0; 
+        background: var(--dark-bg); transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .sidebar.hide-mobile { transform: translateX(100%); }
+    .chat-window { width: 100%; }
+    #backBtn { display: flex !important; }
+}
 
 .user-item {
-    padding: 20px 25px; margin: 10px 15px; border-radius: 22px;
+    padding: 18px 22px; margin: 8px 12px; border-radius: 20px;
     display: flex; align-items: center; gap: 15px; cursor: pointer;
     border: 1px solid transparent;
 }
-.user-item:hover { background: rgba(255,255,255,0.03); border-color: var(--border); }
-.user-item.active { background: linear-gradient(90deg, rgba(0, 255, 204, 0.12), transparent); border-color: rgba(0, 255, 204, 0.2); }
+.user-item:hover { background: rgba(255,255,255,0.03); }
+.user-item.active { background: linear-gradient(90deg, rgba(0, 255, 204, 0.1), transparent); border-color: rgba(0, 255, 204, 0.2); }
 
 .avatar-hex {
-    width: 52px; height: 52px; background: #0a0a0a; border-radius: 16px;
+    width: 50px; height: 50px; background: #0a0a0a; border-radius: 16px;
     display: flex; align-items: center; justify-content: center;
     font-family: 'Orbitron'; font-weight: 900; color: var(--primary);
-    border: 1px solid var(--border); position: relative;
+    border: 1px solid var(--border); position: relative; flex-shrink: 0;
 }
 
 .online-glow {
-    position: absolute; top: -3px; right: -3px; width: 14px; height: 14px;
-    background: var(--primary); border-radius: 50%; border: 3px solid #080808;
-    display: none; box-shadow: 0 0 15px var(--primary);
+    position: absolute; top: -2px; right: -2px; width: 12px; height: 12px;
+    background: var(--primary); border-radius: 50%; border: 2px solid #080808;
+    display: none; box-shadow: 0 0 10px var(--primary);
 }
 .is-online .online-glow { display: block; animation: pulse 2s infinite; }
 
-@keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.6; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
-.chat-window { flex: 1; display: flex; flex-direction: column; position: relative; }
-.chat-header { padding: 25px 40px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.chat-header { 
+    padding: 20px 30px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border); 
+    display: flex; justify-content: space-between; align-items: center; 
+}
 
-#messages { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
-#messages::-webkit-scrollbar { width: 5px; }
+#messages { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+#messages::-webkit-scrollbar { width: 4px; }
 #messages::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
 .bubble {
-    padding: 16px 24px; border-radius: 25px; max-width: 65%; font-size: 14px; line-height: 1.6;
+    padding: 14px 20px; border-radius: 22px; max-width: 75%; font-size: 14px; line-height: 1.6;
+    word-wrap: break-word;
 }
-
 .bubble.me { align-self: flex-end; background: var(--primary); color: #000; font-weight: 700; border-bottom-right-radius: 4px; }
 .bubble.other { align-self: flex-start; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text-main); }
+
+#msgInput {
+    flex: 1; padding: 18px 25px; border-radius: 20px; border: 1px solid var(--border); 
+    background: rgba(0,0,0,0.6); color: #fff; outline: none; font-size: 14px; min-width: 0;
+}
+
+.icon-btn {
+    width: 55px; height: 55px; border-radius: 18px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 22px; border: none; flex-shrink: 0;
+}
 
 #callUI {
     position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 20000;
@@ -149,131 +155,70 @@ body {
 }
 
 #callUI.minimized {
-    width: 380px; height: 100px; inset: auto 30px 30px auto; 
-    border-radius: 30px; flex-direction: row; padding: 0 25px; 
+    width: 320px; height: 90px; inset: auto 20px 20px auto; 
+    border-radius: 28px; flex-direction: row; padding: 0 20px; 
     border: 2px solid var(--primary); background: #000;
-    justify-content: space-between;
 }
 
-#callUI.minimized .call-avatar-large, 
-#callUI.minimized #cStatus, 
-#callUI.minimized #minBtn { display: none; }
-
-#callUI.minimized #cName { font-size: 18px; margin: 0; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-#callUI.minimized .call-controls-wrapper { margin-top: 0; gap: 12px; }
-
-#callUI.minimized button { 
-    width: 55px !important; height: 55px !important; 
-    font-size: 20px !important; border-radius: 18px !important; 
-}
-
-.call-avatar-large {
-    width: 200px; height: 200px; border-radius: 70px; background: var(--primary);
-    display: flex; align-items: center; justify-content: center; font-size: 90px; color: #000;
-    margin-bottom: 40px; box-shadow: 0 0 60px var(--primary-glow);
-}
-
-.theme-toggle-btn {
-    width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border);
-    background: var(--glass); color: var(--primary); font-family: 'Orbitron';
-    font-size: 10px; cursor: pointer; margin-bottom: 10px; letter-spacing: 1px;
-}
-.theme-toggle-btn:hover { background: var(--primary); color: #000; }
-
-.logout-btn {
-    color: var(--secondary); background: rgba(255,0,85,0.1); border: 1px solid rgba(255,0,85,0.2);
-    padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 800; font-size: 11px;
-    width: 100%; text-transform: uppercase; letter-spacing: 1px;
-}
-
-#msgInput {
-    flex: 1; padding: 22px 30px; border-radius: 22px; border: 1px solid var(--border); 
-    background: rgba(0,0,0,0.6); color: #fff; outline: none; font-size: 14px;
-}
-
-.icon-btn {
-    width: 65px; height: 65px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 24px; border: none;
-}
-
-/* --- استایل جدید و نئونی نشانگر ضبط صدا --- */
 #recIndicator {
     display: none; align-items: center; gap: 10px;
     color: var(--secondary); font-weight: 800; font-size: 11px;
-    letter-spacing: 2px; text-shadow: 0 0 10px var(--secondary-glow);
-    font-family: 'Orbitron'; margin-bottom: 5px;
+    letter-spacing: 2px; font-family: 'Orbitron'; margin-bottom: 5px;
 }
-
-.rec-dot {
-    width: 10px; height: 10px; background: var(--secondary);
-    border-radius: 50%; box-shadow: 0 0 15px var(--secondary);
-    animation: recPulse 1.2s infinite;
-}
-
-@keyframes recPulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.4); opacity: 0.4; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-.is-recording {
-    background: var(--secondary) !important; color: #fff !important;
-    box-shadow: 0 0 25px var(--secondary-glow) !important;
-}
+.rec-dot { width: 10px; height: 10px; background: var(--secondary); border-radius: 50%; animation: recPulse 1.2s infinite; }
+@keyframes recPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.is-recording { background: var(--secondary) !important; color: #fff !important; }
 
 </style>
 </head>
 <body>
 
 <div class="bg-canvas">
-    <div class="particle" style="width:450px; height:450px; top:5%; left:5%;"></div>
-    <div class="particle" style="width:600px; height:600px; bottom:5%; right:5%; background:var(--accent);"></div>
+    <div class="particle" style="width:35vw; height:35vw; top:5%; left:5%;"></div>
+    <div class="particle" style="width:45vw; height:45vw; bottom:5%; right:5%; background:var(--accent);"></div>
 </div>
 
 <div id="loginScreen">
     <div class="brand-title">ALLO</div>
     <div class="login-card">
-        <div class="auth-mode-switch">
-            <button id="btnL" class="mode-btn active" onclick="setAuthMode('login')">ورود</button>
-            <button id="btnR" class="mode-btn" onclick="setAuthMode('register')">ثبت‌نام</button>
+        <div class="auth-mode-switch" style="display: flex; background: rgba(0,0,0,0.6); border-radius: 20px; margin-bottom: 30px; padding: 5px; border: 1px solid var(--border);">
+            <button id="btnL" class="mode-btn active" onclick="setAuthMode('login')" style="flex: 1; padding: 14px; border-radius: 15px; cursor: pointer; font-weight: 900; color: #888; border: none; background: none;">ورود</button>
+            <button id="btnR" class="mode-btn" onclick="setAuthMode('register')" style="flex: 1; padding: 14px; border-radius: 15px; cursor: pointer; font-weight: 900; color: #888; border: none; background: none;">ثبت‌نام</button>
         </div>
-        <div class="input-container"><input id="uID" placeholder="USERNAME ID" autocomplete="off"></div>
-        <div class="input-container"><input id="uPass" type="password" placeholder="ACCESS KEY"></div>
-        <button class="action-btn" onclick="handleAuth()">INITIALIZE SESSION</button>
+        <div class="input-container" style="margin-bottom: 20px;"><input id="uID" placeholder="USERNAME ID" autocomplete="off" style="width: 100%; padding: 20px; border-radius: 18px; background: rgba(0,0,0,0.7); border: 1px solid var(--border); color: #fff; text-align: center; outline: none;"></div>
+        <div class="input-container" style="margin-bottom: 25px;"><input id="uPass" type="password" placeholder="ACCESS KEY" style="width: 100%; padding: 20px; border-radius: 18px; background: rgba(0,0,0,0.7); border: 1px solid var(--border); color: #fff; text-align: center; outline: none;"></div>
+        <button class="action-btn" onclick="handleAuth()" style="width: 100%; padding: 20px; border-radius: 18px; border: none; background: linear-gradient(90deg, var(--primary), #00d2ff); color: #000; font-weight: 900; cursor: pointer;">INITIALIZE SESSION</button>
     </div>
 </div>
 
 <div class="app-frame">
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <div style="padding:40px; border-bottom:1px solid var(--border);">
             <h1 style="font-family:'Orbitron'; color:var(--primary); font-size:26px; letter-spacing:6px;">ALLO</h1>
         </div>
-        <div id="userList" style="flex:1; overflow-y:auto; padding-top:15px;"></div>
+        <div id="userList" style="flex:1; overflow-y:auto; padding-top:10px;"></div>
         <div style="padding:25px; background:rgba(0,0,0,0.4); border-top:1px solid var(--border);">
             <div id="myIDDisplay" style="font-family:'Orbitron'; font-size:10px; color:var(--primary); margin-bottom:15px; opacity:0.7;">NODE: ...</div>
-            <button onclick="toggleTheme()" class="theme-toggle-btn">🌓 SWITCH THEME</button>
-            <button onclick="logout()" class="logout-btn">LOGOUT ✕</button>
+            <button onclick="toggleTheme()" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--border); background:none; color:var(--primary); font-family:'Orbitron'; font-size:10px; cursor:pointer; margin-bottom:10px;">🌓 SWITCH THEME</button>
+            <button onclick="logout()" style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(255,0,85,0.2); background:rgba(255,0,85,0.1); color:var(--secondary); font-weight:800; font-size:11px; cursor:pointer;">LOGOUT ✕</button>
         </div>
     </div>
 
     <div class="chat-window">
         <div class="chat-header">
-            <div style="display:flex; align-items:center; gap:18px;">
-                <div id="hAvatar" style="width:55px; height:55px; background:var(--glass); border:1px solid var(--border); border-radius:18px; display:flex; align-items:center; justify-content:center; font-family:'Orbitron'; font-weight:900; color:var(--primary);">?</div>
-                <h3 id="targetName" style="font-weight:300; letter-spacing:2px; font-size:18px;">Terminal Ready</h3>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <button id="backBtn" onclick="backToList()" style="display:none; background:none; border:1px solid var(--primary); color:var(--primary); padding:8px 12px; border-radius:10px; font-family:'Orbitron'; font-size:10px; cursor:pointer;">BACK</button>
+                <div id="hAvatar" style="width:45px; height:45px; background:var(--glass); border:1px solid var(--border); border-radius:15px; display:flex; align-items:center; justify-content:center; font-family:'Orbitron'; font-weight:900; color:var(--primary);">?</div>
+                <h3 id="targetName" style="font-weight:300; letter-spacing:2px; font-size:18px;">Ready...</h3>
             </div>
-            <button onclick="startCall()" style="background:var(--primary); color:#000; border:none; padding:12px 30px; border-radius:15px; font-weight:900; cursor:pointer; font-family:'Orbitron'; font-size:12px;">CALL</button>
+            <button id="callHeaderBtn" onclick="startCall()" style="display:none; background:var(--primary); color:#000; border:none; padding:10px 25px; border-radius:12px; font-weight:900; cursor:pointer; font-family:'Orbitron'; font-size:11px;">CALL</button>
         </div>
 
         <div id="messages"></div>
 
-        <div style="padding:25px 40px; display:flex; flex-direction:column; gap:10px; background:rgba(0,0,0,0.2);">
-            <div id="recIndicator">
-                <div class="rec-dot"></div>
-                <span>SECURE RECORDING...</span>
-            </div>
-            <div style="display:flex; gap:15px; width:100%;">
+        <div style="padding:20px 30px; background:rgba(0,0,0,0.2); border-top:1px solid var(--border);">
+            <div id="recIndicator"><div class="rec-dot"></div><span>SECURE RECORDING...</span></div>
+            <div style="display:flex; gap:12px; width:100%; align-items:center;">
                 <input id="msgInput" placeholder="Secure transmission..." onkeypress="if(event.key=='Enter') sendMsg()">
                 <button id="vBtn" onclick="toggleVoice()" class="icon-btn" style="border:1px solid var(--secondary); color:var(--secondary); background:none;">🎤</button>
                 <button onclick="sendMsg()" class="icon-btn" style="background:var(--primary); color:#000;">✈</button>
@@ -283,14 +228,14 @@ body {
 </div>
 
 <div id="callUI">
-    <button id="minBtn" onclick="toggleCallView()" style="position:absolute; top:30px; left:30px; background:none; border:1px solid #fff; color:#fff; padding:8px 15px; border-radius:10px; cursor:pointer; font-family:'Orbitron'; font-size:10px;">MINIMIZE</button>
-    <div class="call-avatar-large" id="cAvatar">👤</div>
-    <h2 id="cName" style="font-family:'Orbitron'; font-size:45px; margin-bottom:10px; letter-spacing:5px;">USER</h2>
-    <p id="cStatus" style="color:var(--primary); letter-spacing:8px; font-weight:100; font-size:12px;">CONNECTING...</p>
-    <div class="call-controls-wrapper" style="display:flex; gap:35px; margin-top:50px;">
-        <button id="acceptBtn" onclick="answerCall()" style="width:90px; height:90px; border-radius:35px; background:#2ecc71; border:none; font-size:35px; cursor:pointer;">✅</button>
-        <button id="muteBtn" onclick="toggleMute()" style="width:90px; height:90px; border-radius:35px; background:rgba(255,255,255,0.1); border:1px solid var(--border); font-size:35px; cursor:pointer; display:none;">🎙️</button>
-        <button onclick="hangup()" style="width:90px; height:90px; border-radius:35px; background:var(--secondary); border:none; font-size:35px; cursor:pointer;">❌</button>
+    <button onclick="toggleCallView()" style="position:absolute; top:30px; left:30px; background:none; border:1px solid #fff; color:#fff; padding:8px 15px; border-radius:10px; cursor:pointer; font-family:'Orbitron'; font-size:10px;">MINIMIZE</button>
+    <div style="width:160px; height:160px; border-radius:60px; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:70px; color:#000; margin-bottom:40px; box-shadow: 0 0 50px var(--primary-glow);">👤</div>
+    <h2 id="cName" style="font-family:'Orbitron'; font-size:35px; margin-bottom:10px;">USER</h2>
+    <p id="cStatus" style="color:var(--primary); letter-spacing:6px; font-size:12px;">CONNECTING...</p>
+    <div style="display:flex; gap:30px; margin-top:50px;">
+        <button id="acceptBtn" onclick="answerCall()" style="width:80px; height:80px; border-radius:30px; background:#2ecc71; border:none; font-size:30px; cursor:pointer;">✅</button>
+        <button id="muteBtn" onclick="toggleMute()" style="width:80px; height:80px; border-radius:30px; background:rgba(255,255,255,0.1); border:1px solid var(--border); font-size:30px; cursor:pointer; display:none;">🎙️</button>
+        <button onclick="hangup()" style="width:80px; height:80px; border-radius:30px; background:var(--secondary); border:none; font-size:30px; cursor:pointer;">❌</button>
     </div>
 </div>
 
@@ -327,7 +272,9 @@ if(me) { document.getElementById("loginScreen").style.display = "none"; initApp(
 function setAuthMode(m) {
     authMode = m;
     document.getElementById('btnL').className = `mode-btn ${m==='login'?'active':''}`;
+    document.getElementById('btnL').style.color = m==='login'?'#000':'#888';
     document.getElementById('btnR').className = `mode-btn ${m==='register'?'active':''}`;
+    document.getElementById('btnR').style.color = m==='register'?'#000':'#888';
 }
 
 async function handleAuth() {
@@ -353,11 +300,7 @@ function initApp() {
     setInterval(() => db.collection("users").doc(me).update({ lastSeen: Date.now(), online: true }), 20000);
 
     db.collection("messages").where("t", "==", me).where("read", "==", false).onSnapshot(snap => {
-        unreadCounts = {}; 
-        snap.forEach(doc => {
-            const m = doc.data();
-            unreadCounts[m.f] = (unreadCounts[m.f] || 0) + 1;
-        });
+        unreadCounts = {}; snap.forEach(doc => { const m = doc.data(); unreadCounts[m.f] = (unreadCounts[m.f] || 0) + 1; });
         updateUserListUI();
     });
 
@@ -382,7 +325,7 @@ function updateUserListUI() {
                     <div style="font-weight:900; font-size:15px; color:var(--text-main); letter-spacing:1px;">${doc.id}</div>
                     <div style="font-size:9px; color:var(--primary); opacity:0.8; font-weight:800;">${isOnline ? 'ONLINE' : 'OFFLINE'}</div>
                 </div>
-                ${unread > 0 ? `<div class="unread-count" style="background:var(--secondary); padding:2px 8px; border-radius:10px; font-size:10px;">${unread}</div>` : ''}`;
+                ${unread > 0 ? `<div style="background:var(--secondary); padding:2px 8px; border-radius:10px; font-size:10px; font-weight:bold;">${unread}</div>` : ''}`;
             item.onclick = () => { activeTarget = doc.id; selectUser(); };
             list.appendChild(item);
         });
@@ -392,7 +335,16 @@ function updateUserListUI() {
 function selectUser() {
     document.getElementById("targetName").innerText = activeTarget.toUpperCase();
     document.getElementById("hAvatar").innerText = activeTarget[0].toUpperCase();
+    document.getElementById("callHeaderBtn").style.display = "block";
+    
+    if(window.innerWidth <= 800) {
+        document.getElementById("sidebar").classList.add("hide-mobile");
+    }
     loadMessages();
+}
+
+function backToList() {
+    document.getElementById("sidebar").classList.remove("hide-mobile");
 }
 
 function loadMessages() {
@@ -402,12 +354,10 @@ function loadMessages() {
         snap.forEach(doc => {
             const d = doc.data();
             if((d.f==me && d.t==activeTarget) || (d.f==activeTarget && d.t==me)) {
-                if (d.f === activeTarget && d.read === false) {
-                    db.collection("messages").doc(doc.id).update({ read: true });
-                }
+                if (d.f === activeTarget && d.read === false) db.collection("messages").doc(doc.id).update({ read: true });
                 const m = document.createElement("div");
                 m.className = `bubble ${d.f==me ? 'me' : 'other'}`;
-                if(d.audio) m.innerHTML = `<audio src="${d.audio}" controls style="filter:invert(1) opacity:0.8; height:35px;"></audio>`;
+                if(d.audio) m.innerHTML = `<audio src="${d.audio}" controls style="filter:invert(1) opacity:0.8; height:35px; max-width: 100%;"></audio>`;
                 else m.innerText = d.txt;
                 box.appendChild(m);
             }
@@ -437,14 +387,8 @@ async function startCall() {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
 
-    pc.onicecandidate = e => {
-        if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON());
-    };
-
-    pc.ontrack = e => {
-        document.getElementById("remoteAudio").srcObject = e.streams[0];
-        document.getElementById("cStatus").innerText = "CONNECTED";
-    };
+    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON()); };
+    pc.ontrack = e => { document.getElementById("remoteAudio").srcObject = e.streams[0]; document.getElementById("cStatus").innerText = "CONNECTED"; };
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
@@ -452,13 +396,7 @@ async function startCall() {
 
     db.collection("calls").doc(activeTarget).onSnapshot(async snap => {
         const d = snap.data();
-        if(d?.answer && !pc.currentRemoteDescription) {
-            await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
-        }
-    });
-
-    db.collection("calls").doc(activeTarget).collection("receiverCandidates").onSnapshot(s => {
-        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
+        if(d?.answer && !pc.currentRemoteDescription) await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
     });
 }
 
@@ -482,28 +420,15 @@ async function answerCall() {
     document.getElementById("acceptBtn").style.display = "none";
     document.getElementById("muteBtn").style.display = "block";
     document.getElementById("cStatus").innerText = "CONNECTING...";
-
     pc = new RTCPeerConnection(rtcConfig);
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-
-    pc.onicecandidate = e => {
-        if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON());
-    };
-
-    pc.ontrack = e => {
-        document.getElementById("remoteAudio").srcObject = e.streams[0];
-        document.getElementById("cStatus").innerText = "CONNECTED";
-    };
-
+    pc.onicecandidate = e => { if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON()); };
+    pc.ontrack = e => { document.getElementById("remoteAudio").srcObject = e.streams[0]; document.getElementById("cStatus").innerText = "CONNECTED"; };
     await pc.setRemoteDescription(new RTCSessionDescription(window.incoming.offer));
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
     await db.collection("calls").doc(me).update({ answer });
-
-    db.collection("calls").doc(me).collection("callerCandidates").onSnapshot(s => {
-        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
-    });
 }
 
 function toggleMute() {
@@ -518,13 +443,10 @@ function hangup() {
     db.collection("calls").doc(me).delete();
     if(activeTarget) db.collection("calls").doc(activeTarget).delete();
     document.getElementById("callUI").style.display = "none";
-    document.getElementById("callUI").classList.remove("minimized");
     document.getElementById("ring").pause();
 }
 
-function toggleCallView() {
-    document.getElementById("callUI").classList.toggle("minimized");
-}
+function toggleCallView() { document.getElementById("callUI").classList.toggle("minimized"); }
 
 let rec; let chunks = [];
 async function toggleVoice() {
@@ -538,12 +460,9 @@ async function toggleVoice() {
             const b = new Blob(chunks, { type: 'audio/webm' });
             const r = new FileReader(); r.readAsDataURL(b);
             r.onloadend = () => db.collection("messages").add({ f: me, t: activeTarget, audio: r.result, time: Date.now(), read: false });
-            v.classList.remove("is-recording");
-            indicator.style.display = "none";
+            v.classList.remove("is-recording"); indicator.style.display = "none";
         };
-        rec.start(); 
-        v.classList.add("is-recording"); 
-        indicator.style.display = "flex"; // نمایش زیبا و فلکس
+        rec.start(); v.classList.add("is-recording"); indicator.style.display = "flex";
     } else { rec.stop(); }
 }
 
