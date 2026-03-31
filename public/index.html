@@ -1,521 +1,543 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ALLO | Next-Gen Messenger</title> 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ALLO</title> 
 
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;400;700;900&family=Orbitron:wght@400;600;900&display=swap" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;300;500;800;900&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-    <style>
-        :root {
-            --primary: #00ffcc;
-            --primary-bg: #0a0b10;
-            --accent: #7000ff;
-            --glass: rgba(255, 255, 255, 0.03);
-            --border: rgba(255, 255, 255, 0.08);
-            --text: #e0e0e0;
-            --me-gradient: linear-gradient(135deg, #00ffcc 0%, #0099ff 100%);
-        }
+<style>
+:root {
+    --primary: #00ffcc;
+    --primary-glow: rgba(0, 255, 204, 0.6);
+    --secondary: #ff0055;
+    --secondary-glow: rgba(255, 0, 85, 0.5);
+    --accent: #bc13fe;
+    --dark-bg: #050505;
+    --glass: rgba(255, 255, 255, 0.05);
+    --border: rgba(255, 255, 255, 0.12);
+    --text-main: #ffffff;
+    --card-bg: rgba(255, 255, 255, 0.07);
+}
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Vazirmatn', sans-serif; -webkit-tap-highlight-color: transparent; }
+body.light-mode {
+    --dark-bg: #eef2f3;
+    --glass: rgba(0, 0, 0, 0.05);
+    --border: rgba(0, 0, 0, 0.1);
+    --text-main: #1a1a1a;
+    --primary: #00a884;
+    --card-bg: rgba(0, 0, 0, 0.05);
+}
 
-        body {
-            background: var(--primary-bg);
-            color: var(--text);
-            height: 100dvh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-        }
+* { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
 
-        /* پس‌زمینه متحرک */
-        .bg-glow {
-            position: fixed;
-            width: 100vw;
-            height: 100vh;
-            background: radial-gradient(circle at 50% 50%, #1a1b25 0%, #050505 100%);
-            z-index: -1;
-        }
+body { 
+    font-family: 'Vazirmatn', sans-serif; background: var(--dark-bg); color: var(--text-main);
+    height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: center;
+}
 
-        .blob {
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            background: var(--accent);
-            filter: blur(120px);
-            opacity: 0.15;
-            border-radius: 50%;
-            animation: move 20s infinite alternate;
-        }
+/* --- [بخش ریسپانسیو موبایل] --- */
+@media (max-width: 768px) {
+    .app-frame { width: 100vw !important; height: 100vh !important; border-radius: 0 !important; border: none !important; }
+    
+    .sidebar { 
+        width: 100% !important; 
+        position: absolute; 
+        inset: 0; 
+        z-index: 10; 
+        background: var(--dark-bg) !important;
+        border-left: 2px solid var(--primary) !important;
+        box-shadow: inset -10px 0 30px rgba(0, 255, 204, 0.05);
+        transition: transform 0.5s ease; 
+    }
+    
+    .sidebar.active-chat { transform: translateX(100%); }
+    
+    .input-area-wrapper { 
+        padding: 10px 15px !important; 
+        gap: 8px !important; 
+        background: var(--glass) !important;
+    }
+    
+    .input-row-mobile { display: flex !important; width: 100% !important; gap: 8px !important; align-items: center; }
+    #msgInput { padding: 12px 15px !important; font-size: 13px !important; height: 45px !important; border-radius: 12px !important; }
+    
+    .icon-btn { 
+        width: 45px !important; 
+        height: 45px !important; 
+        font-size: 18px !important; 
+        border-radius: 12px !important; 
+    }
 
-        @keyframes move {
-            from { transform: translate(-20%, -20%); }
-            to { transform: translate(20%, 20%); }
-        }
+    .chat-header { padding: 15px !important; }
+    #targetName { font-size: 15px !important; }
+    
+    .bubble.has-audio { min-width: 150px !important; max-width: 85% !important; }
+    .bubble audio { width: 100% !important; height: 32px !important; }
+}
 
-        /* فریم اصلی برنامه */
-        .app-container {
-            width: 95vw;
-            height: 92vh;
-            max-width: 1400px;
-            background: var(--glass);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid var(--border);
-            border-radius: 30px;
-            display: flex;
-            overflow: hidden;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-        }
+.unread-count {
+    background: var(--secondary) !important;
+    color: #fff !important;
+    font-weight: 900 !important;
+    padding: 2px 10px !important;
+    border-radius: 20px !important;
+    font-size: 10px !important;
+    font-family: 'Orbitron';
+    box-shadow: 0 0 15px var(--secondary-glow), 0 0 5px #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    animation: unreadPulse 1s infinite alternate;
+}
+@keyframes unreadPulse { from { box-shadow: 0 0 5px var(--secondary-glow); } to { box-shadow: 0 0 15px var(--secondary-glow); } }
 
-        /* سایدبار */
-        .sidebar {
-            width: 380px;
-            border-left: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            background: rgba(0,0,0,0.2);
-        }
+.is-recording {
+    animation: recBtnPulse 1.5s infinite !important;
+    background: var(--secondary) !important;
+    color: white !important;
+    border: none !important;
+}
+@keyframes recBtnPulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 0, 85, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(255, 0, 85, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 0, 85, 0); }
+}
 
-        .sidebar-header {
-            padding: 30px;
-            background: rgba(255,255,255,0.02);
-            border-bottom: 1px solid var(--border);
-        }
+.bubble.has-audio {
+    background: var(--glass) !important;
+    border: 1px solid var(--primary) !important;
+    position: relative;
+    overflow: hidden;
+    min-width: 180px;
+}
+.bubble.has-audio::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, var(--primary-glow), transparent);
+    width: 60%; animation: voiceWaveMove 2s infinite linear;
+    opacity: 0.15; pointer-events: none;
+}
+@keyframes voiceWaveMove { 0% { transform: translateX(-150%); } 100% { transform: translateX(200%); } }
 
-        .logo {
-            font-family: 'Orbitron';
-            font-size: 24px;
-            font-weight: 900;
-            color: var(--primary);
-            letter-spacing: 5px;
-            text-shadow: 0 0 15px var(--primary);
-        }
+.bg-canvas { position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at center, var(--dark-bg) 0%, #000 100%); }
+.particle { position: absolute; border-radius: 50%; background: var(--primary); filter: blur(100px); opacity: 0.15; animation: float 25s infinite alternate ease-in-out; }
+@keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(150px, -100px) scale(1.4); } }
 
-        .user-list { flex: 1; overflow-y: auto; padding: 15px; }
+#loginScreen { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(30px); }
+.login-card { width: 440px; padding: 50px; border-radius: 40px; background: var(--card-bg); border: 1px solid var(--border); box-shadow: 0 40px 100px rgba(0,0,0,0.9); text-align: center; }
+.brand-title { font-family: 'Orbitron', sans-serif; font-size: 80px; font-weight: 900; color: var(--primary); letter-spacing: 15px; margin-bottom: 30px; text-shadow: 0 0 40px var(--primary-glow); }
 
-        .user-card {
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            cursor: pointer;
-            transition: 0.3s;
-            border: 1px solid transparent;
-        }
+.auth-mode-switch { display: flex; background: rgba(0,0,0,0.6); border-radius: 20px; margin-bottom: 35px; padding: 5px; border: 1px solid var(--border); }
+.mode-btn { flex: 1; padding: 14px; border-radius: 15px; cursor: pointer; font-weight: 900; font-size: 14px; color: #888; border: none; background: none; }
+.mode-btn.active { background: var(--primary); color: #000; box-shadow: 0 0 25px var(--primary-glow); }
 
-        .user-card:hover { background: rgba(255,255,255,0.05); }
-        .user-card.active {
-            background: rgba(0, 255, 204, 0.08);
-            border-color: rgba(0, 255, 204, 0.2);
-        }
+.input-container { margin-bottom: 20px; position: relative; }
+.input-container input { width: 100%; padding: 22px; border-radius: 18px; background: rgba(0,0,0,0.7); border: 1px solid var(--border); color: #fff; font-size: 15px; outline: none; text-align: center; }
+.action-btn { width: 100%; padding: 22px; border-radius: 18px; border: none; background: linear-gradient(90deg, var(--primary), #00d2ff); color: #000; font-weight: 900; font-size: 16px; cursor: pointer; }
 
-        .avatar {
-            width: 55px;
-            height: 55px;
-            background: #1a1c25;
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Orbitron';
-            color: var(--primary);
-            font-weight: bold;
-            border: 1px solid var(--border);
-            position: relative;
-        }
+.app-frame { width: 96vw; height: 92vh; display: flex; background: var(--glass); border: 1px solid var(--border); border-radius: 50px; backdrop-filter: blur(50px); overflow: hidden; }
+.sidebar { width: 360px; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: rgba(0,0,0,0.2); }
+.user-item { padding: 20px 25px; margin: 10px 15px; border-radius: 22px; display: flex; align-items: center; gap: 15px; cursor: pointer; border: 1px solid transparent; }
+.user-item.active { background: linear-gradient(90deg, rgba(0, 255, 204, 0.12), transparent); border-color: rgba(0, 255, 204, 0.2); }
 
-        .online-status {
-            position: absolute;
-            bottom: -2px;
-            left: -2px;
-            width: 12px;
-            height: 12px;
-            background: var(--primary);
-            border-radius: 50%;
-            border: 2px solid #0a0b10;
-            box-shadow: 0 0 10px var(--primary);
-        }
+.avatar-hex { width: 52px; height: 52px; background: #0a0a0a; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron'; font-weight: 900; color: var(--primary); border: 1px solid var(--border); position: relative; }
+.online-glow { position: absolute; top: -3px; right: -3px; width: 14px; height: 14px; background: var(--primary); border-radius: 50%; border: 3px solid #080808; display: none; box-shadow: 0 0 15px var(--primary); }
+.is-online .online-glow { display: block; animation: pulse 2s infinite; }
 
-        /* بخش چت */
-        .main-chat {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
+.chat-window { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
+.chat-header { padding: 25px 40px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+#messages { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
 
-        .chat-header {
-            padding: 20px 35px;
-            background: rgba(0,0,0,0.15);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+.bubble { padding: 16px 24px; border-radius: 25px; max-width: 65%; font-size: 14px; line-height: 1.6; }
+.bubble.me { align-self: flex-end; background: var(--primary); color: #000; font-weight: 700; border-bottom-right-radius: 4px; }
+.bubble.other { align-self: flex-start; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text-main); }
 
-        #messages-container {
-            flex: 1;
-            padding: 25px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+#callUI { position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(100px); }
+#callUI.minimized { width: 380px; height: 100px; inset: auto 30px 30px auto; border-radius: 30px; flex-direction: row; padding: 0 25px; border: 2px solid var(--primary); background: #000; justify-content: space-between; }
 
-        /* حباب‌های پیام */
-        .msg {
-            max-width: 70%;
-            padding: 12px 18px;
-            border-radius: 22px;
-            font-size: 14.5px;
-            line-height: 1.6;
-            animation: slideIn 0.3s ease-out;
-        }
+.theme-toggle-btn { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: var(--primary); font-family: 'Orbitron'; font-size: 10px; cursor: pointer; margin-bottom: 10px; }
+.logout-btn { color: var(--secondary); background: rgba(255,0,85,0.1); border: 1px solid rgba(255,0,85,0.2); padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 800; font-size: 11px; width: 100%; }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .msg.sent {
-            align-self: flex-end;
-            background: var(--me-gradient);
-            color: #000;
-            font-weight: 600;
-            border-bottom-right-radius: 4px;
-        }
-
-        .msg.received {
-            align-self: flex-start;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid var(--border);
-            border-bottom-left-radius: 4px;
-        }
-
-        .msg img {
-            max-width: 100%;
-            border-radius: 15px;
-            margin-bottom: 5px;
-        }
-
-        /* فوتر و ورودی */
-        .chat-footer {
-            padding: 20px 30px;
-            background: rgba(0,0,0,0.2);
-            border-top: 1px solid var(--border);
-        }
-
-        .input-box {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: rgba(255,255,255,0.05);
-            padding: 8px 15px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-        }
-
-        .input-box input {
-            flex: 1;
-            background: none;
-            border: none;
-            color: white;
-            padding: 12px;
-            outline: none;
-            font-size: 15px;
-        }
-
-        .btn-icon {
-            width: 45px;
-            height: 45px;
-            border-radius: 15px;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            transition: 0.2s;
-        }
-
-        .btn-send { background: var(--primary); color: #000; }
-        .btn-util { background: var(--glass); color: #fff; border: 1px solid var(--border); }
-
-        /* ریسپانسیو موبایل */
-        @media (max-width: 768px) {
-            .app-container { width: 100vw; height: 100dvh; border-radius: 0; }
-            .sidebar { 
-                width: 100%; 
-                position: absolute; 
-                z-index: 10; 
-                height: 100%;
-                transition: 0.4s;
-            }
-            .sidebar.hidden { transform: translateX(100%); }
-            
-            .chat-footer {
-                padding-bottom: calc(20px + env(safe-area-inset-bottom));
-            }
-        }
-
-        /* اسکرول‌بار زیبا */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-    </style>
+#msgInput { flex: 1; padding: 22px 30px; border-radius: 22px; border: 1px solid var(--border); background: rgba(0,0,0,0.6); color: #fff; outline: none; font-size: 14px; min-width: 0; }
+.icon-btn { width: 65px; height: 65px; border-radius: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; border: none; flex-shrink: 0; }
+#recIndicator { display: none; align-items: center; gap: 10px; color: var(--secondary); font-weight: 800; font-size: 11px; font-family: 'Orbitron'; margin-bottom: 5px; }
+.rec-dot { width: 10px; height: 10px; background: var(--secondary); border-radius: 50%; animation: recPulse 1.2s infinite; }
+</style>
 </head>
 <body>
 
-    <div class="bg-glow"><div class="blob"></div></div>
+<div class="bg-canvas">
+    <div class="particle" style="width:450px; height:450px; top:5%; left:5%;"></div>
+    <div class="particle" style="width:600px; height:600px; bottom:5%; right:5%; background:var(--accent);"></div>
+</div>
 
-    <div id="login-overlay" style="position:fixed; inset:0; z-index:100; background:#050505; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-        <div class="logo" style="font-size:50px; margin-bottom:40px;">ALLO</div>
-        <div style="width:320px; display:flex; flex-direction:column; gap:15px;">
-            <input id="uID" placeholder="User ID" style="padding:18px; border-radius:15px; border:1px solid var(--border); background:#111; color:white; text-align:center;">
-            <input id="uPass" type="password" placeholder="Password" style="padding:18px; border-radius:15px; border:1px solid var(--border); background:#111; color:white; text-align:center;">
-            <button onclick="handleAuth()" style="padding:18px; border-radius:15px; background:var(--primary); border:none; font-weight:900; cursor:pointer;">CONNECT</button>
+<div id="loginScreen">
+    <div class="brand-title">ALLO</div>
+    <div class="login-card">
+        <div class="auth-mode-switch">
+            <button id="btnL" class="mode-btn active" onclick="setAuthMode('login')">ورود</button>
+            <button id="btnR" class="mode-btn" onclick="setAuthMode('register')">ثبت‌نام</button>
+        </div>
+        <div class="input-container"><input id="uID" placeholder="USERNAME ID" autocomplete="off"></div>
+        <div class="input-container"><input id="uPass" type="password" placeholder="ACCESS KEY"></div>
+        <button class="action-btn" onclick="handleAuth()">INITIALIZE SESSION</button>
+    </div>
+</div>
+
+<div class="app-frame">
+    <div class="sidebar" id="mainSidebar">
+        <div style="padding:40px; border-bottom:1px solid var(--border);">
+            <h1 style="font-family:'Orbitron'; color:var(--primary); font-size:26px; letter-spacing:6px;">ALLO</h1>
+        </div>
+        <div id="userList" style="flex:1; overflow-y:auto; padding-top:15px;"></div>
+        <div style="padding:25px; background:rgba(0,0,0,0.4); border-top:1px solid var(--border);">
+            <div id="myIDDisplay" style="font-family:'Orbitron'; font-size:10px; color:var(--primary); margin-bottom:15px; opacity:0.7;">NODE: ...</div>
+            <button onclick="toggleTheme()" class="theme-toggle-btn">🌓 SWITCH THEME</button>
+            <button onclick="logout()" class="logout-btn">LOGOUT ✕</button>
         </div>
     </div>
 
-    <div class="app-container">
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">ALLO</div>
+    <div class="chat-window">
+        <div class="chat-header">
+            <div style="display:flex; align-items:center; gap:18px;">
+                <button id="backToListBtn" onclick="backToList()" style="display:none; background:none; border:1px solid var(--primary); color:var(--primary); padding:8px 12px; border-radius:10px; cursor:pointer; font-size:10px; font-family:'Orbitron';">BACK</button>
+                <div id="hAvatar" style="width:55px; height:55px; background:var(--glass); border:1px solid var(--border); border-radius:18px; display:flex; align-items:center; justify-content:center; font-family:'Orbitron'; font-weight:900; color:var(--primary);">?</div>
+                <h3 id="targetName" style="font-weight:300; letter-spacing:2px; font-size:18px;">Terminal Ready</h3>
             </div>
-            <div class="user-list" id="user-list"></div>
-            <div style="padding:20px; border-top:1px solid var(--border);">
-                <button onclick="logout()" style="width:100%; padding:12px; border-radius:12px; background:rgba(255,0,0,0.1); color:#ff5555; border:1px solid #ff5555; font-size:12px; cursor:pointer;">DISCONNECT</button>
-            </div>
+            <button onclick="startCall()" style="background:var(--primary); color:#000; border:none; padding:12px 30px; border-radius:15px; font-weight:900; cursor:pointer; font-family:'Orbitron'; font-size:12px;">CALL</button>
         </div>
 
-        <div class="main-chat">
-            <div class="chat-header">
-                <div style="display:flex; align-items:center; gap:15px;">
-                    <button onclick="toggleSidebar()" id="back-btn" class="btn-util" style="display:none; width:35px; height:35px;">⬅</button>
-                    <div id="active-avatar" class="avatar" style="width:40px; height:40px; font-size:14px;">?</div>
-                    <div>
-                        <div id="active-name" style="font-weight:bold; font-size:16px;">انتخاب مخاطب</div>
-                        <div id="active-status" style="font-size:10px; color:var(--primary); font-family:'Orbitron';">READY</div>
-                    </div>
+        <div id="messages"></div>
+
+        <div class="input-area-wrapper" style="padding:25px 40px; display:flex; flex-direction:column; gap:10px; background:rgba(0,0,0,0.2);">
+            <div id="recIndicator" style="display:none; align-items:center; gap:15px;">
+                <div class="rec-dot"></div>
+                <span style="color:var(--secondary); font-family:'Orbitron'; font-size:10px;">RECORDING...</span>
+                <canvas id="voiceWave" width="100" height="20" style="flex:1;"></canvas>
+            </div>
+            <div class="input-row-mobile" style="display:flex; gap:15px; width:100%; align-items:center;">
+                <input id="msgInput" placeholder="Secure transmission..." onkeypress="if(event.key=='Enter') sendMsg()">
+                <button id="vBtn" onclick="toggleVoice()" class="icon-btn" style="border:1px solid var(--secondary); color:var(--secondary); background:none;">🎤</button>
+                <button onclick="sendMsg()" class="icon-btn" style="background:var(--primary); color:#000;">✈</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="callUI">
+    <button id="minBtn" onclick="toggleCallView()" style="position:absolute; top:30px; left:30px; background:none; border:1px solid #fff; color:#fff; padding:8px 15px; border-radius:10px; cursor:pointer; font-family:'Orbitron'; font-size:10px;">MINIMIZE</button>
+    <div class="call-avatar-large" id="cAvatar">👤</div>
+    <h2 id="cName" style="font-family:'Orbitron'; font-size:45px; margin-bottom:10px; letter-spacing:5px;">USER</h2>
+    <p id="cStatus" style="color:var(--primary); letter-spacing:8px; font-weight:100; font-size:12px;">CONNECTING...</p>
+    <div class="call-controls-wrapper" style="display:flex; gap:35px; margin-top:50px;">
+        <button id="acceptBtn" onclick="answerCall()" style="width:90px; height:90px; border-radius:35px; background:#2ecc71; border:none; font-size:35px; cursor:pointer;">✅</button>
+        <button id="muteBtn" onclick="toggleMute()" style="width:90px; height:90px; border-radius:35px; background:rgba(255,255,255,0.1); border:1px solid var(--border); font-size:35px; cursor:pointer; display:none;">🎙️</button>
+        <button onclick="hangup()" style="width:90px; height:90px; border-radius:35px; background:var(--secondary); border:none; font-size:35px; cursor:pointer;">❌</button>
+    </div>
+</div>
+
+<audio id="ring" src="https://actions.google.com/sounds/v1/alarms/phone_alerts_and_ringtones.ogg" loop></audio>
+<audio id="remoteAudio" autoplay playsinline webkit-playsinline></audio>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
+    authDomain: "alloo-web.firebaseapp.com",
+    projectId: "alloo-web",
+    storageBucket: "alloo-web.appspot.com",
+    messagingSenderId: "132232824762",
+    appId: "1:132232824762:web:4e3c25557c072f0feabf83"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let me = localStorage.getItem("alloo_uid");
+let activeTarget = "";
+let authMode = 'login';
+let pc; let localStream; let isMuted = false;
+let unreadCounts = {}; 
+
+if(localStorage.getItem("allo_theme") === "light") document.body.classList.add("light-mode");
+
+function toggleTheme() {
+    document.body.classList.toggle("light-mode");
+    localStorage.setItem("allo_theme", document.body.classList.contains("light-mode") ? "light" : "dark");
+}
+
+if(me) { document.getElementById("loginScreen").style.display = "none"; initApp(); }
+
+function setAuthMode(m) {
+    authMode = m;
+    document.getElementById('btnL').className = `mode-btn ${m==='login'?'active':''}`;
+    document.getElementById('btnR').className = `mode-btn ${m==='register'?'active':''}`;
+}
+
+async function handleAuth() {
+    const id = document.getElementById("uID").value.trim().toLowerCase();
+    const ps = document.getElementById("uPass").value.trim();
+    if(!id || !ps) return;
+    const userRef = db.collection("users").doc(id);
+    const doc = await userRef.get();
+    if(authMode === 'register') {
+        if(doc.exists) return alert("آی‌دی رزرو شده است.");
+        await userRef.set({ pass: ps, online: true, lastSeen: Date.now() });
+    } else {
+        if(!doc.exists || doc.data().pass !== ps) return alert("اطلاعات ورود نادرست است.");
+        await userRef.update({ online: true, lastSeen: Date.now() });
+    }
+    localStorage.setItem("alloo_uid", id);
+    location.reload();
+}
+
+function initApp() {
+    document.getElementById("myIDDisplay").innerText = "NODE: " + me.toUpperCase();
+    db.collection("users").doc(me).update({ online: true, lastSeen: Date.now() });
+    setInterval(() => db.collection("users").doc(me).update({ lastSeen: Date.now(), online: true }), 20000);
+
+    db.collection("messages").where("t", "==", me).where("read", "==", false).onSnapshot(snap => {
+        unreadCounts = {}; 
+        snap.forEach(doc => {
+            const m = doc.data();
+            unreadCounts[m.f] = (unreadCounts[m.f] || 0) + 1;
+        });
+        updateUserListUI();
+    });
+
+    db.collection("users").onSnapshot(() => updateUserListUI());
+    listenForCalls();
+}
+
+function updateUserListUI() {
+    const list = document.getElementById("userList");
+    db.collection("users").get().then(snap => {
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            if(doc.id === me) return;
+            const d = doc.data();
+            const isOnline = d.online && (Date.now() - d.lastSeen < 60000);
+            const unread = unreadCounts[doc.id] || 0;
+            const item = document.createElement("div");
+            item.className = `user-item ${activeTarget === doc.id ? 'active' : ''} ${isOnline ? 'is-online' : ''}`;
+            item.innerHTML = `
+                <div class="avatar-hex">${doc.id[0].toUpperCase()}<div class="online-glow"></div></div>
+                <div style="flex:1">
+                    <div style="font-weight:900; font-size:15px; color:var(--text-main); letter-spacing:1px;">${doc.id}</div>
+                    <div style="font-size:9px; color:var(--primary); opacity:0.8; font-weight:800;">${isOnline ? 'ONLINE' : 'OFFLINE'}</div>
                 </div>
-                <button onclick="startCall()" class="btn-send" style="padding:8px 20px; border-radius:10px; font-size:12px; font-family:'Orbitron'; font-weight:bold;">VOICE CALL</button>
-            </div>
+                ${unread > 0 ? `<div class="unread-count">${unread}</div>` : ''}`;
+            item.onclick = () => { activeTarget = doc.id; selectUser(); };
+            list.appendChild(item);
+        });
+    });
+}
 
-            <div id="messages-container"></div>
+function selectUser() {
+    document.getElementById("targetName").innerText = activeTarget.toUpperCase();
+    document.getElementById("hAvatar").innerText = activeTarget[0].toUpperCase();
+    if(window.innerWidth <= 768) {
+        document.getElementById("mainSidebar").classList.add("active-chat");
+        document.getElementById("backToListBtn").style.display = "block";
+    }
+    loadMessages();
+}
 
-            <div class="chat-footer">
-                <div id="voice-rec" style="display:none; color:var(--primary); font-size:10px; margin-bottom:10px; font-family:'Orbitron';">● RECORDING SIGNAL...</div>
-                <div class="input-box">
-                    <button onclick="document.getElementById('imgInp').click()" class="btn-util">🖼️</button>
-                    <input type="file" id="imgInp" hidden accept="image/*" onchange="sendImage(this)">
-                    
-                    <input id="mInput" placeholder="Write something..." onkeypress="if(event.key=='Enter') sendMsg()">
-                    
-                    <button id="vBtn" onclick="toggleVoice()" class="btn-util">🎤</button>
-                    <button onclick="sendMsg()" class="btn-send btn-icon">✈</button>
-                </div>
-            </div>
-        </div>
-    </div>
+function backToList() {
+    document.getElementById("mainSidebar").classList.remove("active-chat");
+    document.getElementById("backToListBtn").style.display = "none";
+}
 
-    <div id="call-ui" style="display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.95); backdrop-filter:blur(20px); flex-direction:column; align-items:center; justify-content:center;">
-        <div class="avatar" style="width:120px; height:120px; font-size:40px; margin-bottom:20px;" id="c-avatar">?</div>
-        <h2 id="c-name" style="font-family:'Orbitron'; margin-bottom:10px;">USER</h2>
-        <div style="color:var(--primary); animation:pulse 1s infinite alternate;">INCOMING CALL...</div>
-        <div style="display:flex; gap:30px; margin-top:50px;">
-            <button onclick="answerCall()" style="width:70px; height:70px; border-radius:50%; background:#2ecc71; border:none; font-size:25px;">✅</button>
-            <button onclick="hangup()" style="width:70px; height:70px; border-radius:50%; background:#ff4444; border:none; font-size:25px;">❌</button>
-        </div>
-    </div>
+function loadMessages() {
+    db.collection("messages").orderBy("time", "asc").onSnapshot(snap => {
+        const box = document.getElementById("messages");
+        box.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            if((d.f==me && d.t==activeTarget) || (d.f==activeTarget && d.t==me)) {
+                if (d.f === activeTarget && d.read === false) {
+                    db.collection("messages").doc(doc.id).update({ read: true });
+                }
+                const m = document.createElement("div");
+                m.className = `bubble ${d.f==me ? 'me' : 'other'} ${d.audio ? 'has-audio' : ''}`;
+                if(d.audio) {
+                    m.innerHTML = `<audio src="${d.audio}" controls playsinline webkit-playsinline style="filter:invert(1) opacity:0.8; height:35px; width:220px; max-width:100%;"></audio>`;
+                }
+                else m.innerText = d.txt;
+                box.appendChild(m);
+            }
+        });
+        box.scrollTop = box.scrollHeight;
+    });
+}
 
-    <audio id="ringtone" src="https://actions.google.com/sounds/v1/alarms/phone_alerts_and_ringtones.ogg" loop></audio>
-    <audio id="remote-audio" autoplay playsinline></audio>
+function sendMsg() {
+    const i = document.getElementById("msgInput");
+    if(!i.value || !activeTarget) return;
+    db.collection("messages").add({ f: me, t: activeTarget, txt: i.value, time: Date.now(), read: false });
+    i.value = "";
+}
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCEVfe1DpEB4sVjng3Q5qaZ-190QjmXyY0",
-            authDomain: "alloo-web.firebaseapp.com",
-            projectId: "alloo-web",
-            storageBucket: "alloo-web.appspot.com",
-            messagingSenderId: "132232824762",
-            appId: "1:132232824762:web:4e3c25557c072f0feabf83"
+const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }] };
+
+async function startCall() {
+    if(!activeTarget) return;
+    document.getElementById("callUI").style.display = "flex";
+    document.getElementById("cName").innerText = activeTarget.toUpperCase();
+    document.getElementById("acceptBtn").style.display = "none";
+    document.getElementById("muteBtn").style.display = "block";
+    document.getElementById("cStatus").innerText = "CALLING...";
+
+    pc = new RTCPeerConnection(rtcConfig);
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+    pc.onicecandidate = e => {
+        if(e.candidate) db.collection("calls").doc(activeTarget).collection("callerCandidates").add(e.candidate.toJSON());
+    };
+
+    pc.ontrack = e => {
+        document.getElementById("remoteAudio").srcObject = e.streams[0];
+        document.getElementById("cStatus").innerText = "CONNECTED";
+    };
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await db.collection("calls").doc(activeTarget).set({ offer, from: me });
+
+    db.collection("calls").doc(activeTarget).onSnapshot(async snap => {
+        const d = snap.data();
+        if(d?.answer && !pc.currentRemoteDescription) {
+            await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+        }
+    });
+
+    db.collection("calls").doc(activeTarget).collection("receiverCandidates").onSnapshot(s => {
+        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
+    });
+}
+
+function listenForCalls() {
+    db.collection("calls").doc(me).onSnapshot(async snap => {
+        const d = snap.data();
+        if(d?.offer && !pc) {
+            window.incoming = d;
+            document.getElementById("callUI").style.display = "flex";
+            document.getElementById("cName").innerText = d.from.toUpperCase();
+            document.getElementById("acceptBtn").style.display = "block";
+            document.getElementById("muteBtn").style.display = "none";
+            document.getElementById("cStatus").innerText = "INCOMING CALL";
+            document.getElementById("ring").play();
+        } else if(!d && pc) hangup();
+    });
+}
+
+async function answerCall() {
+    document.getElementById("ring").pause();
+    document.getElementById("acceptBtn").style.display = "none";
+    document.getElementById("muteBtn").style.display = "block";
+    document.getElementById("cStatus").innerText = "CONNECTING...";
+
+    pc = new RTCPeerConnection(rtcConfig);
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+    pc.onicecandidate = e => {
+        if(e.candidate) db.collection("calls").doc(me).collection("receiverCandidates").add(e.candidate.toJSON());
+    };
+
+    pc.ontrack = e => {
+        document.getElementById("remoteAudio").srcObject = e.streams[0];
+        document.getElementById("cStatus").innerText = "CONNECTED";
+    };
+
+    await pc.setRemoteDescription(new RTCSessionDescription(window.incoming.offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await db.collection("calls").doc(me).update({ answer });
+
+    db.collection("calls").doc(me).collection("callerCandidates").onSnapshot(s => {
+        s.docChanges().forEach(c => { if(c.type==='added') pc.addIceCandidate(new RTCIceCandidate(c.doc.data())); });
+    });
+}
+
+function toggleMute() {
+    isMuted = !isMuted;
+    localStream.getAudioTracks()[0].enabled = !isMuted;
+    document.getElementById("muteBtn").innerText = isMuted ? "🚫" : "🎙️";
+}
+
+function hangup() {
+    if(localStream) localStream.getTracks().forEach(t => t.stop());
+    if(pc) pc.close(); pc = null;
+    db.collection("calls").doc(me).delete();
+    if(activeTarget) db.collection("calls").doc(activeTarget).delete();
+    document.getElementById("callUI").style.display = "none";
+    document.getElementById("callUI").classList.remove("minimized");
+    document.getElementById("ring").pause();
+}
+
+function toggleCallView() {
+    document.getElementById("callUI").classList.toggle("minimized");
+}
+
+let rec; let chunks = [];
+let audioCtx; let analyser; let animId;
+
+async function toggleVoice() {
+    const v = document.getElementById("vBtn");
+    const indicator = document.getElementById("recIndicator");
+    const canvas = document.getElementById("voiceWave");
+    const ctx = canvas.getContext("2d");
+
+    if(!rec || rec.state === 'inactive') {
+        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        const source = audioCtx.createMediaStreamSource(s);
+        source.connect(analyser);
+        analyser.fftSize = 64;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        function draw() {
+            animId = requestAnimationFrame(draw);
+            analyser.getByteFrequencyData(dataArray);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ff0055';
+            let barWidth = (canvas.width / bufferLength) * 2;
+            let barHeight;
+            let x = 0;
+            for(let i = 0; i < bufferLength; i++) {
+                barHeight = dataArray[i] / 4;
+                ctx.fillRect(x, canvas.height/2 - barHeight/2, barWidth, barHeight);
+                x += barWidth + 1;
+            }
+        }
+        draw();
+
+        // حل مشکل ضبط در آیفون با استفاده از فرمت mp4
+        const options = { mimeType: MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 'audio/webm' };
+        rec = new MediaRecorder(s, options); 
+        chunks = [];
+        rec.ondataavailable = e => chunks.push(e.data);
+        rec.onstop = () => {
+            cancelAnimationFrame(animId);
+            audioCtx.close();
+            const b = new Blob(chunks, { type: options.mimeType });
+            const r = new FileReader(); r.readAsDataURL(b);
+            r.onloadend = () => db.collection("messages").add({ f: me, t: activeTarget, audio: r.result, time: Date.now(), read: false });
+            v.classList.remove("is-recording");
+            indicator.style.display = "none";
+            s.getTracks().forEach(track => track.stop());
         };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        rec.start(); 
+        v.classList.add("is-recording"); 
+        indicator.style.display = "flex"; 
+    } else { rec.stop(); }
+}
 
-        let me = localStorage.getItem("alloo_uid");
-        let target = "";
-        let pc; let stream;
-
-        if(me) { 
-            document.getElementById("login-overlay").style.display = "none";
-            initApp();
-        }
-
-        async function handleAuth() {
-            const id = document.getElementById("uID").value.toLowerCase().trim();
-            const pw = document.getElementById("uPass").value.trim();
-            if(!id || !pw) return;
-            const ref = db.collection("users").doc(id);
-            const doc = await ref.get();
-            if(!doc.exists) await ref.set({pass:pw, online:true, last:Date.now()});
-            else if(doc.data().pass !== pw) return alert("خطا در رمز");
-            localStorage.setItem("alloo_uid", id);
-            location.reload();
-        }
-
-        function initApp() {
-            db.collection("users").doc(me).update({online:true, last:Date.now()});
-            setInterval(() => db.collection("users").doc(me).update({online:true, last:Date.now()}), 20000);
-
-            db.collection("users").onSnapshot(snap => {
-                const list = document.getElementById("user-list");
-                list.innerHTML = "";
-                snap.forEach(doc => {
-                    if(doc.id === me) return;
-                    const d = doc.data();
-                    const isOn = d.online && (Date.now() - d.last < 60000);
-                    const card = document.createElement("div");
-                    card.className = `user-card ${target === doc.id ? 'active' : ''}`;
-                    card.innerHTML = `
-                        <div class="avatar">${doc.id[0].toUpperCase()}${isOn ? '<div class="online-status"></div>' : ''}</div>
-                        <div><div style="font-weight:bold;">${doc.id}</div><div style="font-size:10px; opacity:0.5;">${isOn ? 'ONLINE' : 'OFFLINE'}</div></div>
-                    `;
-                    card.onclick = () => selectUser(doc.id);
-                    list.appendChild(card);
-                });
-            });
-            listenCall();
-        }
-
-        function selectUser(id) {
-            target = id;
-            document.getElementById("active-name").innerText = id;
-            document.getElementById("active-avatar").innerText = id[0].toUpperCase();
-            if(window.innerWidth < 768) {
-                document.getElementById("sidebar").classList.add("hidden");
-                document.getElementById("back-btn").style.display = "flex";
-            }
-            loadMsgs();
-        }
-
-        function toggleSidebar() {
-            document.getElementById("sidebar").classList.remove("hidden");
-            document.getElementById("back-btn").style.display = "none";
-        }
-
-        function loadMsgs() {
-            db.collection("messages").orderBy("time","asc").onSnapshot(snap => {
-                const box = document.getElementById("messages-container");
-                box.innerHTML = "";
-                snap.forEach(doc => {
-                    const d = doc.data();
-                    if((d.f==me && d.t==target) || (d.f==target && d.t==me)) {
-                        const m = document.createElement("div");
-                        m.className = `msg ${d.f==me ? 'sent' : 'received'}`;
-                        if(d.img) m.innerHTML = `<img src="${d.img}">${d.txt||''}`;
-                        else if(d.audio) m.innerHTML = `<audio src="${d.audio}" controls style="width:200px;"></audio>`;
-                        else m.innerText = d.txt;
-                        box.appendChild(m);
-                    }
-                });
-                box.scrollTop = box.scrollHeight;
-            });
-        }
-
-        function sendMsg() {
-            const inp = document.getElementById("mInput");
-            if(!inp.value || !target) return;
-            db.collection("messages").add({f:me, t:target, txt:inp.value, time:Date.now()});
-            inp.value = "";
-        }
-
-        function sendImage(inp) {
-            const file = inp.files[0];
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                db.collection("messages").add({f:me, t:target, img:e.target.result, time:Date.now()});
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // سیستم تماس (WebRTC)
-        const cfg = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-        async function startCall() {
-            document.getElementById("call-ui").style.display = "flex";
-            pc = new RTCPeerConnection(cfg);
-            stream = await navigator.mediaDevices.getUserMedia({audio:true});
-            stream.getTracks().forEach(t => pc.addTrack(t, stream));
-            pc.ontrack = e => document.getElementById("remote-audio").srcObject = e.streams[0];
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            await db.collection("calls").doc(target).set({offer, from:me});
-            db.collection("calls").doc(target).onSnapshot(s => {
-                if(s.data()?.ans) pc.setRemoteDescription(new RTCSessionDescription(s.data().ans));
-            });
-        }
-
-        function listenCall() {
-            db.collection("calls").doc(me).onSnapshot(async s => {
-                const d = s.data();
-                if(d?.offer && !pc) {
-                    window.inc = d;
-                    document.getElementById("call-ui").style.display = "flex";
-                    document.getElementById("c-name").innerText = d.from;
-                    document.getElementById("ringtone").play();
-                } else if(!d && pc) hangup();
-            });
-        }
-
-        async function answerCall() {
-            document.getElementById("ringtone").pause();
-            pc = new RTCPeerConnection(cfg);
-            stream = await navigator.mediaDevices.getUserMedia({audio:true});
-            stream.getTracks().forEach(t => pc.addTrack(t, stream));
-            pc.ontrack = e => document.getElementById("remote-audio").srcObject = e.streams[0];
-            await pc.setRemoteDescription(new RTCSessionDescription(window.inc.offer));
-            const ans = await pc.createAnswer();
-            await pc.setLocalDescription(ans);
-            await db.collection("calls").doc(me).update({ans});
-        }
-
-        function hangup() {
-            if(stream) stream.getTracks().forEach(t => t.stop());
-            if(pc) pc.close(); pc = null;
-            db.collection("calls").doc(me).delete();
-            document.getElementById("call-ui").style.display = "none";
-            document.getElementById("ringtone").pause();
-        }
-
-        // ویس
-        let rec; let chunks = [];
-        async function toggleVoice() {
-            if(!rec || rec.state === 'inactive') {
-                const s = await navigator.mediaDevices.getUserMedia({audio:true});
-                rec = new MediaRecorder(s);
-                rec.ondataavailable = e => chunks.push(e.data);
-                rec.onstop = () => {
-                    const blob = new Blob(chunks, {type:'audio/ogg'});
-                    const reader = new FileReader();
-                    reader.onload = (e) => db.collection("messages").add({f:me, t:target, audio:e.target.result, time:Date.now()});
-                    reader.readAsDataURL(blob);
-                    chunks = []; s.getTracks().forEach(t => t.stop());
-                };
-                rec.start();
-                document.getElementById("voice-rec").style.display = "block";
-            } else {
-                rec.stop();
-                document.getElementById("voice-rec").style.display = "none";
-            }
-        }
-
-        function logout() { localStorage.clear(); location.reload(); }
-    </script>
+function logout() { db.collection("users").doc(me).update({ online: false }); localStorage.clear(); location.reload(); }
+</script>
 </body>
 </html>
