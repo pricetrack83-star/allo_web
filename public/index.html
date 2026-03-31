@@ -55,7 +55,7 @@ body {
     .sidebar.active-chat { transform: translateX(100%); }
     
     .input-area-wrapper { 
-        padding: 10px 15px !important; /* کاهش پدینگ برای جلوگیری از بیرون زدگی */
+        padding: 10px 15px !important; 
         gap: 8px !important; 
         background: rgba(0,0,0,0.5) !important;
     }
@@ -72,6 +72,10 @@ body {
 
     .chat-header { padding: 15px !important; }
     #targetName { font-size: 15px !important; }
+    
+    /* اصلاح سایز ویس در حباب پیام موبایل */
+    .bubble.has-audio { min-width: 150px !important; max-width: 85% !important; }
+    .bubble audio { width: 100% !important; height: 32px !important; }
 }
 
 /* --- [بخش جدید: استایل نئونی عدد پیام‌های جدید] --- */
@@ -89,7 +93,19 @@ body {
 }
 @keyframes unreadPulse { from { box-shadow: 0 0 5px var(--secondary-glow); } to { box-shadow: 0 0 15px var(--secondary-glow); } }
 
-/* --- [بخش جدید: افکت موج‌دار نئونی برای ویس] --- */
+/* انیمیشن تپش دکمه ضبط */
+.is-recording {
+    animation: recBtnPulse 1.5s infinite !important;
+    background: var(--secondary) !important;
+    color: white !important;
+    border: none !important;
+}
+@keyframes recBtnPulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 0, 85, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(255, 0, 85, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 0, 85, 0); }
+}
+
 .bubble.has-audio {
     background: #0a0a0a !important;
     border: 1px solid var(--primary) !important;
@@ -105,7 +121,7 @@ body {
 }
 @keyframes voiceWaveMove { 0% { transform: translateX(-150%); } 100% { transform: translateX(200%); } }
 
-/* --- استایل‌های اصلی شما (بدون تغییر) --- */
+/* استایل‌های اصلی */
 .bg-canvas { position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at center, var(--dark-bg) 0%, #000 100%); }
 .particle { position: absolute; border-radius: 50%; background: var(--primary); filter: blur(100px); opacity: 0.15; animation: float 25s infinite alternate ease-in-out; }
 @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(150px, -100px) scale(1.4); } }
@@ -187,9 +203,10 @@ body {
         <div id="messages"></div>
 
         <div class="input-area-wrapper" style="padding:25px 40px; display:flex; flex-direction:column; gap:10px; background:rgba(0,0,0,0.2);">
-            <div id="recIndicator">
+            <div id="recIndicator" style="display:none; align-items:center; gap:15px;">
                 <div class="rec-dot"></div>
-                <span>SECURE RECORDING...</span>
+                <span style="color:var(--secondary); font-family:'Orbitron'; font-size:10px;">RECORDING...</span>
+                <canvas id="voiceWave" width="100" height="20" style="flex:1;"></canvas>
             </div>
             <div class="input-row-mobile" style="display:flex; gap:15px; width:100%; align-items:center;">
                 <input id="msgInput" placeholder="Secure transmission..." onkeypress="if(event.key=='Enter') sendMsg()">
@@ -334,7 +351,9 @@ function loadMessages() {
                 }
                 const m = document.createElement("div");
                 m.className = `bubble ${d.f==me ? 'me' : 'other'} ${d.audio ? 'has-audio' : ''}`;
-                if(d.audio) m.innerHTML = `<audio src="${d.audio}" controls style="filter:invert(1) opacity:0.8; height:35px;"></audio>`;
+                if(d.audio) {
+                    m.innerHTML = `<audio src="${d.audio}" controls style="filter:invert(1) opacity:0.8; height:35px; width:220px; max-width:100%;"></audio>`;
+                }
                 else m.innerText = d.txt;
                 box.appendChild(m);
             }
@@ -454,19 +473,53 @@ function toggleCallView() {
 }
 
 let rec; let chunks = [];
+let audioCtx; let analyser; let animId;
+
 async function toggleVoice() {
     const v = document.getElementById("vBtn");
     const indicator = document.getElementById("recIndicator");
+    const canvas = document.getElementById("voiceWave");
+    const ctx = canvas.getContext("2d");
+
     if(!rec || rec.state === 'inactive') {
         const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // تنظیم ویژوالایزر موجی صوتی
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        const source = audioCtx.createMediaStreamSource(s);
+        source.connect(analyser);
+        analyser.fftSize = 64;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        function draw() {
+            animId = requestAnimationFrame(draw);
+            analyser.getByteFrequencyData(dataArray);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ff0055';
+            let barWidth = (canvas.width / bufferLength) * 2;
+            let barHeight;
+            let x = 0;
+            for(let i = 0; i < bufferLength; i++) {
+                barHeight = dataArray[i] / 4;
+                ctx.fillRect(x, canvas.height/2 - barHeight/2, barWidth, barHeight);
+                x += barWidth + 1;
+            }
+        }
+        draw();
+
         rec = new MediaRecorder(s); chunks = [];
         rec.ondataavailable = e => chunks.push(e.data);
         rec.onstop = () => {
+            cancelAnimationFrame(animId);
+            audioCtx.close();
             const b = new Blob(chunks, { type: 'audio/webm' });
             const r = new FileReader(); r.readAsDataURL(b);
             r.onloadend = () => db.collection("messages").add({ f: me, t: activeTarget, audio: r.result, time: Date.now(), read: false });
             v.classList.remove("is-recording");
             indicator.style.display = "none";
+            s.getTracks().forEach(track => track.stop());
         };
         rec.start(); 
         v.classList.add("is-recording"); 
