@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "destination": "https://allochat.site/$1",
+      "permanent": true
+    }
+  ]
+}
